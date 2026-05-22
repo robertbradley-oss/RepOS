@@ -78,6 +78,46 @@ try {
     throw new Error("Ticket normalized API readback did not match expected state.");
   }
 
+  const customerInput = {
+    email: "smoke@example.com",
+    name: "Smoke Customer",
+    phone: "555-0000",
+    purchaseSource: "iSpring direct"
+  };
+  const customerCreated = await fetch(`http://127.0.0.1:${port}/api/customers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(customerInput)
+  });
+  if (customerCreated.status !== 201) throw new Error(`Customer create failed: ${customerCreated.status}`);
+
+  const customerNote = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rep: "Smoke Test", body: "Customer note route works." })
+  });
+  if (customerNote.status !== 201) throw new Error(`Customer note failed: ${customerNote.status}`);
+
+  const customerReceipt = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/receipts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileName: "smoke-receipt.pdf", source: "iSpring direct", status: "Verified" })
+  });
+  if (customerReceipt.status !== 201) throw new Error(`Customer receipt failed: ${customerReceipt.status}`);
+
+  const customerWarranty = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/warranties`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "RCC7AK", orderNumber: "SMOKE-ORDER", status: "Registered" })
+  });
+  if (customerWarranty.status !== 201) throw new Error(`Customer warranty failed: ${customerWarranty.status}`);
+
+  const customerTickets = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/tickets`);
+  const customerTicketsPayload = await customerTickets.json();
+  if (customerTicketsPayload.tickets?.length !== 1) {
+    throw new Error("Customer ticket history route did not find the smoke ticket.");
+  }
+
   await runStrictAuthSmoke();
   console.log("Backend smoke test passed.");
 } finally {

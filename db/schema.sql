@@ -65,3 +65,59 @@ create table if not exists auth_sessions (
 
 create index if not exists auth_sessions_user_id_idx on auth_sessions (user_id);
 create index if not exists auth_sessions_expires_at_idx on auth_sessions (expires_at);
+
+create table if not exists customers (
+  id text primary key,
+  email text not null unique,
+  name text not null default '',
+  phone text not null default '',
+  mobile text not null default '',
+  address text not null default '',
+  purchase_source text not null default 'Unknown',
+  order_number text not null default '',
+  notes text not null default '',
+  warranty_registered boolean not null default false,
+  warranty_registered_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  data jsonb not null default '{}'::jsonb
+);
+
+create index if not exists customers_email_idx on customers (email);
+create index if not exists customers_name_idx on customers (name);
+
+create table if not exists customer_notes (
+  id text primary key,
+  customer_id text not null references customers(id) on delete cascade,
+  body text not null default '',
+  rep text not null default '',
+  created_at timestamptz not null default now(),
+  data jsonb not null default '{}'::jsonb
+);
+
+create table if not exists customer_receipts (
+  id text primary key,
+  customer_id text not null references customers(id) on delete cascade,
+  file_name text not null default '',
+  source text not null default 'Unknown',
+  order_number text not null default '',
+  model text not null default '',
+  status text not null default '',
+  uploaded_at timestamptz,
+  data jsonb not null default '{}'::jsonb
+);
+
+create table if not exists customer_warranties (
+  id text primary key,
+  customer_id text not null references customers(id) on delete cascade,
+  receipt_id text,
+  model text not null default '',
+  order_number text not null default '',
+  status text not null default '',
+  registered_at timestamptz,
+  data jsonb not null default '{}'::jsonb
+);
+
+create index if not exists customer_notes_customer_id_idx on customer_notes (customer_id);
+create index if not exists customer_receipts_customer_id_idx on customer_receipts (customer_id);
+create index if not exists customer_warranties_customer_id_idx on customer_warranties (customer_id);

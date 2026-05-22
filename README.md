@@ -42,6 +42,14 @@ The app has no package install step and no build step. It is plain HTML, CSS, Ja
 - `PATCH /api/tickets/:id`
 - `POST /api/tickets/:id/messages`
 - `POST /api/tickets/:id/notes`
+- `GET /api/customers`
+- `POST /api/customers`
+- `GET /api/customers/:id`
+- `PATCH /api/customers/:id`
+- `GET /api/customers/:id/tickets`
+- `POST /api/customers/:id/notes`
+- `POST /api/customers/:id/receipts`
+- `POST /api/customers/:id/warranties`
 - `POST /api/reset`
 
 The backend persists synced demo state to `.data/tessario-state.json`, which is intentionally ignored by Git. Development mode auto-creates an admin session for CS14 Robert; set `TESSARIO_AUTH_MODE=strict` when you want API routes to require an explicit session. See `docs/backend.md` for the backend plan and next upgrades.

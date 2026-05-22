@@ -188,6 +188,78 @@ async function handleApi(request, response, url) {
     }
   }
 
+  if (request.method === "GET" && url.pathname === "/api/customers") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    sendJson(response, 200, {
+      customers: await store.listCustomers(Object.fromEntries(url.searchParams.entries()))
+    });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/customers") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    const input = await readJsonBody(request);
+    if (!isPlainObject(input) || !String(input.email || "").trim()) {
+      sendJson(response, 400, { error: "invalid_customer_payload" });
+      return;
+    }
+    const customer = await store.createCustomer(input);
+    sendJson(response, customer ? 201 : 400, customer ? { customer } : { error: "invalid_customer_payload" });
+    return;
+  }
+
+  const customerRoute = url.pathname.match(/^\/api\/customers\/([^/]+)(?:\/(tickets|notes|receipts|warranties))?$/);
+  if (customerRoute) {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    const customerId = decodeURIComponent(customerRoute[1]);
+    const childRoute = customerRoute[2] || "";
+
+    if (request.method === "GET" && !childRoute) {
+      const customer = await store.getCustomer(customerId);
+      sendJson(response, customer ? 200 : 404, customer ? { customer } : { error: "customer_not_found" });
+      return;
+    }
+
+    if (request.method === "PATCH" && !childRoute) {
+      const patch = await readJsonBody(request);
+      if (!isPlainObject(patch)) {
+        sendJson(response, 400, { error: "invalid_customer_patch" });
+        return;
+      }
+      const customer = await store.patchCustomer(customerId, patch);
+      sendJson(response, customer ? 200 : 404, customer ? { customer } : { error: "customer_not_found" });
+      return;
+    }
+
+    if (request.method === "GET" && childRoute === "tickets") {
+      const tickets = await store.listCustomerTickets(customerId);
+      sendJson(response, tickets ? 200 : 404, tickets ? { tickets } : { error: "customer_not_found" });
+      return;
+    }
+
+    if (request.method === "POST" && ["notes", "receipts", "warranties"].includes(childRoute)) {
+      const input = await readJsonBody(request);
+      if (!isPlainObject(input)) {
+        sendJson(response, 400, { error: "invalid_customer_child_payload" });
+        return;
+      }
+      if (childRoute === "notes" && !String(input.body || "").trim()) {
+        sendJson(response, 400, { error: "invalid_customer_note_payload" });
+        return;
+      }
+      const result = childRoute === "notes"
+        ? await store.addCustomerNote(customerId, input)
+        : childRoute === "receipts"
+          ? await store.addCustomerReceipt(customerId, input)
+          : await store.addCustomerWarranty(customerId, input);
+      sendJson(response, result ? 201 : 404, result || { error: "customer_not_found" });
+      return;
+    }
+  }
+
   const stateMatch = url.pathname.match(/^\/api\/state\/([A-Za-z0-9_-]+)$/);
   if (stateMatch) {
     const resource = stateMatch[1];

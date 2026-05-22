@@ -11,6 +11,7 @@ This backend pass keeps Tessario simple to run while moving the app away from br
 - Bootstrap loading so the frontend can hydrate from backend state.
 - Sync endpoints for tickets, users, profile settings, notifications, Knowledge Vault metadata, product links, customer accounts, and the last ticket number.
 - Normalized ticket endpoints for ticket creation, updates, reads, messages, and notes.
+- Normalized customer endpoints for customers, ticket history, account notes, receipts, and warranties.
 - MVP auth users, sessions, HTTP-only session cookies, and role checks.
 
 ## Run Locally
@@ -41,6 +42,14 @@ http://127.0.0.1:4173
 - `PATCH /api/tickets/:id`
 - `POST /api/tickets/:id/messages`
 - `POST /api/tickets/:id/notes`
+- `GET /api/customers?search=avery&limit=50&offset=0`
+- `POST /api/customers`
+- `GET /api/customers/:id`
+- `PATCH /api/customers/:id`
+- `GET /api/customers/:id/tickets`
+- `POST /api/customers/:id/notes`
+- `POST /api/customers/:id/receipts`
+- `POST /api/customers/:id/warranties`
 - `POST /api/reset`
 
 ## Auth Mode
@@ -101,11 +110,16 @@ Postgres mode creates:
 - `ticket_messages` for normalized ticket message/note records.
 - `auth_users` for backend users and roles.
 - `auth_sessions` for HTTP-only session cookies.
+- `customers` for normalized customer profiles.
+- `customer_notes` for customer account notes.
+- `customer_receipts` for receipt metadata.
+- `customer_warranties` for warranty metadata.
 
 ## Next Backend Upgrades
 
 - Replace dev login with production passwordless, OAuth, or password-based authentication.
-- Add normalized tables for customers, users, assignments, macros, Knowledge Vault documents, and activity history.
+- Move frontend customer-history actions to the normalized customer endpoints.
+- Add normalized tables for assignments, macros, Knowledge Vault documents, and activity history.
 - Add real file upload storage for receipts, screenshots, and Knowledge Vault documents.
 - Add PDF/DOCX text extraction and searchable Knowledge Vault content.
 - Add email ingestion and outbound email integration.
