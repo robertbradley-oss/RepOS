@@ -6,11 +6,13 @@ import { tmpdir } from "node:os";
 const port = 4199;
 const dataDir = await mkdtemp(join(tmpdir(), "tessario-smoke-"));
 const dataFile = join(dataDir, "state.json");
+const uploadDir = join(dataDir, "uploads");
 const server = spawn(process.execPath, ["server.mjs"], {
   env: {
     ...process.env,
     PORT: String(port),
-    TESSARIO_DATA_FILE: dataFile
+    TESSARIO_DATA_FILE: dataFile,
+    TESSARIO_UPLOAD_DIR: uploadDir
   },
   stdio: "pipe"
 });
@@ -105,6 +107,25 @@ try {
   });
   if (customerReceipt.status !== 201) throw new Error(`Customer receipt failed: ${customerReceipt.status}`);
 
+  const receiptForm = new FormData();
+  receiptForm.append("file", new Blob(["Smoke receipt upload"], { type: "text/plain" }), "smoke-receipt.txt");
+  receiptForm.append("source", "iSpring direct");
+  receiptForm.append("status", "Verified");
+  const receiptUpload = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/receipts/upload`, {
+    method: "POST",
+    body: receiptForm
+  });
+  if (receiptUpload.status !== 201) throw new Error(`Customer receipt upload failed: ${receiptUpload.status}`);
+  const receiptUploadPayload = await receiptUpload.json();
+  if (!receiptUploadPayload.file?.downloadUrl || receiptUploadPayload.record?.fileName !== "smoke-receipt.txt") {
+    throw new Error("Customer receipt upload did not return expected file metadata.");
+  }
+
+  const receiptDownload = await fetch(`http://127.0.0.1:${port}${receiptUploadPayload.file.downloadUrl}`);
+  if (!receiptDownload.ok || await receiptDownload.text() !== "Smoke receipt upload") {
+    throw new Error("Protected receipt download did not return the uploaded content.");
+  }
+
   const customerWarranty = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/warranties`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -116,6 +137,25 @@ try {
   const customerTicketsPayload = await customerTickets.json();
   if (customerTicketsPayload.tickets?.length !== 1) {
     throw new Error("Customer ticket history route did not find the smoke ticket.");
+  }
+
+  const knowledgeForm = new FormData();
+  knowledgeForm.append("file", new Blob(["Smoke knowledge upload"], { type: "text/plain" }), "smoke-knowledge.txt");
+  knowledgeForm.append("category", "Policy");
+  knowledgeForm.append("approvedForAi", "true");
+  const knowledgeUpload = await fetch(`http://127.0.0.1:${port}/api/knowledge/files/upload`, {
+    method: "POST",
+    body: knowledgeForm
+  });
+  if (knowledgeUpload.status !== 201) throw new Error(`Knowledge upload failed: ${knowledgeUpload.status}`);
+  const knowledgePayload = await knowledgeUpload.json();
+  if (knowledgePayload.document?.fileName !== "smoke-knowledge.txt" || !knowledgePayload.document?.approvedForAi) {
+    throw new Error("Knowledge upload did not return expected document metadata.");
+  }
+
+  const knowledgeDownload = await fetch(`http://127.0.0.1:${port}${knowledgePayload.file.downloadUrl}`);
+  if (!knowledgeDownload.ok || await knowledgeDownload.text() !== "Smoke knowledge upload") {
+    throw new Error("Protected knowledge download did not return the uploaded content.");
   }
 
   await runStrictAuthSmoke();

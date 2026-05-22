@@ -12,6 +12,7 @@ This backend pass keeps Tessario simple to run while moving the app away from br
 - Sync endpoints for tickets, users, profile settings, notifications, Knowledge Vault metadata, product links, customer accounts, and the last ticket number.
 - Normalized ticket endpoints for ticket creation, updates, reads, messages, and notes.
 - Normalized customer endpoints for customers, ticket history, account notes, receipts, and warranties.
+- Protected upload/download endpoints for customer receipts and Knowledge Vault files.
 - MVP auth users, sessions, HTTP-only session cookies, and role checks.
 
 ## Run Locally
@@ -49,8 +50,24 @@ http://127.0.0.1:4173
 - `GET /api/customers/:id/tickets`
 - `POST /api/customers/:id/notes`
 - `POST /api/customers/:id/receipts`
+- `POST /api/customers/:id/receipts/upload`
 - `POST /api/customers/:id/warranties`
+- `POST /api/knowledge/files/upload`
+- `GET /api/files/:id`
 - `POST /api/reset`
+
+## File Uploads
+
+Local uploads are written to `.uploads/` by default and are served only through authenticated API routes. Set `TESSARIO_UPLOAD_DIR` to use a different local folder and `TESSARIO_MAX_UPLOAD_BYTES` to change the default 20 MB upload limit.
+
+Supported file types:
+
+- PDF
+- PNG/JPG
+- TXT/CSV
+- DOCX/XLSX
+
+Customer receipt uploads create both a protected file record and customer receipt metadata. Knowledge Vault uploads are admin-guarded and add a document record to `knowledgeDocs`.
 
 ## Auth Mode
 
@@ -75,6 +92,7 @@ Admin-guarded routes currently include:
 
 - `GET /api/auth/users`
 - `POST /api/reset`
+- `POST /api/knowledge/files/upload`
 - `PUT /api/state/users`
 - `PUT /api/state/profile`
 - `PUT /api/state/knowledgeDocs`
@@ -114,12 +132,13 @@ Postgres mode creates:
 - `customer_notes` for customer account notes.
 - `customer_receipts` for receipt metadata.
 - `customer_warranties` for warranty metadata.
+- `uploaded_files` for protected local upload metadata.
 
 ## Next Backend Upgrades
 
 - Replace dev login with production passwordless, OAuth, or password-based authentication.
 - Move frontend customer-history actions to the normalized customer endpoints.
 - Add normalized tables for assignments, macros, Knowledge Vault documents, and activity history.
-- Add real file upload storage for receipts, screenshots, and Knowledge Vault documents.
+- Move local uploads to durable object storage for deployed environments.
 - Add PDF/DOCX text extraction and searchable Knowledge Vault content.
 - Add email ingestion and outbound email integration.

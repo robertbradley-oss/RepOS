@@ -121,3 +121,22 @@ create table if not exists customer_warranties (
 create index if not exists customer_notes_customer_id_idx on customer_notes (customer_id);
 create index if not exists customer_receipts_customer_id_idx on customer_receipts (customer_id);
 create index if not exists customer_warranties_customer_id_idx on customer_warranties (customer_id);
+
+create table if not exists uploaded_files (
+  id text primary key,
+  category text not null default '',
+  owner_type text not null default '',
+  owner_id text not null default '',
+  original_name text not null default '',
+  stored_name text not null default '',
+  storage_path text not null default '',
+  mime_type text not null default 'application/octet-stream',
+  size_bytes integer not null default 0,
+  uploaded_by text not null default '',
+  created_at timestamptz not null default now(),
+  data jsonb not null default '{}'::jsonb
+);
+
+create index if not exists uploaded_files_category_idx on uploaded_files (category);
+create index if not exists uploaded_files_owner_idx on uploaded_files (owner_type, owner_id);
+create index if not exists uploaded_files_created_at_idx on uploaded_files (created_at desc);

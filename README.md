@@ -6,7 +6,7 @@ Tessario is a front-end prototype for a modern internal ticketing workspace. Thi
 
 The product concept is workspace-agnostic: Tessario provides the ticketing, dashboard, customer-history, assignment, macro, and assistant experience, while the iSpring model supplies the sample departments, products, policies, tickets, and support language used to demonstrate the workflow.
 
-This is currently an MVP prototype with a lightweight local backend. It includes server-side JSON persistence for demo data, but does not yet include production auth, email sync, Postgres, order lookup, inventory lookup, or real file storage.
+This is currently an MVP prototype with a lightweight local backend. It includes server-side JSON persistence for demo data, optional Postgres support, MVP auth, and protected local file uploads. It does not yet include production login, email sync, order lookup, inventory lookup, cloud file storage, or document text extraction.
 
 ## How To Run Locally
 
@@ -49,10 +49,13 @@ The app has no package install step and no build step. It is plain HTML, CSS, Ja
 - `GET /api/customers/:id/tickets`
 - `POST /api/customers/:id/notes`
 - `POST /api/customers/:id/receipts`
+- `POST /api/customers/:id/receipts/upload`
 - `POST /api/customers/:id/warranties`
+- `POST /api/knowledge/files/upload`
+- `GET /api/files/:id`
 - `POST /api/reset`
 
-The backend persists synced demo state to `.data/tessario-state.json`, which is intentionally ignored by Git. Development mode auto-creates an admin session for CS14 Robert; set `TESSARIO_AUTH_MODE=strict` when you want API routes to require an explicit session. See `docs/backend.md` for the backend plan and next upgrades.
+The backend persists synced demo state to `.data/tessario-state.json` and local uploads to `.uploads/`, both intentionally ignored by Git. Development mode auto-creates an admin session for CS14 Robert; set `TESSARIO_AUTH_MODE=strict` when you want API routes to require an explicit session. See `docs/backend.md` for the backend plan and next upgrades.
 
 ## How To Deploy To Vercel
 
@@ -113,14 +116,15 @@ The important deployed files are:
 - Admin tools for assignment pool management, rep settings, workspace configuration, and mock routing controls.
 - iSpring model data including sample products, support macros, customer tickets, warranty/receipt context, and guardrails.
 - Static frontend with localStorage fallback and backend JSON persistence for demo data.
+- Protected local upload/download endpoints for customer receipts and Knowledge Vault files.
 
 ## Known Issues
 
 - Backend persistence uses a local JSON file unless `DATABASE_URL` is configured for Postgres.
 - Auth and role checks exist as an MVP, but production password/OAuth login is not built yet.
-- Email ingestion and file storage are not production-ready yet.
+- Email ingestion and cloud file storage are not production-ready yet.
 - `localStorage` remains as a browser fallback. The app validates the saved mock-ticket schema and reseeds default data when stale data is detected.
-- Attachment previews use mock inline/modal rendering until real backend file storage and downloads exist.
+- Attachment previews still use mock inline/modal rendering in parts of the UI, though backend upload/download endpoints now exist.
 - Copy actions use `navigator.clipboard` and may silently do nothing if the browser blocks clipboard access.
 - The app is optimized for desktop. Smaller screens are not the current priority.
 - Next Best Step guidance is rule/mock-data based. AI Assignment is currently mock fair-routing logic, not a real AI service.
@@ -136,7 +140,7 @@ The important deployed files are:
 - Add admin audit history for assignment pool changes.
 - Replace JSON-file persistence with Postgres and normalized ticket/customer/message tables.
 - Add real auth, role checks, and organization/workspace membership.
-- Add real file storage and document text extraction for Knowledge Vault sources.
+- Move uploaded files to durable cloud/object storage and add document text extraction for Knowledge Vault sources.
 - Add a real macro drawer with categories, favorites, previews, and personal/team/admin macro types.
 - Add better attachment preview modals for photos and PDFs.
 - Expand the Dashboard with richer manager views for workload forecasting, SLA breach causes, oldest tickets, and escalation coaching.
