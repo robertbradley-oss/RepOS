@@ -11,7 +11,7 @@ This backend pass keeps Tessario simple to run while moving the app away from br
 - Bootstrap loading so the frontend can hydrate from backend state.
 - Sync endpoints for tickets, users, profile settings, notifications, Knowledge Vault metadata, product links, customer accounts, and the last ticket number.
 - Normalized ticket endpoints for ticket creation, updates, reads, messages, and notes.
-- Development placeholder session endpoint for future auth work.
+- MVP auth users, sessions, HTTP-only session cookies, and role checks.
 
 ## Run Locally
 
@@ -29,6 +29,9 @@ http://127.0.0.1:4173
 
 - `GET /api/health`
 - `GET /api/session`
+- `POST /api/auth/dev-login`
+- `POST /api/auth/logout`
+- `GET /api/auth/users`
 - `GET /api/bootstrap`
 - `GET /api/state/:resource`
 - `PUT /api/state/:resource`
@@ -39,6 +42,35 @@ http://127.0.0.1:4173
 - `POST /api/tickets/:id/messages`
 - `POST /api/tickets/:id/notes`
 - `POST /api/reset`
+
+## Auth Mode
+
+By default, Tessario runs in development auth mode. The server auto-creates an admin user for `CS14 Robert` and sets an HTTP-only session cookie when protected routes are used.
+
+Default admin:
+
+- Email: `robbybradley@gmail.com`
+- Display name: `CS14 Robert`
+- Role: `admin`
+
+Use strict mode to require an explicit session:
+
+```powershell
+$env:TESSARIO_AUTH_MODE='strict'
+npm.cmd run dev
+```
+
+In strict mode, protected routes return `401` until a session exists. For local development, `POST /api/auth/dev-login` creates a session for the seeded admin unless `TESSARIO_DISABLE_DEV_LOGIN=1` is set.
+
+Admin-guarded routes currently include:
+
+- `GET /api/auth/users`
+- `POST /api/reset`
+- `PUT /api/state/users`
+- `PUT /api/state/profile`
+- `PUT /api/state/knowledgeDocs`
+- `PUT /api/state/productLinks`
+- `PUT /api/state/customerAccounts`
 
 Supported resources:
 
@@ -67,10 +99,12 @@ Postgres mode creates:
 - `app_state` for compatibility with the current frontend sync contract.
 - `tickets` for normalized ticket records.
 - `ticket_messages` for normalized ticket message/note records.
+- `auth_users` for backend users and roles.
+- `auth_sessions` for HTTP-only session cookies.
 
 ## Next Backend Upgrades
 
-- Add real authentication and role checks.
+- Replace dev login with production passwordless, OAuth, or password-based authentication.
 - Add normalized tables for customers, users, assignments, macros, Knowledge Vault documents, and activity history.
 - Add real file upload storage for receipts, screenshots, and Knowledge Vault documents.
 - Add PDF/DOCX text extraction and searchable Knowledge Vault content.

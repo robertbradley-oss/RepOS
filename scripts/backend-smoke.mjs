@@ -18,6 +18,15 @@ const server = spawn(process.execPath, ["server.mjs"], {
 try {
   await waitForHealth(port);
 
+  const session = await fetch(`http://127.0.0.1:${port}/api/session`);
+  const sessionPayload = await session.json();
+  if (!sessionPayload.authenticated || sessionPayload.user?.role !== "admin") {
+    throw new Error("Development session did not auto-authenticate as admin.");
+  }
+
+  const users = await fetch(`http://127.0.0.1:${port}/api/auth/users`);
+  if (!users.ok) throw new Error(`Admin auth users route failed: ${users.status}`);
+
   const profile = { displayName: "Smoke Test", role: "Admin" };
   const update = await fetch(`http://127.0.0.1:${port}/api/state/profile`, {
     method: "PUT",
@@ -69,6 +78,7 @@ try {
     throw new Error("Ticket normalized API readback did not match expected state.");
   }
 
+  await runStrictAuthSmoke();
   console.log("Backend smoke test passed.");
 } finally {
   server.kill();
@@ -85,4 +95,44 @@ async function waitForHealth(targetPort) {
     }
   }
   throw new Error("Server did not become healthy in time.");
+}
+
+async function runStrictAuthSmoke() {
+  const strictPort = 4200;
+  const strictDataDir = await mkdtemp(join(tmpdir(), "tessario-strict-smoke-"));
+  const strictServer = spawn(process.execPath, ["server.mjs"], {
+    env: {
+      ...process.env,
+      PORT: String(strictPort),
+      TESSARIO_AUTH_MODE: "strict",
+      TESSARIO_DATA_FILE: join(strictDataDir, "state.json")
+    },
+    stdio: "pipe"
+  });
+
+  try {
+    await waitForHealth(strictPort);
+    const unauthenticated = await fetch(`http://127.0.0.1:${strictPort}/api/tickets`);
+    if (unauthenticated.status !== 401) {
+      throw new Error(`Strict mode should require auth, got ${unauthenticated.status}.`);
+    }
+
+    const login = await fetch(`http://127.0.0.1:${strictPort}/api/auth/dev-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "robbybradley@gmail.com" })
+    });
+    if (!login.ok) throw new Error(`Strict dev login failed: ${login.status}`);
+    const cookie = login.headers.get("set-cookie")?.split(";")[0];
+    if (!cookie) throw new Error("Strict dev login did not return a session cookie.");
+
+    const authenticated = await fetch(`http://127.0.0.1:${strictPort}/api/tickets`, {
+      headers: { Cookie: cookie }
+    });
+    if (!authenticated.ok) {
+      throw new Error(`Strict authenticated ticket list failed: ${authenticated.status}`);
+    }
+  } finally {
+    strictServer.kill();
+  }
 }

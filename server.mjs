@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomBytes } from "node:crypto";
 import { createJsonStore } from "./lib/json-store.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -10,6 +11,9 @@ const port = Number(process.env.PORT || 4173);
 const dataFile = process.env.TESSARIO_DATA_FILE || join(root, ".data", "tessario-state.json");
 const schemaPath = join(root, "db", "schema.sql");
 const maxJsonBytes = 12 * 1024 * 1024;
+const authMode = process.env.TESSARIO_AUTH_MODE || "development";
+const sessionCookieName = "tessario_session";
+const sessionDays = Number(process.env.TESSARIO_SESSION_DAYS || 7);
 
 const staticTypes = {
   ".html": "text/html; charset=utf-8",
@@ -30,8 +34,10 @@ const resourceValidators = {
   customerAccounts: Array.isArray,
   lastTicketNumber: (value) => Number.isInteger(value) && value >= 0
 };
+const adminStateResources = new Set(["users", "profile", "knowledgeDocs", "productLinks", "customerAccounts"]);
 
 const store = await createStore();
+await store.ensureAuthUser(defaultAuthUser());
 
 const server = createServer(async (request, response) => {
   try {
@@ -60,31 +66,67 @@ async function handleApi(request, response, url) {
       ok: true,
       app: "Tessario (iSpring Model)",
       mode: "mvp-backend",
-      persistence: store.mode
+      persistence: store.mode,
+      authMode
     });
     return;
   }
 
   if (request.method === "GET" && url.pathname === "/api/session") {
-    const state = await store.loadState();
+    const user = await getCurrentUser(request, response);
     sendJson(response, 200, {
-      user: {
-        name: state.profile?.displayName || "CS14 Robert",
-        role: state.profile?.role || "Admin"
-      },
-      authMode: "development-placeholder"
+      authenticated: Boolean(user),
+      user: user ? publicUser(user) : null,
+      authMode
     });
     return;
   }
 
+  if (request.method === "GET" && url.pathname === "/api/auth/users") {
+    const user = await requireRole(request, response, ["admin", "owner"]);
+    if (!user) return;
+    sendJson(response, 200, { users: (await store.listAuthUsers()).map(publicUser) });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/auth/dev-login") {
+    if (process.env.TESSARIO_DISABLE_DEV_LOGIN === "1") {
+      sendJson(response, 403, { error: "dev_login_disabled" });
+      return;
+    }
+    const input = await readJsonBody(request);
+    const email = isPlainObject(input) && input.email ? String(input.email) : defaultAuthUser().email;
+    const user = await store.findAuthUserByEmail(email) || await store.ensureAuthUser(defaultAuthUser());
+    const session = await createSessionForUser(response, user);
+    sendJson(response, 200, { authenticated: true, user: publicUser(user), expiresAt: session.expiresAt });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/auth/logout") {
+    const token = parseCookies(request.headers.cookie || "")[sessionCookieName];
+    if (token) await store.deleteAuthSession(token);
+    setCookie(response, expiredSessionCookie());
+    sendJson(response, 200, { ok: true });
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/bootstrap") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
     sendJson(response, 200, {
-      state: await store.loadState()
+      state: await store.loadState(),
+      session: {
+        authenticated: Boolean(user),
+        user: user ? publicUser(user) : null,
+        authMode
+      }
     });
     return;
   }
 
   if (request.method === "GET" && url.pathname === "/api/tickets") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
     sendJson(response, 200, {
       tickets: await store.listTickets(Object.fromEntries(url.searchParams.entries()))
     });
@@ -92,6 +134,8 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "POST" && url.pathname === "/api/tickets") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
     const input = await readJsonBody(request);
     if (!isPlainObject(input) || !String(input.subject || "").trim()) {
       sendJson(response, 400, { error: "invalid_ticket_payload" });
@@ -107,12 +151,16 @@ async function handleApi(request, response, url) {
     const childRoute = ticketRoute[2] || "";
 
     if (request.method === "GET" && !childRoute) {
+      const user = await requireAuth(request, response);
+      if (!user) return;
       const ticket = await store.getTicket(ticketId);
       sendJson(response, ticket ? 200 : 404, ticket ? { ticket } : { error: "ticket_not_found" });
       return;
     }
 
     if (request.method === "PATCH" && !childRoute) {
+      const user = await requireAuth(request, response);
+      if (!user) return;
       const patch = await readJsonBody(request);
       if (!isPlainObject(patch)) {
         sendJson(response, 400, { error: "invalid_ticket_patch" });
@@ -124,6 +172,8 @@ async function handleApi(request, response, url) {
     }
 
     if (request.method === "POST" && (childRoute === "messages" || childRoute === "notes")) {
+      const user = await requireAuth(request, response);
+      if (!user) return;
       const input = await readJsonBody(request);
       if (!isPlainObject(input) || !String(input.body || "").trim()) {
         sendJson(response, 400, { error: "invalid_message_payload" });
@@ -147,11 +197,17 @@ async function handleApi(request, response, url) {
     }
 
     if (request.method === "GET") {
+      const user = await requireAuth(request, response);
+      if (!user) return;
       sendJson(response, 200, { resource, value: await store.getResource(resource) });
       return;
     }
 
     if (request.method === "PUT") {
+      const user = adminStateResources.has(resource)
+        ? await requireRole(request, response, ["admin", "owner"])
+        : await requireAuth(request, response);
+      if (!user) return;
       const value = await readJsonBody(request);
       if (!resourceValidators[resource](value)) {
         sendJson(response, 400, { error: "invalid_resource_payload", resource });
@@ -164,6 +220,8 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "POST" && url.pathname === "/api/reset") {
+    const user = await requireRole(request, response, ["admin", "owner"]);
+    if (!user) return;
     sendJson(response, 200, { ok: true, state: await store.resetState() });
     return;
   }
@@ -207,7 +265,9 @@ function defaultState() {
     knowledgeDocs: null,
     productLinks: null,
     customerAccounts: null,
-    lastTicketNumber: null
+    lastTicketNumber: null,
+    authUsers: null,
+    authSessions: null
   };
 }
 
@@ -241,11 +301,105 @@ async function readJsonBody(request) {
 function sendJson(response, status, payload) {
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
+    "Cache-Control": "no-store",
+    ...pendingHeaders(response)
   });
   response.end(JSON.stringify(payload));
 }
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+async function requireAuth(request, response) {
+  const user = await getCurrentUser(request, response);
+  if (!user) {
+    sendJson(response, 401, { error: "authentication_required" });
+    return null;
+  }
+  return user;
+}
+
+async function requireRole(request, response, roles) {
+  const user = await requireAuth(request, response);
+  if (!user) return null;
+  if (!roles.includes(String(user.role || "").toLowerCase())) {
+    sendJson(response, 403, { error: "insufficient_role", required: roles });
+    return null;
+  }
+  return user;
+}
+
+async function getCurrentUser(request, response) {
+  const token = parseCookies(request.headers.cookie || "")[sessionCookieName];
+  if (token) {
+    const result = await store.getAuthSession(token);
+    if (result?.user) return result.user;
+  }
+  if (authMode === "strict") return null;
+  const user = await store.ensureAuthUser(defaultAuthUser());
+  await createSessionForUser(response, user);
+  return user;
+}
+
+async function createSessionForUser(response, user) {
+  const token = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + sessionDays * 24 * 60 * 60 * 1000).toISOString();
+  const session = await store.createAuthSession(user.id, { token, expiresAt });
+  setCookie(response, sessionCookie(token, expiresAt));
+  return session;
+}
+
+function defaultAuthUser() {
+  return {
+    id: "cs14-robert",
+    email: "robbybradley@gmail.com",
+    displayName: "CS14 Robert",
+    repName: "CS14 Robert",
+    role: "admin",
+    active: true
+  };
+}
+
+function publicUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    repName: user.repName,
+    role: user.role,
+    active: user.active !== false
+  };
+}
+
+function parseCookies(cookieHeader) {
+  return Object.fromEntries(
+    cookieHeader
+      .split(";")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const index = part.indexOf("=");
+        if (index === -1) return [part, ""];
+        return [decodeURIComponent(part.slice(0, index)), decodeURIComponent(part.slice(index + 1))];
+      })
+  );
+}
+
+function sessionCookie(token, expiresAt) {
+  return `${sessionCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Expires=${new Date(expiresAt).toUTCString()}`;
+}
+
+function expiredSessionCookie() {
+  return `${sessionCookieName}=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+}
+
+function setCookie(response, cookie) {
+  response.__tessarioHeaders = response.__tessarioHeaders || {};
+  const existing = response.__tessarioHeaders["Set-Cookie"];
+  response.__tessarioHeaders["Set-Cookie"] = existing ? [...existing, cookie] : [cookie];
+}
+
+function pendingHeaders(response) {
+  return response.__tessarioHeaders || {};
 }

@@ -30,6 +30,9 @@ The app has no package install step and no build step. It is plain HTML, CSS, Ja
 
 - `GET /api/health`
 - `GET /api/session`
+- `POST /api/auth/dev-login`
+- `POST /api/auth/logout`
+- `GET /api/auth/users`
 - `GET /api/bootstrap`
 - `GET /api/state/:resource`
 - `PUT /api/state/:resource`
@@ -41,7 +44,7 @@ The app has no package install step and no build step. It is plain HTML, CSS, Ja
 - `POST /api/tickets/:id/notes`
 - `POST /api/reset`
 
-The backend persists synced demo state to `.data/tessario-state.json`, which is intentionally ignored by Git. See `docs/backend.md` for the backend plan and next upgrades.
+The backend persists synced demo state to `.data/tessario-state.json`, which is intentionally ignored by Git. Development mode auto-creates an admin session for CS14 Robert; set `TESSARIO_AUTH_MODE=strict` when you want API routes to require an explicit session. See `docs/backend.md` for the backend plan and next upgrades.
 
 ## How To Deploy To Vercel
 
@@ -106,7 +109,8 @@ The important deployed files are:
 ## Known Issues
 
 - Backend persistence uses a local JSON file unless `DATABASE_URL` is configured for Postgres.
-- Auth, email ingestion, file storage, and role permissions are not production-ready yet.
+- Auth and role checks exist as an MVP, but production password/OAuth login is not built yet.
+- Email ingestion and file storage are not production-ready yet.
 - `localStorage` remains as a browser fallback. The app validates the saved mock-ticket schema and reseeds default data when stale data is detected.
 - Attachment previews use mock inline/modal rendering until real backend file storage and downloads exist.
 - Copy actions use `navigator.clipboard` and may silently do nothing if the browser blocks clipboard access.
