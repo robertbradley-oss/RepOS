@@ -35,7 +35,7 @@ const legacyRepNameMap = {
 };
 
 const workspaceConfig = {
-  productName: "Tessario",
+  productName: "Tessario (iSpring Model)",
   workspaceName: "iSpring Water Systems",
   workspaceShortName: "iSpring",
   workspaceLabel: "Workspace: iSpring Water Systems",
