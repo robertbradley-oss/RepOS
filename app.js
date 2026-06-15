@@ -217,7 +217,7 @@ const workspaceConfig = {
     showTicketPreview: false,
     sidebarCollapsedDefault: false,
     theme: "Light",
-    accentColor: "#1674F4",
+    accentColor: "#4727B5",
     ticketDensity: "Comfortable",
     defaultSort: "Last Updated",
     autoOpenFirstTicket: false,
@@ -7404,11 +7404,11 @@ function renderActivityChart(scopedTickets) {
   const pad = 32;
   const max = Math.max(6, ...series.flatMap((item) => item.values));
   const colors = {
-    Created: "#1674F4",
-    Closed: "#19C9FF",
+    Created: "#4727B5",
+    Closed: "#8B72F0",
     Reopened: "#a16207",
-    "SLA risk": "#4B22E8",
-    "Customer replied": "#1E8BFF"
+    "SLA risk": "#B54727",
+    "Customer replied": "#5C3AD6"
   };
   const lines = series.map((item) => {
     const points = item.values.map((value, index) => {
@@ -9331,7 +9331,7 @@ function renderConversation(ticket) {
     </div>
     ${renderAppFooter("detail-footer")}
     </div>
-    <button class="reply-float-btn" id="replyFloatBtn" type="button" aria-label="Jump to reply composer">Reply ?</button>
+    <button class="reply-float-btn" id="replyFloatBtn" type="button" aria-label="Jump to reply composer">Reply</button>
   `;
 
   document.querySelector("#backToQueueButton").addEventListener("click", showQueueScreen);
