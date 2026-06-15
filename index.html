@@ -1,10 +1,11 @@
 ﻿<!doctype html>
-<!-- Tessario static app shell: sidebar, top bar, ticket workspace, and modal container. -->
+<!-- RepOS static app shell: sidebar, top bar, ticket workspace, and modal container. -->
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tessario (iSpring Model)</title>
+    <title>RepOS (iSpring Model)</title>
+    <meta name="description" content="RepOS, the Rep Operating System, shown with the iSpring Water Systems demo workspace.">
     <link rel="icon" href="./assets/tessario-mark.svg">
     <link rel="stylesheet" href="./styles.css">
   </head>
@@ -17,7 +18,7 @@
             <span hidden>T</span>
           </span>
           <div class="brand-copy">
-            <strong>Tessario</strong>
+            <strong>RepOS</strong>
             <span id="brandTagline">Ticketing made clear</span>
           </div>
         </div>
@@ -80,7 +81,7 @@
           </label>
 
           <div class="topbar-actions">
-            <button class="secondary-button topbar-action-button assist-launch-button admin-only" id="tessarioAssistButton" type="button" title="Tessario Assist" aria-label="Open Tessario Assist">
+            <button class="secondary-button topbar-action-button assist-launch-button admin-only" id="tessarioAssistButton" type="button" title="RepOS Assist" aria-label="Open RepOS Assist">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8 10.1 9 5 10.9l5.1 1.9L12 18l1.9-5.2 5.1-1.9L13.9 9 12 3.8Z"></path><path d="M5.7 15.4 5 17.3l-1.9.7 1.9.7.7 1.9.7-1.9 1.9-.7-1.9-.7-.7-1.9Z"></path><path d="m18 16 .8 2.1 2.1.8-2.1.8-.8 2.1-.8-2.1-2.1-.8 2.1-.8L18 16Z"></path></svg>
               <span>Assist</span>
             </button>
@@ -184,12 +185,12 @@
           <aside class="context-panel" id="contextPanel" aria-label="Ticket context"></aside>
 
           <section class="admin-panel" id="adminPanel" aria-label="Admin assignment settings"></section>
-          <section class="knowledge-panel" id="knowledgePanel" aria-label="Tessario Knowledge Vault"></section>
-          <section class="dashboard-panel" id="dashboardPanel" aria-label="Tessario Dashboard"></section>
+          <section class="knowledge-panel" id="knowledgePanel" aria-label="RepOS Knowledge Vault"></section>
+          <section class="dashboard-panel" id="dashboardPanel" aria-label="RepOS Dashboard"></section>
         </section>
 
         <footer class="app-footer" aria-label="Copyright">
-          Copyright © 2026 Tessario, LLC. All Rights Reserved.
+          Copyright © 2026 RepOS, LLC. All Rights Reserved.
         </footer>
       </main>
     </div>
@@ -199,7 +200,7 @@
     <dialog class="modal confirmation-modal motion-modal-open" id="workflowConfirmModal" hidden></dialog>
     <dialog class="modal profile-modal motion-modal-open" id="profileModal" hidden></dialog>
     <dialog class="modal knowledge-file-modal motion-modal-open" id="knowledgeFileModal" hidden></dialog>
-    <aside class="assist-drawer motion-drawer-open" id="assistDrawer" aria-label="Tessario AI assistant" aria-hidden="true"></aside>
+    <aside class="assist-drawer motion-drawer-open" id="assistDrawer" aria-label="RepOS Assist" aria-hidden="true"></aside>
     <div class="toast motion-fade-in" id="toast" role="status" aria-live="polite" hidden></div>
 
     <script src="./app.js"></script>

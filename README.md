@@ -1,10 +1,10 @@
-﻿# Tessario (iSpring Model)
+﻿# RepOS (iSpring Model)
 
 ## Project Purpose
 
-Tessario is a front-end prototype for a modern internal ticketing workspace. This version is the iSpring model, a demo workspace built around realistic water-system support tickets, customer history, rep workflows, macros, and follow-up context.
+RepOS, short for Rep Operating System, is a front-end prototype for a modern internal ticketing workspace. This version is the iSpring model, a demo workspace built around realistic water-system support tickets, customer history, rep workflows, macros, and follow-up context.
 
-The product concept is workspace-agnostic: Tessario provides the ticketing, dashboard, customer-history, assignment, macro, and assistant experience, while the iSpring model supplies the sample departments, products, policies, tickets, and support language used to demonstrate the workflow.
+The product concept is workspace-agnostic: RepOS provides the ticketing, dashboard, customer-history, assignment, macro, and assistant experience, while the iSpring model supplies the sample departments, products, policies, tickets, and support language used to demonstrate the workflow.
 
 This is currently an MVP prototype with a lightweight local backend. It includes server-side JSON persistence for demo data, optional Postgres support, MVP auth, and protected local file uploads. It does not yet include production login, email sync, order lookup, inventory lookup, cloud file storage, or document text extraction.
 
@@ -99,8 +99,8 @@ The important deployed files are:
 - `index.html`: Static app shell. Contains the sidebar, top bar, metric strip, two-screen ticket workspace, queue controls, admin assignment screen, customer-history modal, and create-ticket modal.
 - `styles.css`: Desktop-first CRM styling. Defines the dark navy sidebar, compact metric cards, queue/detail screen layouts, card/table queue views, conversation thread, reply dock, and right context panel.
 - `app.js`: Main front-end application logic. Contains the `workspaceConfig` demo configuration, mock ticket data, assignment users, fair-routing logic, main support views, screen state, view/filter/sort state, table queue rendering, conversation rendering, smart diagnosis, macros, attachments, guardrails, customer history, admin controls, and create-ticket behavior.
-- `assets/tessario-mark.svg`: Tessario icon-only mark used for the left sidebar brand mark and browser favicon.
-- `assets/tessario-logo.svg`: Full Tessario logo asset retained for product-brand treatments when needed outside the current workspace header.
+- `assets/tessario-mark.svg`: RepOS icon-only mark used for the left sidebar brand mark and browser favicon.
+- `assets/tessario-logo.svg`: Full RepOS logo asset retained for product-brand treatments when needed outside the current workspace header.
 - `assets/ispring-logo.png`: Active iSpring workspace logo used in the top header.
 - `server.mjs`: Node server for static hosting and MVP JSON API persistence.
 - `docs/backend.md`: Backend MVP notes and next upgrade path.
@@ -111,7 +111,7 @@ The important deployed files are:
 - Ticket queue for scanning open, assigned, and closed support requests.
 - Ticket detail workspace with customer context, message history, notes, attachments, status updates, and reply drafting.
 - Dashboard views for support activity, workload, SLA risk, product trends, and tickets needing attention.
-- Tessario Assist mock copilot for ticket summaries, draft replies, next-step guidance, and support-safe wording.
+- RepOS Assist mock copilot for ticket summaries, draft replies, next-step guidance, and support-safe wording.
 - Knowledge Vault prototype for tracking approved source files that future assistant workflows can use.
 - Admin tools for assignment pool management, rep settings, workspace configuration, and mock routing controls.
 - iSpring model data including sample products, support macros, customer tickets, warranty/receipt context, and guardrails.

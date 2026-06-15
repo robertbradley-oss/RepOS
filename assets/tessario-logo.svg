@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
-  <title id="title">Tessario logo</title>
+  <title id="title">RepOS logo</title>
   <rect width="1024" height="1024" fill="#fff"/>
   <g transform="translate(300 152) scale(.86)">
     <defs>
@@ -29,5 +29,5 @@
     <path fill="#073BAF" opacity=".72" d="m255 176 96 59c5 5 8 12 8 19v5L255 331z"/>
     <path fill="#3D16D8" opacity=".74" d="m255 331 104-72v86c0 8-3 15-8 20l-66 69c-11 12-30 4-30-12z"/>
   </g>
-  <text x="512" y="752" fill="#061A4A" font-family="Aptos, Inter, Segoe UI, Arial, sans-serif" font-size="126" font-weight="400" text-anchor="middle" letter-spacing="8">Tessario</text>
+  <text x="512" y="752" fill="#061A4A" font-family="Aptos, Inter, Segoe UI, Arial, sans-serif" font-size="126" font-weight="400" text-anchor="middle" letter-spacing="8">RepOS</text>
 </svg>

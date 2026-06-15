@@ -1,4 +1,4 @@
-// Tessario local server: static app hosting plus MVP JSON API persistence.
+// RepOS local server: static app hosting plus MVP JSON API persistence.
 import { createServer } from "node:http";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join, normalize, resolve } from "node:path";
@@ -71,7 +71,7 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, "127.0.0.1", () => {
-  console.log(`Tessario (iSpring Model) running at http://127.0.0.1:${port}`);
+  console.log(`RepOS (iSpring Model) running at http://127.0.0.1:${port}`);
   console.log(`Persistence: ${store.mode}`);
 });
 
@@ -79,7 +79,7 @@ async function handleApi(request, response, url) {
   if (request.method === "GET" && url.pathname === "/api/health") {
     sendJson(response, 200, {
       ok: true,
-      app: "Tessario (iSpring Model)",
+      app: "RepOS (iSpring Model)",
       mode: "mvp-backend",
       persistence: store.mode,
       authMode

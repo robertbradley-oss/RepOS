@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
-  <title id="title">Tessario mark</title>
+  <title id="title">RepOS mark</title>
   <defs>
     <linearGradient id="topLeft" x1="90" x2="270" y1="148" y2="148" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#17C8F9"/>

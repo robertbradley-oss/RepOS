@@ -1,10 +1,10 @@
-# Tessario Backend MVP
+# RepOS Backend MVP
 
-This backend pass keeps Tessario simple to run while moving the app away from browser-only persistence and toward normalized server data.
+This backend pass keeps RepOS simple to run while moving the app away from browser-only persistence and toward normalized server data.
 
 ## What It Provides
 
-- Static hosting for the current Tessario frontend.
+- Static hosting for the current RepOS frontend.
 - JSON API endpoints under `/api`.
 - Server-side persistence in `.data/tessario-state.json` by default.
 - Optional Postgres persistence when `DATABASE_URL` is set.
@@ -71,7 +71,7 @@ Customer receipt uploads create both a protected file record and customer receip
 
 ## Auth Mode
 
-By default, Tessario runs in development auth mode. The server auto-creates an admin user for `CS14 Robert` and sets an HTTP-only session cookie when protected routes are used.
+By default, RepOS runs in development auth mode. The server auto-creates an admin user for `CS14 Robert` and sets an HTTP-only session cookie when protected routes are used.
 
 Default admin:
 

@@ -1,4 +1,4 @@
-﻿// Tessario front-end logic: mock ticket data, queue filtering, conversation rendering, macros, and context panels.
+﻿// RepOS front-end logic: mock ticket data, queue filtering, conversation rendering, macros, and context panels.
 const STORAGE_KEY = "tessario.support.workspace.v18";
 const TICKET_COUNTER_STORAGE_KEY = "tessario.support.lastTicketNumber.v1";
 const USERS_STORAGE_KEY = "tessario.support.assignmentUsers.v1";
@@ -36,12 +36,12 @@ const legacyRepNameMap = {
 };
 
 const workspaceConfig = {
-  productName: "Tessario (iSpring Model)",
+  productName: "RepOS (iSpring Model)",
   workspaceName: "iSpring Water Systems",
   workspaceShortName: "iSpring",
   workspaceLabel: "Workspace: iSpring Water Systems",
-  tagline: "Ticketing made clear",
-  workspaceNote: "iSpring Water Systems is the active workspace in this Tessario session.",
+  tagline: "Rep Operating System",
+  workspaceNote: "iSpring Water Systems is the active workspace in this RepOS session.",
   ticketPrefix: "ISP",
   departments: ["3-CS", "Support", "Technical Support", "Warranty", "Returns"],
   defaultDepartment: "3-CS",
@@ -1929,9 +1929,9 @@ function buildConversation(config, createdAt, lastCustomerAt, lastRepAt) {
   if (detectedPurchaseSource !== "Unknown") {
     messages.push({
       type: "timeline",
-      author: "Tessario AI",
+      author: "RepOS Assist",
       timestamp: hoursAgo(Math.max(0.45, config.ageHours - 0.75)),
-      body: `Tessario AI detected possible purchase source from attachment: ${detectedPurchaseSource}. Needs rep review.`
+      body: `RepOS Assist detected possible purchase source from attachment: ${detectedPurchaseSource}. Needs rep review.`
     });
   }
 
@@ -2007,7 +2007,7 @@ function extendedThreadForCase(config) {
   return [
     { type: "customer", ageHours: config.ageHours, body: config.opening },
     { type: "timeline", author: "System", ageHours: config.ageHours - 0.2, body: `Assigned to ${rep}.` },
-    { type: "timeline", author: "Tessario AI", ageHours: config.ageHours - 0.4, body: `Tessario AI detected possible purchase source from attachment: ${source}. Needs rep review.` },
+    { type: "timeline", author: "RepOS Assist", ageHours: config.ageHours - 0.4, body: `RepOS Assist detected possible purchase source from attachment: ${source}. Needs rep review.` },
     { type: "rep", author: rep, ageHours: config.ageHours - 2, body: config.intakeReply },
     { type: "customer", ageHours: config.ageHours - 10, body: config.customerDetail },
     { type: "timeline", author: "System", ageHours: config.ageHours - 10.2, body: `Attachment received: ${receiptFile}.` },
@@ -2595,7 +2595,7 @@ function generateLongThreadMockTickets() {
       thread: [
         { type: "customer", ageHours: 70, body: "The RCC7P-AK tank still is not filling after I changed filters. Faucet flow dies after one cup." },
         { type: "timeline", author: "System", ageHours: 69.8, body: "Assigned to CS14 Robert." },
-        { type: "timeline", author: "Tessario AI", ageHours: 69.6, body: "Tessario AI detected possible purchase source from attachment: iSpring direct. Needs rep review." },
+        { type: "timeline", author: "RepOS Assist", ageHours: 69.6, body: "RepOS Assist detected possible purchase source from attachment: iSpring direct. Needs rep review." },
         { type: "rep", ageHours: 68, body: "Thanks Ellen. Please drain the tank fully, check empty tank pressure, and confirm the tank valve handle is parallel with the tubing." },
         { type: "customer", ageHours: 52, body: "The tank was around 3 PSI empty, so I raised it to 8. It filled some overnight but still runs out fast." },
         { type: "note", author: lead, ageHours: 51.5, body: "Pressure was low, but refill is still slow. Next check feed valve, ASO/check valve, and possible post-filter restriction." },
@@ -2755,7 +2755,7 @@ function generateLongThreadMockTickets() {
       thread: [
         { type: "customer", ageHours: 88, body: "The box arrived crushed and one fitting is cracked. Amazon told me to contact iSpring." },
         { type: "timeline", author: "System", ageHours: 87.8, body: "Assigned to CS5 Michelle." },
-        { type: "timeline", author: "Tessario AI", ageHours: 87.6, body: "Tessario AI detected possible purchase source from attachment: Amazon. Needs rep review." },
+        { type: "timeline", author: "RepOS Assist", ageHours: 87.6, body: "RepOS Assist detected possible purchase source from attachment: Amazon. Needs rep review." },
         { type: "rep", author: "CS5 Michelle", ageHours: 85, body: "I am sorry it arrived damaged. Please send photos of the box label, damaged part, and Amazon order page." },
         { type: "customer", ageHours: 61, body: "I already uploaded all of that. I do not want to be bounced between Amazon and iSpring." },
         { type: "timeline", author: "System", ageHours: 60.8, body: "Attachments received: amazon-box-crushed.jpg, cracked-fitting.jpg, amazon-order-1134419021.pdf." },
@@ -3142,7 +3142,7 @@ function generateLongThreadMockTickets() {
       thread: [
         { type: "customer", ageHours: 120, body: "Can you confirm whether my RO500AK warranty registration went through? I uploaded the Amazon invoice." },
         { type: "timeline", author: "System", ageHours: 119.8, body: "Assigned to CS14 Robert." },
-        { type: "timeline", author: "Tessario AI", ageHours: 119.6, body: "Tessario AI detected possible purchase source from attachment: Amazon. Needs rep review." },
+        { type: "timeline", author: "RepOS Assist", ageHours: 119.6, body: "RepOS Assist detected possible purchase source from attachment: Amazon. Needs rep review." },
         { type: "rep", ageHours: 118, body: "I can check. Please confirm the email you want tied to the warranty record." },
         { type: "customer", ageHours: 98, body: "Use this email address. The invoice is attached to the ticket." },
         { type: "timeline", author: "System", ageHours: 97.8, body: "Receipt verified: amazon-ro500ak-invoice.pdf." },
@@ -3601,33 +3601,33 @@ function normalizeTicketPurchaseSource(ticket) {
   ticket.conversation = (ticket.conversation || []).map((message) => {
     if (!message || typeof message.body !== "string") return message;
     const body = replaceLegacyRepNamesInText(message.body);
-    if (/Tessario AI detected (?:possible )?purchase source(?: from attachment)?:/i.test(body)) {
+    if (/(?:RepOS Assist|Tessario AI) detected (?:possible )?purchase source(?: from attachment)?:/i.test(body)) {
       const source = purchaseSourceFromText(body);
       const nextBody = detected !== "Unknown"
-        ? `Tessario AI detected possible purchase source from attachment: ${detected}. Needs rep review.`
+        ? `RepOS Assist detected possible purchase source from attachment: ${detected}. Needs rep review.`
         : source !== "Unknown"
           ? `Unverified purchase source mention: ${source}. Receipt/order proof needed.`
           : "Attachment uploaded; purchase source needs review.";
       if (nextBody !== message.body) changed = true;
-      return { ...message, body: nextBody, author: normalizeRepName(message.author) || message.author };
+      return { ...message, body: nextBody, author: "RepOS Assist" };
     }
-    if (/Tessario AI found saved receipt source:/i.test(body)) {
+    if (/(?:RepOS Assist|Tessario AI) found saved receipt source:/i.test(body)) {
       const source = purchaseSourceFromText(body);
       const nextBody = source !== "Unknown"
-        ? `Tessario AI detected possible purchase source from saved customer account: ${source}. Needs rep review.`
-        : "Tessario AI detected possible purchase source from saved customer account. Needs rep review.";
+        ? `RepOS Assist detected possible purchase source from saved customer account: ${source}. Needs rep review.`
+        : "RepOS Assist detected possible purchase source from saved customer account. Needs rep review.";
       if (nextBody !== message.body) changed = true;
-      return { ...message, body: nextBody, author: normalizeRepName(message.author) || message.author };
+      return { ...message, body: nextBody, author: "RepOS Assist" };
     }
-    if (/Tessario AI found receipt already on file/i.test(body)) {
-      const nextBody = "Tessario AI detected receipt already on file for this customer account. Needs rep review.";
+    if (/(?:RepOS Assist|Tessario AI) found receipt already on file/i.test(body)) {
+      const nextBody = "RepOS Assist detected receipt already on file for this customer account. Needs rep review.";
       if (nextBody !== message.body) changed = true;
-      return { ...message, body: nextBody, author: normalizeRepName(message.author) || message.author };
+      return { ...message, body: nextBody, author: "RepOS Assist" };
     }
-    if (/Tessario AI found registered warranty/i.test(body)) {
-      const nextBody = "Tessario AI detected possible registered warranty on this customer account. Needs rep review.";
+    if (/(?:RepOS Assist|Tessario AI) found registered warranty/i.test(body)) {
+      const nextBody = "RepOS Assist detected possible registered warranty on this customer account. Needs rep review.";
       if (nextBody !== message.body) changed = true;
-      return { ...message, body: nextBody, author: normalizeRepName(message.author) || message.author };
+      return { ...message, body: nextBody, author: "RepOS Assist" };
     }
     const normalizedAuthor = normalizeRepName(message.author) || message.author;
     if (body !== message.body || normalizedAuthor !== message.author) changed = true;
@@ -3639,7 +3639,7 @@ function normalizeTicketPurchaseSource(ticket) {
     const body = String(message?.body || "");
     const author = String(message?.author || "");
     const isReviewEvent = message?.type === "timeline" &&
-      /Tessario AI/i.test(author) &&
+      /(?:RepOS Assist|Tessario AI)/i.test(author) &&
       /(Needs rep review|purchase source needs review)/i.test(body);
     if (!isReviewEvent) return true;
     const key = body.toLowerCase();
@@ -3651,12 +3651,12 @@ function normalizeTicketPurchaseSource(ticket) {
     return true;
   });
 
-  if (detected !== "Unknown" && !ticket.conversation?.some((message) => message.body === `Tessario AI detected possible purchase source from attachment: ${detected}. Needs rep review.`)) {
+  if (detected !== "Unknown" && !ticket.conversation?.some((message) => message.body === `RepOS Assist detected possible purchase source from attachment: ${detected}. Needs rep review.`)) {
     ticket.conversation.push({
       type: "timeline",
-      author: "Tessario AI",
+      author: "RepOS Assist",
       timestamp: ticket.createdAt || new Date().toISOString(),
-      body: `Tessario AI detected possible purchase source from attachment: ${detected}. Needs rep review.`
+      body: `RepOS Assist detected possible purchase source from attachment: ${detected}. Needs rep review.`
     });
     changed = true;
   }
@@ -3713,7 +3713,7 @@ function normalizeTicketStatusTimelineOwnership(ticket) {
     if (/customer replied;\s*ticket reopened/i.test(message.body)) return message;
     const isStatusChange = /status changed|changed status|moved back to open|reopened|resolved|closed,\s*waiting on response|waiting customer|waiting on response|pending parts|escalated|overdue/i.test(message.body);
     const author = String(message.author || "");
-    if (!isStatusChange || !/^(system|tessario ai)$/i.test(author)) return message;
+    if (!isStatusChange || !/^(system|tessario ai|repos assist)$/i.test(author)) return message;
     changed = true;
     return { ...message, author: assignee };
   });
@@ -3828,8 +3828,8 @@ function ticketReferenceDisplay(value) {
 function timelineDisplayBody(ticket, message) {
   const author = String(message?.author || "");
   let body = replaceLegacyRepNamesInText(ticketReferenceDisplay(statusDisplayText(String(message?.body || "")))).trim();
-  if (/tessario ai/i.test(author)) {
-    body = body.replace(/^Tessario AI\s+/i, "").replace(/^detected/i, "Detected");
+  if (/(?:tessario ai|repos assist)/i.test(author)) {
+    body = body.replace(/^(?:RepOS Assist|Tessario AI)\s+/i, "").replace(/^detected/i, "Detected");
   }
   if (/^system\s+/i.test(body)) body = body.replace(/^system\s+/i, "");
   return body;
@@ -3840,10 +3840,10 @@ function timelineEventMeta(message) {
   const body = String(message?.body || "");
   const text = `${author} ${body}`.toLowerCase();
 
-  if (author.toLowerCase().includes("tessario ai")) {
+  if (/(?:tessario ai|repos assist)/i.test(author)) {
     return {
       kind: "ai",
-      label: "Tessario AI",
+      label: "RepOS Assist",
       icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8 10.1 9 5 10.9l5.1 1.9L12 18l1.9-5.2 5.1-1.9L13.9 9 12 3.8Z"></path><path d="M5.7 15.4 5 17.3l-1.9.7 1.9.7.7 1.9.7-1.9 1.9-.7-1.9-.7-.7-1.9Z"></path></svg>'
     };
   }
@@ -4107,7 +4107,7 @@ function seedNotifications(sourceTickets) {
     { category: "mention", ticket: ticketById("ISP-28491"), title: "Mentioned in internal note", description: "CS1 Nick mentioned you for a repeat customer context check.", hours: 7.3, read: false },
     { category: "receipts", ticket: ticketById("ISP-28489"), title: "Receipt needs review", description: "A Lowe's receipt was uploaded and needs verification.", hours: 10.4, read: true },
     { category: "receipts", ticket: ticketById("ISP-28490"), title: "Warranty action needed", description: "Receipt is on file, but warranty registration still needs action.", hours: 17.7, read: false },
-    { category: "assist", ticket: ticketById("ISP-28501"), title: "Tessario Assist draft ready", description: "A troubleshooting reply draft is ready for rep review.", hours: 22.1, read: true },
+    { category: "assist", ticket: ticketById("ISP-28501"), title: "RepOS Assist draft ready", description: "A troubleshooting reply draft is ready for rep review.", hours: 22.1, read: true },
     { category: "assignment", ticket: null, title: "Assignment eligibility changed", description: "Admin updated your assignment pool eligibility.", hours: 31.5, read: true }
   ];
 
@@ -4562,7 +4562,7 @@ async function hydrateBackendState() {
       render({ preserveQueueList: false, suppressQueueRowEnter: true });
     }
   } catch (error) {
-    console.warn("Tessario backend sync is unavailable; using browser localStorage.", error);
+    console.warn("RepOS backend sync is unavailable; using browser localStorage.", error);
   } finally {
     backendSyncReady = true;
     syncBackendSnapshot();
@@ -4600,7 +4600,7 @@ async function flushBackendSync() {
       });
       if (!response.ok) throw new Error(`Backend sync failed for ${resource}: ${response.status}`);
     } catch (error) {
-      console.warn("Tessario backend sync failed.", error);
+      console.warn("RepOS backend sync failed.", error);
     }
   }));
 }
@@ -5270,7 +5270,7 @@ function warrantyMatchesTicket(warranty, ticket) {
   return recordMatchesTicket(warranty, ticket);
 }
 
-function setTicketPurchaseSource(ticket, source, actor = "Tessario AI", manual = false, options = {}) {
+function setTicketPurchaseSource(ticket, source, actor = "RepOS Assist", manual = false, options = {}) {
   const nextSource = workspaceConfig.purchaseSources.includes(source) ? source : "Unknown";
   if (!ticket) return false;
   if (!manual) {
@@ -5293,7 +5293,7 @@ function setTicketPurchaseSource(ticket, source, actor = "Tessario AI", manual =
   return true;
 }
 
-function recordAiPurchaseSourceDetection(ticket, source, actor = "Tessario AI", options = {}) {
+function recordAiPurchaseSourceDetection(ticket, source, actor = "RepOS Assist", options = {}) {
   if (!ticket) return false;
   const nextSource = workspaceConfig.purchaseSources.includes(source) ? source : "Unknown";
   const timestamp = options.timestamp || new Date().toISOString();
@@ -5340,7 +5340,7 @@ function saveTicketReceiptToAccount(ticket) {
   const added = addReceiptToAccount(account, ticket, `Saved from ${ticketDisplayId(ticket)} by ${uploadedBy}`, { uploadedBy });
   if (!isVerifiedPurchaseSource(ticket.purchaseSource)) {
     const detected = detectPurchaseSource(ticket);
-    if (detected !== "Unknown") setTicketPurchaseSource(ticket, detected, "Tessario AI", false, { fromAttachment: true });
+    if (detected !== "Unknown") setTicketPurchaseSource(ticket, detected, "RepOS Assist", false, { fromAttachment: true });
   }
   ticket.conversation.push({
     type: "timeline",
@@ -5392,8 +5392,8 @@ function saveUploadedReceiptToAccount(ticket, file) {
   });
   if (!isVerifiedPurchaseSource(ticket.purchaseSource)) {
     const detected = detectPurchaseSource(ticket);
-    if (detected !== "Unknown") setTicketPurchaseSource(ticket, detected, "Tessario AI", false, { fromAttachment: true });
-    else recordAiPurchaseSourceDetection(ticket, "Unknown", "Tessario AI", { timestamp: uploadedAt, fromAttachment: true });
+    if (detected !== "Unknown") setTicketPurchaseSource(ticket, detected, "RepOS Assist", false, { fromAttachment: true });
+    else recordAiPurchaseSourceDetection(ticket, "Unknown", "RepOS Assist", { timestamp: uploadedAt, fromAttachment: true });
   }
   persistCustomerAccounts();
   persistTickets();
@@ -5521,21 +5521,21 @@ function applyCustomerAccountToTicket(ticket) {
   const warranty = warrantyRecordFor(ticket);
   if (receipt && !ticket.receipt && ticket.receiptReviewStatus !== "Detected by AI / Needs rep review") {
     ticket.receiptReviewStatus = "Detected by AI / Needs rep review";
-    if (!ticket.conversation.some((message) => message.body === "Tessario AI detected receipt already on file for this customer account. Needs rep review.")) ticket.conversation.push({
+    if (!ticket.conversation.some((message) => message.body === "RepOS Assist detected receipt already on file for this customer account. Needs rep review.")) ticket.conversation.push({
       type: "timeline",
-      author: "Tessario AI",
+      author: "RepOS Assist",
       timestamp: new Date().toISOString(),
-      body: "Tessario AI detected receipt already on file for this customer account. Needs rep review."
+      body: "RepOS Assist detected receipt already on file for this customer account. Needs rep review."
     });
     changed = true;
   }
   if (warranty && ticket.warranty !== "Registered" && ticket.warrantyReviewStatus !== "Detected by AI / Needs rep review") {
     ticket.warrantyReviewStatus = "Detected by AI / Needs rep review";
-    if (!ticket.conversation.some((message) => message.body === "Tessario AI detected possible registered warranty on this customer account. Needs rep review.")) ticket.conversation.push({
+    if (!ticket.conversation.some((message) => message.body === "RepOS Assist detected possible registered warranty on this customer account. Needs rep review.")) ticket.conversation.push({
       type: "timeline",
-      author: "Tessario AI",
+      author: "RepOS Assist",
       timestamp: new Date().toISOString(),
-      body: "Tessario AI detected possible registered warranty on this customer account. Needs rep review."
+      body: "RepOS Assist detected possible registered warranty on this customer account. Needs rep review."
     });
     changed = true;
   }
@@ -5546,11 +5546,11 @@ function applyCustomerAccountToTicket(ticket) {
       ticket.purchaseSourceMode = "ai-detected";
       changed = true;
     }
-    if (!ticket.conversation.some((message) => message.body === `Tessario AI detected possible purchase source from saved customer account: ${account.purchaseSource}. Needs rep review.`)) ticket.conversation.push({
+    if (!ticket.conversation.some((message) => message.body === `RepOS Assist detected possible purchase source from saved customer account: ${account.purchaseSource}. Needs rep review.`)) ticket.conversation.push({
       type: "timeline",
-      author: "Tessario AI",
+      author: "RepOS Assist",
       timestamp: new Date().toISOString(),
-      body: `Tessario AI detected possible purchase source from saved customer account: ${account.purchaseSource}. Needs rep review.`
+      body: `RepOS Assist detected possible purchase source from saved customer account: ${account.purchaseSource}. Needs rep review.`
     });
     changed = true;
   }
@@ -5614,7 +5614,7 @@ function render({ preserveQueueList = uiState.activeScreen !== "queue", suppress
 function renderAppFooter(extraClass = "") {
   return `
     <footer class="app-footer scroll-footer ${escapeHtml(extraClass)}" aria-label="Copyright">
-      Copyright &copy; 2026 Tessario, LLC. All Rights Reserved.
+      Copyright &copy; 2026 RepOS, LLC. All Rights Reserved.
     </footer>
   `;
 }
@@ -5852,7 +5852,7 @@ function renderAccountTab() {
     <section class="profile-tab-panel" data-profile-panel="account" role="tabpanel">
       <div class="profile-section-title">
         <h3>Account</h3>
-        <p>Edit the profile details Tessario shows to teammates and customers.</p>
+        <p>Edit the profile details RepOS shows to teammates and customers.</p>
       </div>
       <div class="profile-grid account-grid">
         <div class="profile-image-card">
@@ -5890,7 +5890,7 @@ function renderPreferencesTab() {
     <section class="profile-tab-panel" data-profile-panel="preferences" role="tabpanel">
       <div class="profile-section-title">
         <h3>Preferences</h3>
-        <p>Customize how Tessario opens, scans, and presents queues.</p>
+        <p>Customize how RepOS opens, scans, and presents queues.</p>
       </div>
       <div class="profile-grid">
         ${profileSelect("defaultLandingView", "Default landing view", ["Open Tickets", "Closed Tickets"], landingLabel(profile.defaultLandingView))}
@@ -5916,7 +5916,7 @@ function renderSignatureTab() {
     <section class="profile-tab-panel" data-profile-panel="signature" role="tabpanel">
       <div class="profile-section-title">
         <h3>Signature</h3>
-        <p>Set the signature Tessario can insert into customer replies.</p>
+        <p>Set the signature RepOS can insert into customer replies.</p>
       </div>
       <div class="profile-grid signature-grid">
         <label class="profile-field full-span">
@@ -5943,7 +5943,7 @@ function renderNotificationsTab() {
     <section class="profile-tab-panel" data-profile-panel="notifications" role="tabpanel">
       <div class="profile-section-title">
         <h3>Notifications</h3>
-        <p>Choose how Tessario should alert you during active support work.</p>
+        <p>Choose how RepOS should alert you during active support work.</p>
       </div>
       <div class="profile-grid">
         ${profileCheckbox("inAppNotifications", "In-app notifications", profile.inAppNotifications)}
@@ -5953,7 +5953,7 @@ function renderNotificationsTab() {
         ${profileCheckbox("notifySlaOverdue", "SLA and overdue tickets", profile.notifySlaOverdue ?? profile.notifyOverdue)}
         ${profileCheckbox("notifyMentioned", "Mentions in internal notes", profile.notifyMentioned)}
         ${profileCheckbox("notifyReceiptsWarranty", "Receipts and warranty", profile.notifyReceiptsWarranty)}
-        ${profileCheckbox("notifyAssist", "Tessario Assist drafts", profile.notifyAssist)}
+        ${profileCheckbox("notifyAssist", "RepOS Assist drafts", profile.notifyAssist)}
         ${profileCheckbox("notifyAssignmentEligibility", "Assignment eligibility changes", profile.notifyAssignmentEligibility)}
         ${profileCheckbox("quietHoursEnabled", "Quiet hours enabled", profile.quietHoursEnabled)}
         ${profileInput("quietHoursStart", "Quiet hours start", profile.quietHoursStart, "time")}
@@ -5967,17 +5967,17 @@ function renderAssistSettingsTab() {
   return `
     <section class="profile-tab-panel" data-profile-panel="assist" role="tabpanel">
       <div class="profile-section-title">
-        <h3>Tessario Assist</h3>
-        <p>Control how Tessario Assist helps with ticket context and draft replies.</p>
+        <h3>RepOS Assist</h3>
+        <p>Control how RepOS Assist helps with ticket context and draft replies.</p>
       </div>
       <div class="profile-grid">
-        ${profileCheckbox("assistEnabled", "Enable Tessario Assist", profile.assistEnabled)}
+        ${profileCheckbox("assistEnabled", "Enable RepOS Assist", profile.assistEnabled)}
         ${profileCheckbox("assistTicketContextEnabled", "Ticket context enabled", profile.assistTicketContextEnabled)}
         ${profileCheckbox("assistAllowDraftInsertion", "Allow draft insertion", profile.assistAllowDraftInsertion)}
         ${profileCheckbox("assistRequireReview", "Require rep review before sending", profile.assistRequireReview)}
       </div>
       <div class="assist-settings-note full-span">
-        Tessario Assist uses ticket context and approved workspace sources. Connected document extraction can be added when the data layer is ready.
+        RepOS Assist uses ticket context and approved workspace sources. Connected document extraction can be added when the data layer is ready.
       </div>
     </section>
   `;
@@ -5991,7 +5991,7 @@ function renderWorkspaceTab(workload) {
     <section class="profile-tab-panel" data-profile-panel="workspace" role="tabpanel">
       <div class="profile-section-title">
         <h3>Workspace</h3>
-        <p>Current workspace/account details for this Tessario session.</p>
+        <p>Current workspace/account details for this RepOS session.</p>
       </div>
       <div class="workspace-profile-grid">
         ${workspaceFact("Workspace", workspaceConfig.workspaceName)}
@@ -6001,7 +6001,7 @@ function renderWorkspaceTab(workload) {
         ${workspaceFact("Assignment eligible", currentAssignmentUser()?.assignmentEligible ? "Yes" : "No")}
         ${workspaceFact("AI assignment workload count", workload)}
       </div>
-      ${currentUserIsAdmin() ? `<div class="profile-admin-callout"><span class="admin-badge">Admin</span><p>CS14 Robert can manage reps who are eligible for Tessario AI fair assignment.</p><div class="profile-admin-actions">${adminControls}<button class="secondary-button danger-soft" id="resetWorkspaceDataButton" type="button">Reset workspace data</button></div></div>` : ""}
+      ${currentUserIsAdmin() ? `<div class="profile-admin-callout"><span class="admin-badge">Admin</span><p>CS14 Robert can manage reps who are eligible for RepOS Assist fair assignment.</p><div class="profile-admin-actions">${adminControls}<button class="secondary-button danger-soft" id="resetWorkspaceDataButton" type="button">Reset workspace data</button></div></div>` : ""}
     </section>
   `;
 }
@@ -6104,7 +6104,7 @@ function renderNotifications() {
       ${notificationFilters.map((item) => `<button class="${item.id === activeNotificationFilter ? "active" : ""}" data-notification-filter="${item.id}" type="button">${escapeHtml(item.label)}</button>`).join("")}
     </div>
     <div class="notification-list">
-      ${visibleNotifications.length ? visibleNotifications.map(renderNotificationItem).join("") : `<div class="notification-empty"><strong>No notifications here</strong><p>Tessario only surfaces high-value ticket events.</p></div>`}
+      ${visibleNotifications.length ? visibleNotifications.map(renderNotificationItem).join("") : `<div class="notification-empty"><strong>No notifications here</strong><p>RepOS only surfaces high-value ticket events.</p></div>`}
     </div>
   `;
 }
@@ -6703,7 +6703,7 @@ function renderAiAssignmentCard(ticket) {
         <p class="eyebrow">AI Assignment</p>
         <h3>${escapeHtml(ticket.aiAssignment?.assignedTo || ticket.assignee)}</h3>
       </div>
-      <p>${escapeHtml(ticket.aiAssignment?.reason || "Imported or manually assigned ticket. Tessario checks subject mentions and customer history before randomly assigning unowned incoming email.")}</p>
+      <p>${escapeHtml(ticket.aiAssignment?.reason || "Imported or manually assigned ticket. RepOS checks subject mentions and customer history before randomly assigning unowned incoming email.")}</p>
     </section>
   `;
 }
@@ -7132,7 +7132,7 @@ function renderDashboardPanel() {
   el.dashboardPanel.innerHTML = `
     <div class="dashboard-header">
       <div>
-        <h1>${currentDashboardView === "manager" ? "Tessario command center" : "My support dashboard"}</h1>
+        <h1>${currentDashboardView === "manager" ? "RepOS command center" : "My support dashboard"}</h1>
         <p>${currentDashboardView === "manager" ? "Team command center for iSpring support." : "Your tickets first, with team trends shown only in aggregate."}</p>
       </div>
       <div class="dashboard-header-actions">
@@ -8211,7 +8211,7 @@ function renderAdminPanel() {
       <div>
         <p class="eyebrow">Admin</p>
         <h1>Workspace admin</h1>
-        <p>Admin-only tools for Tessario Assist, source files, macros, assignment, reps, and workspace settings.</p>
+        <p>Admin-only tools for RepOS Assist, source files, macros, assignment, reps, and workspace settings.</p>
       </div>
       <button class="secondary-button" id="backFromAdminButton" type="button">Back to queue</button>
     </div>
@@ -8221,8 +8221,8 @@ function renderAdminPanel() {
         <h3>Workspace tools</h3>
       </div>
       <div class="admin-tool-grid">
-        ${renderAdminToolCard("assist", "Tessario Assist", "Admin access", "Open the global support copilot.")}
-        ${renderAdminToolCard("knowledge", "Knowledge Vault", "Source files", "Manage approved Tessario Assist sources.")}
+        ${renderAdminToolCard("assist", "RepOS Assist", "Admin access", "Open the global support copilot.")}
+        ${renderAdminToolCard("knowledge", "Knowledge Vault", "Source files", "Manage approved RepOS Assist sources.")}
         ${renderAdminToolCard("macros", "Macros", "Canned replies", "Review the macro library and open a ticket context.")}
         ${renderAdminToolCard("assignment", "Assignment Pool / Reps", "Workload", "Manage eligible reps and reassignment.")}
         ${renderAdminToolCard("workspace", "Workspace Settings", "Profile", "Open workspace settings and admin controls.")}
@@ -8233,7 +8233,7 @@ function renderAdminPanel() {
         <p class="eyebrow">Admin tools</p>
         <h3>Workspace recovery</h3>
       </div>
-      <p>Restore the current workspace to the standard support queue, assignment pool, profile preferences, and an empty Tessario Knowledge Vault.</p>
+      <p>Restore the current workspace to the standard support queue, assignment pool, profile preferences, and an empty RepOS Knowledge Vault.</p>
       <button class="secondary-button danger-soft" id="adminResetWorkspaceButton" type="button">Reset workspace data</button>
     </section>
     ${renderAdminMacroSection()}
@@ -8306,16 +8306,16 @@ function renderKnowledgeVaultPanel() {
   el.knowledgePanel.innerHTML = `
     <div class="admin-header knowledge-header">
       <div>
-        <p class="eyebrow">Tessario Knowledge Vault</p>
+        <p class="eyebrow">RepOS Knowledge Vault</p>
         <h1>Source file library</h1>
-        <p>Upload manuals, policies, macros, troubleshooting guides, and other source files. Approved files become the source library for Tessario Assist.</p>
+        <p>Upload manuals, policies, macros, troubleshooting guides, and other source files. Approved files become the source library for RepOS Assist.</p>
       </div>
       <button class="secondary-button" id="backFromKnowledgeButton" type="button">Back to queue</button>
     </div>
     <section class="admin-card knowledge-source-note">
-      <strong>${approvedCount ? "Using approved Tessario Knowledge Vault sources." : "No approved Tessario Knowledge Vault sources available yet."}</strong>
-      <p>${approvedCount ? approvedSources.map((doc) => `Source: ${escapeHtml(doc.fileName)}`).join("<br>") : "Approve an uploaded source before Tessario Assist uses it."}</p>
-      <p>Approved source details stay available in this workspace and help reps see which materials are cleared for Tessario Assist.</p>
+      <strong>${approvedCount ? "Using approved RepOS Knowledge Vault sources." : "No approved RepOS Knowledge Vault sources available yet."}</strong>
+      <p>${approvedCount ? approvedSources.map((doc) => `Source: ${escapeHtml(doc.fileName)}`).join("<br>") : "Approve an uploaded source before RepOS Assist uses it."}</p>
+      <p>Approved source details stay available in this workspace and help reps see which materials are cleared for RepOS Assist.</p>
     </section>
     <section class="admin-card knowledge-controls-card">
       <div class="knowledge-controls">
@@ -8431,7 +8431,7 @@ function renderKnowledgeUploadApprovalPrompt() {
     <section class="admin-card knowledge-approval-prompt">
       <div>
         <p class="eyebrow">Upload complete</p>
-        <h3>Approve this file for Tessario Assist?</h3>
+        <h3>Approve this file for RepOS Assist?</h3>
         <p>${escapeHtml(names.join(", "))}</p>
       </div>
       <div class="knowledge-approval-actions">
@@ -8446,7 +8446,7 @@ function renderKnowledgeEmptyState() {
   return `
     <div class="empty-state polished knowledge-empty-state">
       <strong>No knowledge files uploaded yet.</strong>
-      <p>Upload manuals, policies, macros, troubleshooting guides, or other source files to power Tessario Assist.</p>
+      <p>Upload manuals, policies, macros, troubleshooting guides, or other source files to power RepOS Assist.</p>
     </div>
   `;
 }
@@ -8486,7 +8486,7 @@ function renderKnowledgeFileRow(doc) {
       <td>${escapeHtml(doc.uploadedBy)}</td>
       <td>${escapeHtml(doc.category)}</td>
       <td>${currentUserIsAdmin() ? `<select data-status-knowledge="${escapeHtml(doc.id)}" aria-label="Status for ${escapeHtml(doc.fileName)}">${knowledgeStatuses.map((status) => `<option value="${escapeHtml(status)}"${doc.status === status ? " selected" : ""}>${escapeHtml(status)}</option>`).join("")}</select>` : escapeHtml(doc.status)}</td>
-      <td><label class="inline-approval"><input data-approve-knowledge="${escapeHtml(doc.id)}" type="checkbox" ${doc.approvedForAi ? "checked" : ""} ${currentUserIsAdmin() ? "" : "disabled"} aria-label="Approved for Tessario Assist"><span>${doc.approvedForAi ? "Yes" : "No"}</span></label></td>
+      <td><label class="inline-approval"><input data-approve-knowledge="${escapeHtml(doc.id)}" type="checkbox" ${doc.approvedForAi ? "checked" : ""} ${currentUserIsAdmin() ? "" : "disabled"} aria-label="Approved for RepOS Assist"><span>${doc.approvedForAi ? "Yes" : "No"}</span></label></td>
       <td><input data-internal-knowledge="${escapeHtml(doc.id)}" type="checkbox" ${doc.internalOnly ? "checked" : ""} ${currentUserIsAdmin() ? "" : "disabled"} aria-label="Internal only"></td>
       <td><input data-customer-knowledge="${escapeHtml(doc.id)}" type="checkbox" ${doc.customerFacingAllowed ? "checked" : ""} ${currentUserIsAdmin() ? "" : "disabled"} aria-label="Customer-facing allowed"></td>
       <td>
@@ -8589,7 +8589,7 @@ function handleKnowledgeFiles(fileList) {
   if (!currentUserIsAdmin()) return;
   const files = Array.from(fileList).filter(isSupportedKnowledgeFile);
   if (!files.length) {
-    showToast("No supported Tessario Knowledge Vault files selected.");
+    showToast("No supported RepOS Knowledge Vault files selected.");
     return;
   }
   const today = toDateInput(new Date().toISOString());
@@ -8622,7 +8622,7 @@ function handleKnowledgeFiles(fileList) {
   };
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
-  showToast(`${uploaded.length} file${uploaded.length === 1 ? "" : "s"} uploaded to Tessario Knowledge Vault metadata.`);
+  showToast(`${uploaded.length} file${uploaded.length === 1 ? "" : "s"} uploaded to RepOS Knowledge Vault metadata.`);
 }
 
 function isSupportedKnowledgeFile(file) {
@@ -8831,7 +8831,7 @@ function approveKnowledgeFile(docId) {
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
   renderAssistDrawer();
-  showToast(`${doc.fileName} approved for Tessario Assist.`);
+  showToast(`${doc.fileName} approved for RepOS Assist.`);
 }
 
 function approveUploadedKnowledgeFiles() {
@@ -8847,7 +8847,7 @@ function approveUploadedKnowledgeFiles() {
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
   renderAssistDrawer();
-  showToast(`${activeIds.length} file${activeIds.length === 1 ? "" : "s"} approved for Tessario Assist.`);
+  showToast(`${activeIds.length} file${activeIds.length === 1 ? "" : "s"} approved for RepOS Assist.`);
 }
 
 function clearUploadApprovalPrompt(shouldRender = true) {
@@ -8902,9 +8902,9 @@ function renderKnowledgeFileModal(doc) {
     <form id="knowledgeFileForm" class="knowledge-file-form">
       <div class="modal-header">
         <div>
-          <p class="eyebrow">Tessario Knowledge Vault file</p>
+          <p class="eyebrow">RepOS Knowledge Vault file</p>
           <h2>${escapeHtml(doc.fileName)}</h2>
-          <p>Tessario stores source details here. Connected file storage and text extraction are required before Assist can read document contents directly.</p>
+          <p>RepOS stores source details here. Connected file storage and text extraction are required before Assist can read document contents directly.</p>
         </div>
         <button class="icon-button" id="closeKnowledgeFileButton" aria-label="Close" type="button">x</button>
       </div>
@@ -8919,7 +8919,7 @@ function renderKnowledgeFileModal(doc) {
         <label><span>Last reviewed date</span><input name="lastReviewedDate" type="date" value="${escapeHtml(doc.lastReviewedDate || "")}" ${disabled}></label>
         <label><span>File details</span><input value="${escapeHtml(`${doc.fileType.toUpperCase()} / ${formatFileSize(doc.size)}`)}" disabled></label>
         <label class="full-span"><span>Description</span><textarea name="description" rows="4" ${disabled}>${escapeHtml(doc.description || "")}</textarea></label>
-        <label class="profile-toggle"><input name="approvedForAi" type="checkbox" ${doc.approvedForAi ? "checked" : ""} ${disabled}><span>Approved for Tessario Assist</span></label>
+        <label class="profile-toggle"><input name="approvedForAi" type="checkbox" ${doc.approvedForAi ? "checked" : ""} ${disabled}><span>Approved for RepOS Assist</span></label>
         <label class="profile-toggle"><input name="internalOnly" type="checkbox" ${doc.internalOnly ? "checked" : ""} ${disabled}><span>Internal only</span></label>
         <label class="profile-toggle"><input name="customerFacingAllowed" type="checkbox" ${doc.customerFacingAllowed ? "checked" : ""} ${disabled}><span>Customer-facing allowed</span></label>
       </div>
@@ -9600,10 +9600,10 @@ function renderAssistTicketCard(ticket) {
     <section class="context-card assist-ticket-card compact-context-card">
       <div class="section-title row-title">
         <div>
-          <p class="eyebrow">Tessario Assist</p>
+          <p class="eyebrow">RepOS Assist</p>
           <h3>Ticket copilot</h3>
         </div>
-        <button class="ghost-button compact-action-button" id="openTicketAssistButton" type="button">Use Tessario AI</button>
+        <button class="ghost-button compact-action-button" id="openTicketAssistButton" type="button">Use RepOS Assist</button>
       </div>
     </section>
   `;
@@ -10726,11 +10726,11 @@ function openTicketAssistDrawer(ticketId, prompt = "") {
 
 function openAssistDrawer({ mode = "global", ticketId = "", prompt = "" } = {}) {
   if (!currentUserIsAdmin()) {
-    showToast("Tessario Assist is available to admins only.");
+    showToast("RepOS Assist is available to admins only.");
     return;
   }
   if (!profile.assistEnabled) {
-    showToast("Tessario Assist is disabled in settings.");
+    showToast("RepOS Assist is disabled in settings.");
     return;
   }
   const nextMode = mode === "ticket" && ticketId ? "ticket" : "global";
@@ -10768,17 +10768,17 @@ function renderAssistDrawer() {
   el.assistDrawer.innerHTML = `
     <div class="assist-header">
       <div>
-        <h2>Tessario Assist</h2>
+        <h2>RepOS Assist</h2>
         <span>${isTicketMode ? `Using ${escapeHtml(ticketDisplayId(ticket))} context` : "General assistant"}</span>
       </div>
-      <button class="icon-button" id="closeAssistButton" aria-label="Close Tessario Assist" type="button">
+      <button class="icon-button" id="closeAssistButton" aria-label="Close RepOS Assist" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 5 6.4l5.6 5.6L5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6 6.4 5Z"/></svg>
       </button>
     </div>
     <div class="assist-messages" id="assistMessages" aria-live="polite">
       ${chat.messages.map((message) => `
         <article class="assist-message ${message.role}">
-          <strong>${message.role === "user" ? "You" : "Tessario Assist"}</strong>
+          <strong>${message.role === "user" ? "You" : "RepOS Assist"}</strong>
           <p>${escapeHtml(message.body)}</p>
         </article>
       `).join("")}
@@ -10788,7 +10788,7 @@ function renderAssistDrawer() {
       <div>
         ${sources.length
           ? sources.map((source) => `<p><strong>Source: ${escapeHtml(source.name)}</strong><span>${escapeHtml(source.status)}</span></p>`).join("")
-          : `<p><strong>No approved Tessario Knowledge Vault sources available yet.</strong><span>Approve workspace sources in the Knowledge Vault before Assist uses them.</span></p>`}
+          : `<p><strong>No approved RepOS Knowledge Vault sources available yet.</strong><span>Approve workspace sources in the Knowledge Vault before Assist uses them.</span></p>`}
       </div>
     </details>
     <div class="assist-actions">
@@ -10799,12 +10799,12 @@ function renderAssistDrawer() {
     <form class="assist-input-row" id="assistForm">
       <details class="assist-suggestion-menu">
         <summary>Suggestions</summary>
-        <div class="assist-suggestions" aria-label="Suggested Tessario Assist prompts">
+        <div class="assist-suggestions" aria-label="Suggested RepOS Assist prompts">
           ${suggestions.map((item) => `<button data-assist-suggestion="${escapeHtml(item)}" type="button">${escapeHtml(item)}</button>`).join("")}
         </div>
       </details>
       <div class="assist-composer">
-        <textarea id="assistInput" name="assistInput" rows="1" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" ${disabled ? "disabled" : ""} placeholder="${disabled ? "Tessario Assist is disabled" : "Message Tessario Assist"}"></textarea>
+        <textarea id="assistInput" name="assistInput" rows="1" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" ${disabled ? "disabled" : ""} placeholder="${disabled ? "RepOS Assist is disabled" : "Message RepOS Assist"}"></textarea>
         <button class="primary-button" type="submit" ${disabled ? "disabled" : ""}>Send</button>
       </div>
     </form>
@@ -10822,7 +10822,7 @@ function assistKnowledgeSourceNote() {
   if (masterSource) return "Knowledge source available: iSpring Master Support Document";
   return approvedSources.length
     ? `Knowledge source available: ${approvedSources.slice(0, 3).map((doc) => doc.fileName).join(", ")}`
-    : "No approved Tessario Knowledge Vault sources available yet.";
+    : "No approved RepOS Knowledge Vault sources available yet.";
 }
 
 function createEmptyAssistChat() {
@@ -10847,7 +10847,7 @@ function seedAssistChatIfEmpty() {
     role: "assistant",
     body: assistState.mode === "ticket"
       ? "I can help with this ticket's details, conversation, customer context, model, notes, and approved workspace sources. What should we work through first?"
-      : "Hi, I am Tessario Assist. Ask a support question, search approved workspace sources, or paste text you want help with."
+      : "Hi, I am RepOS Assist. Ask a support question, search approved workspace sources, or paste text you want help with."
   });
 }
 
@@ -10859,7 +10859,7 @@ function assistSourcesFor(question, ticket) {
   const label = source.fileName;
   return [{
     name: label,
-    status: `${source.status} Tessario Knowledge Vault source`
+    status: `${source.status} RepOS Knowledge Vault source`
   }];
 }
 
@@ -10928,7 +10928,7 @@ function copyAssistResponse() {
   const { lastResponse } = currentAssistChat();
   if (!lastResponse) return;
   navigator.clipboard?.writeText(lastResponse);
-  showToast("Tessario AI response copied.");
+  showToast("RepOS Assist response copied.");
 }
 
 function insertAssistDraft() {
@@ -10945,7 +10945,7 @@ function insertAssistDraft() {
   persistTickets();
   addNotification({
     category: "assist",
-    title: "Tessario Assist draft ready",
+    title: "RepOS Assist draft ready",
     description: `${ticketDisplayId(ticket)} has a draft inserted and ready for rep review.`,
     ticketId: ticket.id
   });
@@ -10960,7 +10960,7 @@ function tessarioAiResponse(question, ticket, mode = assistState.mode) {
   if (!ticket && generalSupportAnswer) return withKnowledgeSourceFooter(generalSupportAnswer, question, ticket);
   if (!ticket) {
     const asksForSpecificTicket = /this ticket|this case|selected ticket|current customer|customer said|summarize ticket|missing info for this|analyze this/i.test(query);
-    if (mode === "global" && asksForSpecificTicket) return "Open the ticket and click Use Tessario AI so I can use its conversation, customer, model, and order context.";
+    if (mode === "global" && asksForSpecificTicket) return "Open the ticket and click Use RepOS Assist so I can use its conversation, customer, model, and order context.";
     const answer = query.includes("macro")
       ? "A good general intake macro asks for the model number, order source, purchase date or receipt, the exact symptom, recent filter changes, photos or a short video, and any lights, beeps, pressure readings, or water-test results."
       : "I can help like a support copilot: ask me about iSpring models, troubleshooting, what to ask next, reply drafts, tone rewrites, warranty intake, or pasted customer text. If you open a ticket, I can use that ticket's customer and conversation context too.";
@@ -10982,13 +10982,13 @@ function tessarioAiResponse(question, ticket, mode = assistState.mode) {
   return withKnowledgeSourceFooter(answer, question, ticket);
 }
 
-// MVP note: Tessario Knowledge Vault uploads are metadata-only in this static app.
+// MVP note: RepOS Knowledge Vault uploads are metadata-only in this static app.
 // Real PDF/DOCX/TXT content grounding requires backend file storage, text extraction, indexing, and source citation.
 function knowledgeResponseFor(question, ticket) {
   const approvedSources = approvedKnowledgeSources();
   const query = question.toLowerCase();
   if (!approvedSources.length && /knowledge|vault|source|manual|policy|file|approved/i.test(query)) {
-    return "No approved Tessario Knowledge Vault sources available yet.\n\nApprove workspace source files in Tessario Knowledge Vault before using them as support reference material.";
+    return "No approved RepOS Knowledge Vault sources available yet.\n\nApprove workspace source files in RepOS Knowledge Vault before using them as support reference material.";
   }
   if (!/knowledge|vault|source|manual|policy|file|approved/i.test(query)) return "";
   const doc = preferredKnowledgeSource(question, ticket);
@@ -11015,10 +11015,10 @@ function isMasterSupportSource(doc) {
 function sourceAwareIntro(doc, ticket) {
   if (isMasterSupportSource(doc)) {
     return ticket
-      ? `Based on the approved iSpring support source, Tessario Assist can reference this source for ${ticketDisplayId(ticket)}.`
-      : "Based on the approved iSpring support source, Tessario Assist can reference this workspace source.";
+      ? `Based on the approved iSpring support source, RepOS Assist can reference this source for ${ticketDisplayId(ticket)}.`
+      : "Based on the approved iSpring support source, RepOS Assist can reference this workspace source.";
   }
-  return "Using approved Tessario Knowledge Vault sources.";
+  return "Using approved RepOS Knowledge Vault sources.";
 }
 
 function withKnowledgeSourceFooter(answer, question, ticket) {
@@ -11304,17 +11304,17 @@ function handleComposerAttachmentSelection(event) {
   if (proofAttachments.length) {
     const detected = detectPurchaseSourceFromAttachments(proofAttachments);
     if (detected !== "Unknown") {
-      const updated = setTicketPurchaseSource(ticket, detected, "Tessario AI", false, { fromAttachment: true, timestamp: uploadedAt });
+      const updated = setTicketPurchaseSource(ticket, detected, "RepOS Assist", false, { fromAttachment: true, timestamp: uploadedAt });
       if (!updated) {
         ticket.conversation.push({
           type: "timeline",
-          author: "Tessario AI",
+          author: "RepOS Assist",
           timestamp: uploadedAt,
-          body: `Tessario AI detected possible purchase source from attachment: ${detected}. Needs rep review.`
+          body: `RepOS Assist detected possible purchase source from attachment: ${detected}. Needs rep review.`
         });
       }
     } else {
-      recordAiPurchaseSourceDetection(ticket, "Unknown", "Tessario AI", { timestamp: uploadedAt, fromAttachment: true });
+      recordAiPurchaseSourceDetection(ticket, "Unknown", "RepOS Assist", { timestamp: uploadedAt, fromAttachment: true });
     }
   }
   persistTickets();
