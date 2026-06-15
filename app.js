@@ -217,7 +217,7 @@ const workspaceConfig = {
     showTicketPreview: false,
     sidebarCollapsedDefault: false,
     theme: "Light",
-    accentColor: "#4727B5",
+    accentColor: "#7C5CFF",
     ticketDensity: "Comfortable",
     defaultSort: "Last Updated",
     autoOpenFirstTicket: false,
@@ -7404,11 +7404,11 @@ function renderActivityChart(scopedTickets) {
   const pad = 32;
   const max = Math.max(6, ...series.flatMap((item) => item.values));
   const colors = {
-    Created: "#4727B5",
-    Closed: "#8B72F0",
-    Reopened: "#a16207",
-    "SLA risk": "#B54727",
-    "Customer replied": "#5C3AD6"
+    Created: "#7C5CFF",
+    Closed: "#A78BFF",
+    Reopened: "#8a5208",
+    "SLA risk": "#D8453B",
+    "Customer replied": "#6034E0"
   };
   const lines = series.map((item) => {
     const points = item.values.map((value, index) => {
