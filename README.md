@@ -64,7 +64,7 @@ This project is a static site. Deploy the folder root to Vercel.
 Current production alias:
 
 ```text
-https://ispring-support-hub.vercel.app
+https://rep-os.vercel.app
 ```
 
 Vercel also creates one-time deployment URLs, such as `https://ispring-support-awyx1p8uy-robbybradley-oss-projects.vercel.app`. Those are snapshots. If an older deployment URL still shows zero metrics, use the production alias above or redeploy.
