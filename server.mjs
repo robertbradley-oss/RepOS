@@ -46,7 +46,7 @@ const resourceValidators = {
   notifications: Array.isArray,
   knowledgeDocs: Array.isArray,
   productLinks: Array.isArray,
-  customerAccounts: Array.isArray,
+  customerAccounts: isPlainObject,
   lastTicketNumber: (value) => Number.isInteger(value) && value >= 0
 };
 const adminStateResources = new Set(["users", "profile", "knowledgeDocs", "productLinks", "customerAccounts"]);

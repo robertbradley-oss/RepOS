@@ -4543,8 +4543,8 @@ async function hydrateBackendState() {
       localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(productLinks));
       hydrated = true;
     }
-    if (Array.isArray(state.customerAccounts)) {
-      customerAccounts = state.customerAccounts;
+    if (isBackendPlainObject(state.customerAccounts)) {
+      customerAccounts = normalizeCustomerAccounts(state.customerAccounts) || {};
       localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(customerAccounts));
       hydrated = true;
     }
@@ -5034,9 +5034,9 @@ function ensureWarrantyRecordForReceipt(account, receipt) {
   return record;
 }
 
-function purchaseSourceFor(ticket) {
-  const account = accountForTicket(ticket);
-  const receipt = receiptRecordFor(ticket);
+function purchaseSourceFor(ticket, accountOverride = null, receiptOverride) {
+  const account = accountOverride || accountForTicket(ticket);
+  const receipt = receiptOverride === undefined ? receiptRecordFor(ticket) : receiptOverride;
   if (isVerifiedPurchaseSource(ticket.purchaseSource)) return ticket.purchaseSource;
   if (isVerifiedPurchaseSource(receipt?.source)) return receipt.source;
   if (isVerifiedPurchaseSource(account.purchaseSource)) return account.purchaseSource;
@@ -5216,7 +5216,7 @@ function addWarrantyToAccount(account, ticket, notes = "", receipt = null) {
     status: "Not registered",
     registeredAt: "",
     registeredBy: "",
-    source: purchaseSourceFor(ticket) || account.purchaseSource || "Unknown",
+    source: purchaseSourceFor(ticket, account, linkedReceipt) || account.purchaseSource || "Unknown",
     orderNumber: ticket.order || "",
     model: ticket.model || "",
     ticketId: ticket.id,
@@ -5227,7 +5227,7 @@ function addWarrantyToAccount(account, ticket, notes = "", receipt = null) {
   record.registeredBy = profileDisplayName();
   record.receiptId = record.receiptId || linkedReceipt?.id || "";
   record.receiptFileName = record.receiptFileName || linkedReceipt?.fileName || "";
-  record.source = purchaseSourceFor(ticket) || record.source || account.purchaseSource || "Unknown";
+  record.source = purchaseSourceFor(ticket, account, linkedReceipt) || record.source || account.purchaseSource || "Unknown";
   record.orderNumber = ticket.order || record.orderNumber || "";
   record.model = ticket.model || record.model || "";
   record.ticketId = ticket.id || record.ticketId || "";
