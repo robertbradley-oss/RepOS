@@ -2793,7 +2793,8 @@ body:not(.is-admin) .admin-only {
   overflow: auto;
   overscroll-behavior: contain;
   background: var(--tessario-card);
-  border-top: 1px solid var(--line-soft);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
 }
 
 .queue-table {
