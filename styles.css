@@ -1978,10 +1978,24 @@ body:not(.is-admin) .admin-only {
 
 .queue-header-actions {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
   gap: 10px;
+}
+
+/* Search relocated from the topbar onto the queue card header */
+.queue-header-actions .global-search {
+  flex: 0 1 360px;
+  min-width: 200px;
+  max-width: 380px;
+}
+
+/* Topbar now holds only the action buttons — keep them top-right */
+.topbar-actions {
+  margin-left: auto;
 }
 
 .bulk-actions {

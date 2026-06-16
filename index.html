@@ -67,20 +67,6 @@
 
       <main class="workspace">
         <header class="topbar">
-          <div class="topbar-title">
-            <div class="topbar-brand-lockup">
-              <img class="topbar-workspace-logo" src="./assets/ispring-logo.png" alt="iSpring" onerror="this.hidden=true; this.nextElementSibling.hidden=false">
-              <strong class="topbar-workspace-fallback" hidden>iSpring</strong>
-              <small id="topbarWorkspaceLabel">Workspace</small>
-            </div>
-          </div>
-
-          <label class="global-search">
-            <span aria-hidden="true">Search</span>
-            <input id="globalSearch" type="search" placeholder="Search tickets, customers, models, orders, notes" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
-            <kbd>/</kbd>
-          </label>
-
           <div class="topbar-actions">
             <button class="secondary-button topbar-action-button assist-launch-button admin-only" id="tessarioAssistButton" type="button" title="RepOS Assist" aria-label="Open RepOS Assist">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8 10.1 9 5 10.9l5.1 1.9L12 18l1.9-5.2 5.1-1.9L13.9 9 12 3.8Z"></path><path d="M5.7 15.4 5 17.3l-1.9.7 1.9.7.7 1.9.7-1.9 1.9-.7-1.9-.7-.7-1.9Z"></path><path d="m18 16 .8 2.1 2.1.8-2.1.8-.8 2.1-.8-2.1-2.1-.8 2.1-.8L18 16Z"></path></svg>
@@ -114,7 +100,13 @@
                 <p class="eyebrow">Queue</p>
                 <h1 id="queueTitle">Open Tickets</h1>
               </div>
-              <div class="queue-header-actions"></div>
+              <div class="queue-header-actions">
+                <label class="global-search">
+                  <span aria-hidden="true">Search</span>
+                  <input id="globalSearch" type="search" placeholder="Search tickets, customers, models, orders, notes" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+                  <kbd>/</kbd>
+                </label>
+              </div>
             </div>
 
             <div class="queue-controls">
