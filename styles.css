@@ -89,7 +89,7 @@
   --radius-md: 13px;
   --radius-lg: 16px;
   --radius-xl: 22px;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "SF Mono", "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
   --shadow: var(--shadow-neu-card);
   --shadow-soft: var(--shadow-resting);
