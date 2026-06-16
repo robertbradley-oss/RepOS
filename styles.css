@@ -8005,9 +8005,7 @@ body:not(.is-admin) .admin-only {
 }
 
 .workspace {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(250, 250, 252, 0) 150px),
-    var(--canvas);
+  background: transparent;
 }
 
 .topbar {
