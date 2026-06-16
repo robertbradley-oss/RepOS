@@ -43,9 +43,9 @@
   --shadow-floating: 0 4px 8px rgba(15, 23, 42, 0.08), 0 28px 54px -18px rgba(15, 23, 42, 0.26);
   --shadow-neu-card: 0 22px 48px -24px rgba(15, 23, 42, 0.32), 8px 8px 22px var(--neu-card-shadow-dark), -8px -8px 22px var(--neu-card-shadow-light);
 
-  --bg-glow-1: #b29bff;
-  --bg-glow-2: #d6b2ff;
-  --bg-glow-3: #aab0f2;
+  --bg-glow-1: #c3b0ff;
+  --bg-glow-2: #e0c8fb;
+  --bg-glow-3: #c0bef4;
 
   /* ---- Legacy RepOS aliases, repointed onto the system above (names kept for compatibility) ---- */
   --tessario-navy: var(--ink);
@@ -54,7 +54,7 @@
   --tessario-bright-blue: #8f73ff;
   --tessario-cyan: #a78bff;
   --tessario-violet: var(--accent);
-  --tessario-bg: #c9bced;
+  --tessario-bg: #ece8f6;
   --tessario-card: #ffffff;
   --tessario-border: var(--hairline);
   --tessario-muted: var(--ink-secondary);
@@ -209,10 +209,9 @@ body {
   color: var(--ink);
   background-color: var(--canvas);
   background-image:
-    radial-gradient(1300px 820px at 0% -8%, var(--bg-glow-1) 0%, transparent 60%),
-    radial-gradient(1200px 760px at 100% 0%, var(--bg-glow-2) 0%, transparent 62%),
-    radial-gradient(1040px 700px at 50% 112%, var(--bg-glow-3) 0%, transparent 60%),
-    radial-gradient(1500px 1050px at 50% 42%, rgba(124, 92, 255, 0.12) 0%, transparent 70%);
+    radial-gradient(940px 580px at 6% -10%, var(--bg-glow-1) 0%, transparent 60%),
+    radial-gradient(820px 540px at 97% 0%, var(--bg-glow-2) 0%, transparent 62%),
+    radial-gradient(760px 480px at 52% 114%, var(--bg-glow-3) 0%, transparent 60%);
   background-attachment: fixed;
   cursor: default;
   font-family: var(--font-display);
