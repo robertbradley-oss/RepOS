@@ -8154,13 +8154,48 @@ function hoursUntil(value) {
   return Math.round((new Date(value) - new Date()) / 36e5);
 }
 
-function renderAdminToolCard(id, title, meta, body) {
+function renderAdminToolCard(id, title, meta, body, status = "") {
   return `
     <button class="admin-tool-card" data-admin-tool="${escapeHtml(id)}" type="button">
-      <strong>${escapeHtml(title)}</strong>
       <span>${escapeHtml(meta)}</span>
+      <strong>${escapeHtml(title)}</strong>
       <p>${escapeHtml(body)}</p>
+      ${status ? `<small>${escapeHtml(status)}</small>` : ""}
     </button>
+  `;
+}
+
+function renderAdminOverview() {
+  const visibleReps = visibleAssignmentUsers();
+  const eligibleReps = activeAssignmentUsers();
+  const activeDocs = knowledgeDocs.filter((doc) => !doc.archived);
+  const approvedSources = approvedKnowledgeSources();
+  const needsReview = activeDocs.filter((doc) => doc.status === "Needs Review" || doc.status === "Draft").length;
+  const activeLinks = productLinks.filter((link) => link.active).length;
+  const activeTickets = tickets.filter(isActiveTicket).length;
+  const overview = [
+    ["Support queue", activeTickets, `${eligibleReps.length} of ${visibleReps.length} reps routing new work`],
+    ["Knowledge Vault", `${approvedSources.length}/${activeDocs.length}`, `${needsReview} source files need review`],
+    ["Macros", macroLibrary.length, "Canned replies available from ticket detail"],
+    ["Product links", activeLinks, "Active library links available to reps"]
+  ];
+  return `
+    <section class="admin-card admin-overview-card" aria-label="Admin Hub overview">
+      <div class="section-title">
+        <p class="eyebrow">Control center</p>
+        <h3>Support operations overview</h3>
+      </div>
+      <div class="admin-overview-grid">
+        ${overview.map(([label, value, detail]) => `
+          <article>
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value)}</strong>
+            <small>${escapeHtml(detail)}</small>
+          </article>
+        `).join("")}
+      </div>
+      <p class="admin-section-note">Admin Hub brings together support source files, macros, product links, rep assignment, and workspace settings for RepOS.</p>
+    </section>
   `;
 }
 
@@ -8201,7 +8236,6 @@ function renderAdminMacroSection() {
         </table>
       </div>
     </section>
-    ${renderAppFooter("admin-footer")}
   `;
 }
 
@@ -8247,21 +8281,23 @@ function renderAdminPanel() {
     <div class="admin-header">
       <div>
         <p class="eyebrow">Admin</p>
-        <h1>Workspace admin</h1>
-        <p>Admin-only tools for source files, macros, assignment, reps, and workspace settings.</p>
+        <h1>RepOS Admin Hub</h1>
+        <p>Control center for support tools, source files, reps, assignment routing, and workspace settings.</p>
       </div>
       <button class="secondary-button" id="backFromAdminButton" type="button">Back to queue</button>
     </div>
+    ${renderAdminOverview()}
     <section class="admin-card admin-hub-card">
       <div class="section-title">
         <p class="eyebrow">Admin navigation</p>
-        <h3>Workspace tools</h3>
+        <h3>Support tool shortcuts</h3>
       </div>
+      <p class="admin-section-note">Jump to the admin surfaces that maintain the current support workspace.</p>
       <div class="admin-tool-grid">
-        ${renderAdminToolCard("knowledge", "Knowledge Vault", "Source files", "Manage approved workspace sources.")}
-        ${renderAdminToolCard("macros", "Macros", "Canned replies", "Review the macro library and open a ticket context.")}
-        ${renderAdminToolCard("assignment", "Assignment Pool / Reps", "Workload", "Manage eligible reps and reassignment.")}
-        ${renderAdminToolCard("workspace", "Workspace Settings", "Profile", "Open workspace settings and admin controls.")}
+        ${renderAdminToolCard("knowledge", "Knowledge Vault", "Source files", "Manage approved workspace sources.", `${approvedKnowledgeSources().length} approved sources`)}
+        ${renderAdminToolCard("macros", "Macros", "Canned replies", "Review the macro library and open a ticket context.", `${macroLibrary.length} macros`)}
+        ${renderAdminToolCard("assignment", "Assignment Pool / Reps", "Workload", "Manage eligible reps and reassignment.", `${activeAssignmentUsers().length} eligible reps`)}
+        ${renderAdminToolCard("workspace", "Workspace Settings", "Profile", "Open workspace settings and admin controls.", "Profile and recovery tools")}
       </div>
     </section>
     <section class="admin-card admin-recovery-card">
@@ -8273,24 +8309,21 @@ function renderAdminPanel() {
       <button class="secondary-button danger-soft" id="adminResetWorkspaceButton" type="button">Reset workspace data</button>
     </section>
     ${renderAdminMacroSection()}
-    <section class="admin-card" id="assignmentPoolSection">
-      <div class="section-title">
-        <p class="eyebrow">Add rep</p>
-        <h3>Assignment user</h3>
+    <section class="admin-card admin-assignment-card" id="assignmentPoolSection">
+      <div class="admin-assignment-head">
+        <div class="section-title">
+          <p class="eyebrow">Workload</p>
+          <h3>Assignment pool</h3>
+        </div>
+        <form class="admin-add-form" id="addRepForm">
+          <input name="repName" required placeholder="Rep name">
+          <select name="repRole" aria-label="Role">
+            ${userRoles.map((role) => `<option value="${role}">${role}</option>`).join("")}
+          </select>
+          <button class="primary-button" type="submit">Add rep</button>
+        </form>
       </div>
-      <form class="admin-add-form" id="addRepForm">
-        <input name="repName" required placeholder="Rep name">
-        <select name="repRole" aria-label="Role">
-          ${userRoles.map((role) => `<option value="${role}">${role}</option>`).join("")}
-        </select>
-        <button class="primary-button" type="submit">Add rep</button>
-      </form>
-    </section>
-    <section class="admin-card">
-      <div class="section-title">
-        <p class="eyebrow">Workload</p>
-        <h3>Assignment pool</h3>
-      </div>
+      <p class="admin-section-note">Enable reps for new ticket assignment, reassign active work before removal, and review current workload.</p>
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead>
@@ -8307,6 +8340,7 @@ function renderAdminPanel() {
         </table>
       </div>
     </section>
+    ${renderAppFooter("admin-footer")}
   `;
 
   el.adminPanel.querySelector("#backFromAdminButton").addEventListener("click", showQueueScreen);

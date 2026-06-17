@@ -6418,6 +6418,50 @@ body:not(.is-admin) .admin-only {
   border-radius: 9px;
 }
 
+.admin-overview-card {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-overview-grid article {
+  display: grid;
+  gap: 4px;
+  min-height: 104px;
+  padding: 12px;
+  background: linear-gradient(180deg, #fbfaff 0%, #f3fbfc 100%);
+  border: 1px solid rgba(124, 92, 255, 0.16);
+  border-left: 3px solid var(--tessario-blue);
+  border-radius: 8px;
+}
+
+.admin-overview-grid span,
+.admin-overview-grid small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.admin-overview-grid strong {
+  color: #241a54;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.admin-section-note {
+  margin: 0;
+  color: #536776;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
 .admin-tool-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -6426,45 +6470,69 @@ body:not(.is-admin) .admin-only {
 }
 
 .admin-tool-card {
+  display: grid;
+  gap: 7px;
+  align-content: start;
   min-height: 118px;
   padding: 12px;
   text-align: left;
   color: var(--ink);
-  background: var(--tessario-card);
-  border: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, #ffffff, #fbfafe);
+  border: 1px solid rgba(124, 92, 255, 0.14);
   border-radius: 8px;
   cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
 }
 
 .admin-tool-card:hover {
   border-color: rgba(124, 92, 255, 0.35);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  transform: translateY(calc(var(--motion-distance-xs) * -1));
 }
 
 .admin-tool-card strong,
 .admin-tool-card span,
-.admin-tool-card p {
+.admin-tool-card p,
+.admin-tool-card small {
   display: block;
 }
 
 .admin-tool-card strong {
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1.2;
 }
 
 .admin-tool-card span {
-  margin-top: 4px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent);
+  color: #075985;
   text-transform: uppercase;
   letter-spacing: 0;
 }
 
 .admin-tool-card p {
-  margin: 8px 0 0;
+  margin: 0;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
+}
+
+.admin-tool-card small {
+  align-self: end;
+  justify-self: start;
+  max-width: 100%;
+  min-height: 22px;
+  padding: 4px 8px;
+  color: var(--tessario-deep-blue);
+  background: rgba(124, 92, 255, 0.1);
+  border: 1px solid rgba(124, 92, 255, 0.22);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.2;
 }
 
 .admin-recovery-card {
@@ -6485,6 +6553,22 @@ body:not(.is-admin) .admin-only {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) 160px auto;
   gap: 8px;
+}
+
+.admin-assignment-card {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-assignment-head {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(420px, 1.25fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.admin-assignment-head .section-title {
+  margin-bottom: 0;
 }
 
 .admin-add-form input,
@@ -7706,6 +7790,18 @@ body:not(.is-admin) .admin-only {
 }
 
 @media (max-width: 720px) {
+  .admin-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-overview-grid,
+  .admin-tool-grid,
+  .admin-macro-summary,
+  .admin-add-form {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-header,
   .dashboard-header-actions {
     align-items: stretch;
@@ -10393,9 +10489,16 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
   }
 
   .manager-workload-summary,
+  .admin-overview-grid,
   .team-trend-widget-grid,
   .dashboard-widget-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-assignment-head,
+  .admin-recovery-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
   }
 
   .ticket-header.compact .ticket-header-main {
@@ -10453,5 +10556,19 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 
   .user-profile {
     display: grid;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-overview-grid,
+  .admin-tool-grid,
+  .admin-macro-summary,
+  .admin-add-form,
+  .manager-workload-summary,
+  .workload-summary-grid,
+  .team-trend-stats,
+  .team-trend-widget-grid,
+  .dashboard-widget-grid {
+    grid-template-columns: 1fr;
   }
 }
