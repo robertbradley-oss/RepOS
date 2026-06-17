@@ -8,6 +8,7 @@ import { createJsonStore } from "./lib/json-store.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 4173);
+const host = process.env.HOST || "127.0.0.1";
 const dataFile = process.env.TESSARIO_DATA_FILE || join(root, ".data", "tessario-state.json");
 const uploadDir = process.env.TESSARIO_UPLOAD_DIR || join(root, ".uploads");
 const schemaPath = join(root, "db", "schema.sql");
@@ -70,8 +71,8 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`RepOS running at http://127.0.0.1:${port}`);
+server.listen(port, host, () => {
+  console.log(`RepOS running at http://${host}:${port}`);
   console.log(`Persistence: ${store.mode}`);
 });
 

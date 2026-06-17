@@ -18,13 +18,23 @@ This backend pass keeps RepOS simple to run while moving the app away from brows
 ## Run Locally
 
 ```powershell
-npm run dev
+npm.cmd install
+npm.cmd run dev
 ```
 
 Open:
 
 ```text
 http://127.0.0.1:4173
+```
+
+See `.env.example` for supported runtime settings. The server does not auto-load `.env` files; set values in your shell or deployment environment.
+
+Use `HOST=0.0.0.0` only for Node hosting platforms that require binding outside localhost:
+
+```powershell
+$env:HOST='0.0.0.0'
+npm.cmd run start
 ```
 
 ## API Endpoints

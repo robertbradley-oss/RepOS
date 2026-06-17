@@ -13,7 +13,8 @@ This is currently an MVP prototype with a lightweight local backend. It includes
 From this folder:
 
 ```powershell
-node server.mjs
+npm.cmd install
+npm.cmd run dev
 ```
 
 Then open:
@@ -22,7 +23,7 @@ Then open:
 http://127.0.0.1:4173
 ```
 
-The app has no package install step and no build step. It is plain HTML, CSS, JavaScript, and a no-dependency Node server.
+The app has no build step. It is plain HTML, CSS, JavaScript, and a lightweight Node server. `pg` is installed only for optional Postgres persistence; the default local mode uses JSON-file persistence.
 
 ## Backend MVP
 
@@ -55,11 +56,20 @@ The app has no package install step and no build step. It is plain HTML, CSS, Ja
 - `GET /api/files/:id`
 - `POST /api/reset`
 
-The backend persists synced demo state to `.data/tessario-state.json` and local uploads to `.uploads/`, both intentionally ignored by Git. Development mode auto-creates an admin session for CS14 Robert; set `TESSARIO_AUTH_MODE=strict` when you want API routes to require an explicit session. See `docs/backend.md` for the backend plan and next upgrades.
+The backend persists synced demo state to `.data/tessario-state.json` and local uploads to `.uploads/`, both intentionally ignored by Git. Development mode auto-creates an admin session for CS14 Robert; set `TESSARIO_AUTH_MODE=strict` when you want API routes to require an explicit session. See `.env.example` for supported runtime settings and `docs/backend.md` for the backend plan and next upgrades.
 
-## How To Deploy To Vercel
+Common runtime settings:
 
-This project is a static site. Deploy the folder root to Vercel.
+- `HOST`: Defaults to `127.0.0.1`. Use `0.0.0.0` only when a Node hosting platform requires it.
+- `PORT`: Defaults to `4173`.
+- `TESSARIO_DATA_FILE`: Defaults to `.data/tessario-state.json`.
+- `TESSARIO_UPLOAD_DIR`: Defaults to `.uploads`.
+- `TESSARIO_AUTH_MODE`: Defaults to `development`; use `strict` for explicit-session auth checks.
+- `DATABASE_URL`: Optional. When set, RepOS uses Postgres and runs `db/schema.sql` on startup unless `TESSARIO_AUTO_MIGRATE=0`.
+
+## How To Deploy A Demo
+
+For a static Vercel demo, deploy the folder root and serve the frontend files only. Static hosting uses browser/local fallback state and does not run the Node API, JSON persistence, auth, or protected uploads.
 
 Current production alias:
 
@@ -92,7 +102,15 @@ The important deployed files are:
 - `assets/tessario-logo.svg`
 - `assets/ispring-logo.png`
 
-`server.mjs` is only for local preview and is not needed for Vercel hosting.
+For a backend-backed demo, run `server.mjs` on a Node host with durable storage settings:
+
+```powershell
+$env:HOST='0.0.0.0'
+$env:PORT='4173'
+npm.cmd run start
+```
+
+Use mounted/persistent paths for `TESSARIO_DATA_FILE` and `TESSARIO_UPLOAD_DIR`, or set `DATABASE_URL` for Postgres state. Uploaded file bytes still use `TESSARIO_UPLOAD_DIR`, so use durable object storage or a persistent volume before treating uploads as production data.
 
 ## Current App Structure
 
@@ -111,8 +129,7 @@ The important deployed files are:
 - Ticket queue for scanning open, assigned, and closed support requests.
 - Ticket detail workspace with customer context, message history, notes, attachments, status updates, and reply drafting.
 - Dashboard views for support activity, workload, SLA risk, product trends, and tickets needing attention.
-- RepOS Assist mock copilot for ticket summaries, draft replies, next-step guidance, and support-safe wording.
-- Knowledge Vault prototype for tracking approved source files that future assistant workflows can use.
+- Knowledge Vault prototype for tracking approved workspace source files.
 - Admin tools for assignment pool management, rep settings, workspace configuration, and mock routing controls.
 - iSpring model data including sample products, support macros, customer tickets, warranty/receipt context, and guardrails.
 - Static frontend with localStorage fallback and backend JSON persistence for demo data.
@@ -127,7 +144,6 @@ The important deployed files are:
 - Attachment previews still use mock inline/modal rendering in parts of the UI, though backend upload/download endpoints now exist.
 - Copy actions use `navigator.clipboard` and may silently do nothing if the browser blocks clipboard access.
 - The app is optimized for desktop. Smaller screens are not the current priority.
-- Next Best Step guidance is rule/mock-data based. AI Assignment is currently mock fair-routing logic, not a real AI service.
 - Vercel deployment should serve static files unless a server/runtime deployment path is configured.
 
 ## Next Planned Upgrades
@@ -136,7 +152,6 @@ The important deployed files are:
 - Add a manual reset/demo data button for support demos.
 - Add a richer ticket creation/editing flow with product/order/warranty fields.
 - Add saved custom views and visible column preferences.
-- Add richer AI routing rules for specialized queues, PTO/coverage, language skills, product specialization, and manager overrides.
 - Add admin audit history for assignment pool changes.
 - Replace JSON-file persistence with Postgres and normalized ticket/customer/message tables.
 - Add real auth, role checks, and organization/workspace membership.
