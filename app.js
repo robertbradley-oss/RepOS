@@ -1,4 +1,4 @@
-﻿// RepOS front-end logic: mock ticket data, queue filtering, conversation rendering, macros, and context panels.
+// RepOS front-end logic: mock ticket data, queue filtering, conversation rendering, macros, and context panels.
 const STORAGE_KEY = "tessario.support.workspace.v18";
 const TICKET_COUNTER_STORAGE_KEY = "tessario.support.lastTicketNumber.v1";
 const USERS_STORAGE_KEY = "tessario.support.assignmentUsers.v1";
@@ -231,7 +231,6 @@ const workspaceConfig = {
     notifyOverdue: true,
     notifyMentioned: true,
     notifyReceiptsWarranty: true,
-    notifyAssist: true,
     notifyAssignmentEligibility: true,
     inAppNotifications: true,
     emailNotifications: false,
@@ -239,11 +238,7 @@ const workspaceConfig = {
     notificationStyle: "In-app only",
     quietHoursEnabled: false,
     quietHoursStart: "18:00",
-    quietHoursEnd: "08:00",
-    assistEnabled: true,
-    assistTicketContextEnabled: true,
-    assistAllowDraftInsertion: true,
-    assistRequireReview: true
+    quietHoursEnd: "08:00"
   },
   reps: [
     { id: "robert-bradley", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
@@ -1240,15 +1235,6 @@ let uiState = {
 };
 let lastRenderedScreen = uiState.activeScreen;
 let isCreateTicketModalOpen = false;
-let assistState = {
-  isOpen: false,
-  mode: "global",
-  openedFromTicketId: ""
-};
-let assistChats = {
-  global: createEmptyAssistChat(),
-  tickets: {}
-};
 let uploadApprovalPrompt = {
   docIds: [],
   fileNames: []
@@ -1290,7 +1276,6 @@ const el = {
   settingsNavButton: document.querySelector("#settingsNavButton"),
   knowledgeVaultNavButton: document.querySelector("#knowledgeVaultNavButton"),
   macroNavButton: document.querySelector("#macroNavButton"),
-  tessarioAssistButton: document.querySelector("#tessarioAssistButton"),
   notificationBellButton: document.querySelector("#notificationBellButton"),
   notificationUnreadCount: document.querySelector("#notificationUnreadCount"),
   notificationPanel: document.querySelector("#notificationPanel"),
@@ -1323,7 +1308,6 @@ const el = {
   workflowConfirmModal: document.querySelector("#workflowConfirmModal"),
   profileModal: document.querySelector("#profileModal"),
   knowledgeFileModal: document.querySelector("#knowledgeFileModal"),
-  assistDrawer: document.querySelector("#assistDrawer"),
   toast: document.querySelector("#toast"),
   ticketForm: null
 };
@@ -1400,7 +1384,6 @@ function init() {
   el.settingsNavButton.addEventListener("click", () => openProfileModal("account"));
   el.knowledgeVaultNavButton?.addEventListener("click", showKnowledgeVaultScreen);
   el.macroNavButton?.addEventListener("click", showMacroLibrary);
-  el.tessarioAssistButton?.addEventListener("click", () => openGlobalAssistDrawer());
   el.notificationBellButton?.addEventListener("click", (event) => {
     event.stopPropagation();
     toggleNotificationsPanel();
@@ -1433,7 +1416,6 @@ function init() {
   el.knowledgeFileModal.addEventListener("click", (event) => {
     if (event.target === el.knowledgeFileModal) closeKnowledgeFileModal();
   });
-  el.assistDrawer.addEventListener("click", handleAssistDrawerClick);
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && notificationsOpen) closeNotificationsPanel();
@@ -3604,30 +3586,30 @@ function normalizeTicketPurchaseSource(ticket) {
     if (/(?:RepOS Assist|Tessario AI) detected (?:possible )?purchase source(?: from attachment)?:/i.test(body)) {
       const source = purchaseSourceFromText(body);
       const nextBody = detected !== "Unknown"
-        ? `RepOS Assist detected possible purchase source from attachment: ${detected}. Needs rep review.`
+        ? `System detected possible purchase source from attachment: ${detected}. Needs rep review.`
         : source !== "Unknown"
           ? `Unverified purchase source mention: ${source}. Receipt/order proof needed.`
           : "Attachment uploaded; purchase source needs review.";
       if (nextBody !== message.body) changed = true;
-      return { ...message, body: nextBody, author: "RepOS Assist" };
+      return { ...message, body: nextBody, author: "System" };
     }
     if (/(?:RepOS Assist|Tessario AI) found saved receipt source:/i.test(body)) {
       const source = purchaseSourceFromText(body);
       const nextBody = source !== "Unknown"
-        ? `RepOS Assist detected possible purchase source from saved customer account: ${source}. Needs rep review.`
-        : "RepOS Assist detected possible purchase source from saved customer account. Needs rep review.";
+        ? `System detected possible purchase source from saved customer account: ${source}. Needs rep review.`
+        : "System detected possible purchase source from saved customer account. Needs rep review.";
       if (nextBody !== message.body) changed = true;
-      return { ...message, body: nextBody, author: "RepOS Assist" };
+      return { ...message, body: nextBody, author: "System" };
     }
     if (/(?:RepOS Assist|Tessario AI) found receipt already on file/i.test(body)) {
-      const nextBody = "RepOS Assist detected receipt already on file for this customer account. Needs rep review.";
+      const nextBody = "System detected receipt already on file for this customer account. Needs rep review.";
       if (nextBody !== message.body) changed = true;
-      return { ...message, body: nextBody, author: "RepOS Assist" };
+      return { ...message, body: nextBody, author: "System" };
     }
     if (/(?:RepOS Assist|Tessario AI) found registered warranty/i.test(body)) {
-      const nextBody = "RepOS Assist detected possible registered warranty on this customer account. Needs rep review.";
+      const nextBody = "System detected possible registered warranty on this customer account. Needs rep review.";
       if (nextBody !== message.body) changed = true;
-      return { ...message, body: nextBody, author: "RepOS Assist" };
+      return { ...message, body: nextBody, author: "System" };
     }
     const normalizedAuthor = normalizeRepName(message.author) || message.author;
     if (body !== message.body || normalizedAuthor !== message.author) changed = true;
@@ -3651,12 +3633,12 @@ function normalizeTicketPurchaseSource(ticket) {
     return true;
   });
 
-  if (detected !== "Unknown" && !ticket.conversation?.some((message) => message.body === `RepOS Assist detected possible purchase source from attachment: ${detected}. Needs rep review.`)) {
+  if (detected !== "Unknown" && !ticket.conversation?.some((message) => /detected possible purchase source from attachment:/i.test(message.body) && message.body.includes(detected))) {
     ticket.conversation.push({
       type: "timeline",
-      author: "RepOS Assist",
+      author: "System",
       timestamp: ticket.createdAt || new Date().toISOString(),
-      body: `RepOS Assist detected possible purchase source from attachment: ${detected}. Needs rep review.`
+      body: `System detected possible purchase source from attachment: ${detected}. Needs rep review.`
     });
     changed = true;
   }
@@ -3829,7 +3811,7 @@ function timelineDisplayBody(ticket, message) {
   const author = String(message?.author || "");
   let body = replaceLegacyRepNamesInText(ticketReferenceDisplay(statusDisplayText(String(message?.body || "")))).trim();
   if (/(?:tessario ai|repos assist)/i.test(author)) {
-    body = body.replace(/^(?:RepOS Assist|Tessario AI)\s+/i, "").replace(/^detected/i, "Detected");
+    body = body.replace(/^(?:RepOS Assist|Tessario AI)\s+/i, "").replace(/^detected/i, "System detected");
   }
   if (/^system\s+/i.test(body)) body = body.replace(/^system\s+/i, "");
   return body;
@@ -3842,9 +3824,9 @@ function timelineEventMeta(message) {
 
   if (/(?:tessario ai|repos assist)/i.test(author)) {
     return {
-      kind: "ai",
-      label: "RepOS Assist",
-      icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8 10.1 9 5 10.9l5.1 1.9L12 18l1.9-5.2 5.1-1.9L13.9 9 12 3.8Z"></path><path d="M5.7 15.4 5 17.3l-1.9.7 1.9.7.7 1.9.7-1.9 1.9-.7-1.9-.7-.7-1.9Z"></path></svg>'
+      kind: "system",
+      label: "System",
+      icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 9.2 16.7 19 7"></path><path d="M4.8 5.5h10.8"></path><path d="M4.8 18.5h14.4"></path></svg>'
     };
   }
   if (/assign|reassign|routed|owner/.test(text)) {
@@ -4107,7 +4089,6 @@ function seedNotifications(sourceTickets) {
     { category: "mention", ticket: ticketById("ISP-28491"), title: "Mentioned in internal note", description: "CS1 Nick mentioned you for a repeat customer context check.", hours: 7.3, read: false },
     { category: "receipts", ticket: ticketById("ISP-28489"), title: "Receipt needs review", description: "A Lowe's receipt was uploaded and needs verification.", hours: 10.4, read: true },
     { category: "receipts", ticket: ticketById("ISP-28490"), title: "Warranty action needed", description: "Receipt is on file, but warranty registration still needs action.", hours: 17.7, read: false },
-    { category: "assist", ticket: ticketById("ISP-28501"), title: "RepOS Assist draft ready", description: "A troubleshooting reply draft is ready for rep review.", hours: 22.1, read: true },
     { category: "assignment", ticket: null, title: "Assignment eligibility changed", description: "Admin updated your assignment pool eligibility.", hours: 31.5, read: true }
   ];
 
@@ -5047,7 +5028,7 @@ function purchaseSourceFor(ticket, accountOverride = null, receiptOverride) {
 function detectedPurchaseSourceReview(ticket) {
   const source = ticket?.detectedPurchaseSource;
   if (!isVerifiedPurchaseSource(source)) return "";
-  return `Detected by AI: ${source} / Needs rep review`;
+  return `Needs rep review: ${source}`;
 }
 
 function purchaseSourceDisplayFor(ticket) {
@@ -5270,7 +5251,7 @@ function warrantyMatchesTicket(warranty, ticket) {
   return recordMatchesTicket(warranty, ticket);
 }
 
-function setTicketPurchaseSource(ticket, source, actor = "RepOS Assist", manual = false, options = {}) {
+function setTicketPurchaseSource(ticket, source, actor = "System", manual = false, options = {}) {
   const nextSource = workspaceConfig.purchaseSources.includes(source) ? source : "Unknown";
   if (!ticket) return false;
   if (!manual) {
@@ -5293,7 +5274,7 @@ function setTicketPurchaseSource(ticket, source, actor = "RepOS Assist", manual 
   return true;
 }
 
-function recordAiPurchaseSourceDetection(ticket, source, actor = "RepOS Assist", options = {}) {
+function recordAiPurchaseSourceDetection(ticket, source, actor = "System", options = {}) {
   if (!ticket) return false;
   const nextSource = workspaceConfig.purchaseSources.includes(source) ? source : "Unknown";
   const timestamp = options.timestamp || new Date().toISOString();
@@ -5340,7 +5321,7 @@ function saveTicketReceiptToAccount(ticket) {
   const added = addReceiptToAccount(account, ticket, `Saved from ${ticketDisplayId(ticket)} by ${uploadedBy}`, { uploadedBy });
   if (!isVerifiedPurchaseSource(ticket.purchaseSource)) {
     const detected = detectPurchaseSource(ticket);
-    if (detected !== "Unknown") setTicketPurchaseSource(ticket, detected, "RepOS Assist", false, { fromAttachment: true });
+    if (detected !== "Unknown") setTicketPurchaseSource(ticket, detected, "System", false, { fromAttachment: true });
   }
   ticket.conversation.push({
     type: "timeline",
@@ -5392,8 +5373,8 @@ function saveUploadedReceiptToAccount(ticket, file) {
   });
   if (!isVerifiedPurchaseSource(ticket.purchaseSource)) {
     const detected = detectPurchaseSource(ticket);
-    if (detected !== "Unknown") setTicketPurchaseSource(ticket, detected, "RepOS Assist", false, { fromAttachment: true });
-    else recordAiPurchaseSourceDetection(ticket, "Unknown", "RepOS Assist", { timestamp: uploadedAt, fromAttachment: true });
+    if (detected !== "Unknown") setTicketPurchaseSource(ticket, detected, "System", false, { fromAttachment: true });
+    else recordAiPurchaseSourceDetection(ticket, "Unknown", "System", { timestamp: uploadedAt, fromAttachment: true });
   }
   persistCustomerAccounts();
   persistTickets();
@@ -5519,23 +5500,23 @@ function applyCustomerAccountToTicket(ticket) {
   let changed = false;
   const receipt = receiptRecordFor(ticket);
   const warranty = warrantyRecordFor(ticket);
-  if (receipt && !ticket.receipt && ticket.receiptReviewStatus !== "Detected by AI / Needs rep review") {
-    ticket.receiptReviewStatus = "Detected by AI / Needs rep review";
-    if (!ticket.conversation.some((message) => message.body === "RepOS Assist detected receipt already on file for this customer account. Needs rep review.")) ticket.conversation.push({
+  if (receipt && !ticket.receipt && ticket.receiptReviewStatus !== "Needs rep review") {
+    ticket.receiptReviewStatus = "Needs rep review";
+    if (!ticket.conversation.some((message) => /detected receipt already on file for this customer account/i.test(message.body))) ticket.conversation.push({
       type: "timeline",
-      author: "RepOS Assist",
+      author: "System",
       timestamp: new Date().toISOString(),
-      body: "RepOS Assist detected receipt already on file for this customer account. Needs rep review."
+      body: "System detected receipt already on file for this customer account. Needs rep review."
     });
     changed = true;
   }
-  if (warranty && ticket.warranty !== "Registered" && ticket.warrantyReviewStatus !== "Detected by AI / Needs rep review") {
-    ticket.warrantyReviewStatus = "Detected by AI / Needs rep review";
-    if (!ticket.conversation.some((message) => message.body === "RepOS Assist detected possible registered warranty on this customer account. Needs rep review.")) ticket.conversation.push({
+  if (warranty && ticket.warranty !== "Registered" && ticket.warrantyReviewStatus !== "Needs rep review") {
+    ticket.warrantyReviewStatus = "Needs rep review";
+    if (!ticket.conversation.some((message) => /detected possible registered warranty on this customer account/i.test(message.body))) ticket.conversation.push({
       type: "timeline",
-      author: "RepOS Assist",
+      author: "System",
       timestamp: new Date().toISOString(),
-      body: "RepOS Assist detected possible registered warranty on this customer account. Needs rep review."
+      body: "System detected possible registered warranty on this customer account. Needs rep review."
     });
     changed = true;
   }
@@ -5546,11 +5527,11 @@ function applyCustomerAccountToTicket(ticket) {
       ticket.purchaseSourceMode = "ai-detected";
       changed = true;
     }
-    if (!ticket.conversation.some((message) => message.body === `RepOS Assist detected possible purchase source from saved customer account: ${account.purchaseSource}. Needs rep review.`)) ticket.conversation.push({
+    if (!ticket.conversation.some((message) => /detected possible purchase source from saved customer account/i.test(message.body) && message.body.includes(account.purchaseSource))) ticket.conversation.push({
       type: "timeline",
-      author: "RepOS Assist",
+      author: "System",
       timestamp: new Date().toISOString(),
-      body: `RepOS Assist detected possible purchase source from saved customer account: ${account.purchaseSource}. Needs rep review.`
+      body: `System detected possible purchase source from saved customer account: ${account.purchaseSource}. Needs rep review.`
     });
     changed = true;
   }
@@ -5571,7 +5552,6 @@ function render({ preserveQueueList = uiState.activeScreen !== "queue", suppress
   renderMetrics();
   updateProfileButton();
   renderNotifications();
-  renderAssistDrawer();
 
   const shouldRenderQueueList = uiState.activeScreen === "queue" || !el.ticketList?.innerHTML.trim();
   const visibleTickets = shouldRenderQueueList || !preserveQueueList || !cachedVisibleTickets.length
@@ -5597,7 +5577,6 @@ function render({ preserveQueueList = uiState.activeScreen !== "queue", suppress
   renderAdminPanel();
   renderKnowledgeVaultPanel();
   renderDashboardPanel();
-  renderAssistDrawer();
   applyUiState();
   animateViewTransition();
   refreshCustomSelects();
@@ -5759,6 +5738,7 @@ function renderQueuePreview(ticket) {
 
 function openProfileModal(tab = activeProfileTab) {
   activeProfileTab = typeof tab === "string" ? tab : activeProfileTab || "account";
+  if (!["account", "preferences", "signature", "notifications", "workspace"].includes(activeProfileTab)) activeProfileTab = "account";
   renderProfileModal();
   el.profileModal.hidden = false;
   el.profileModal.removeAttribute("hidden");
@@ -5802,7 +5782,6 @@ function renderProfileModal() {
         ${profileTabButton("preferences", "Preferences")}
         ${profileTabButton("signature", "Signature")}
         ${profileTabButton("notifications", "Notifications")}
-        ${profileTabButton("assist", "Assist")}
         ${profileTabButton("workspace", "Workspace")}
       </div>
       <div class="profile-tab-panels">
@@ -5810,7 +5789,6 @@ function renderProfileModal() {
         ${renderPreferencesTab()}
         ${renderSignatureTab()}
         ${renderNotificationsTab()}
-        ${renderAssistSettingsTab()}
         ${renderWorkspaceTab(workload)}
       </div>
       <div class="profile-actions">
@@ -5954,31 +5932,10 @@ function renderNotificationsTab() {
         ${profileCheckbox("notifySlaOverdue", "SLA and overdue tickets", profile.notifySlaOverdue ?? profile.notifyOverdue)}
         ${profileCheckbox("notifyMentioned", "Mentions in internal notes", profile.notifyMentioned)}
         ${profileCheckbox("notifyReceiptsWarranty", "Receipts and warranty", profile.notifyReceiptsWarranty)}
-        ${profileCheckbox("notifyAssist", "RepOS Assist drafts", profile.notifyAssist)}
         ${profileCheckbox("notifyAssignmentEligibility", "Assignment eligibility changes", profile.notifyAssignmentEligibility)}
         ${profileCheckbox("quietHoursEnabled", "Quiet hours enabled", profile.quietHoursEnabled)}
         ${profileInput("quietHoursStart", "Quiet hours start", profile.quietHoursStart, "time")}
         ${profileInput("quietHoursEnd", "Quiet hours end", profile.quietHoursEnd, "time")}
-      </div>
-    </section>
-  `;
-}
-
-function renderAssistSettingsTab() {
-  return `
-    <section class="profile-tab-panel" data-profile-panel="assist" role="tabpanel">
-      <div class="profile-section-title">
-        <h3>RepOS Assist</h3>
-        <p>Control how RepOS Assist helps with ticket context and draft replies.</p>
-      </div>
-      <div class="profile-grid">
-        ${profileCheckbox("assistEnabled", "Enable RepOS Assist", profile.assistEnabled)}
-        ${profileCheckbox("assistTicketContextEnabled", "Ticket context enabled", profile.assistTicketContextEnabled)}
-        ${profileCheckbox("assistAllowDraftInsertion", "Allow draft insertion", profile.assistAllowDraftInsertion)}
-        ${profileCheckbox("assistRequireReview", "Require rep review before sending", profile.assistRequireReview)}
-      </div>
-      <div class="assist-settings-note full-span">
-        RepOS Assist uses ticket context and approved workspace sources. Connected document extraction can be added when the data layer is ready.
       </div>
     </section>
   `;
@@ -6000,9 +5957,9 @@ function renderWorkspaceTab(workload) {
         ${workspaceFact("Queue", workspaceConfig.defaultQueue)}
         ${workspaceFact("Role", profile.role)}
         ${workspaceFact("Assignment eligible", currentAssignmentUser()?.assignmentEligible ? "Yes" : "No")}
-        ${workspaceFact("AI assignment workload count", workload)}
+        ${workspaceFact("Assignment workload count", workload)}
       </div>
-      ${currentUserIsAdmin() ? `<div class="profile-admin-callout"><span class="admin-badge">Admin</span><p>CS14 Robert can manage reps who are eligible for RepOS Assist fair assignment.</p><div class="profile-admin-actions">${adminControls}<button class="secondary-button danger-soft" id="resetWorkspaceDataButton" type="button">Reset workspace data</button></div></div>` : ""}
+      ${currentUserIsAdmin() ? `<div class="profile-admin-callout"><span class="admin-badge">Admin</span><p>CS14 Robert can manage reps who are eligible for ticket assignment.</p><div class="profile-admin-actions">${adminControls}<button class="secondary-button danger-soft" id="resetWorkspaceDataButton" type="button">Reset workspace data</button></div></div>` : ""}
     </section>
   `;
 }
@@ -6228,7 +6185,6 @@ function shouldCreateNotification(category) {
   if (category === "sla") return Boolean(profile.notifySlaOverdue ?? profile.notifyOverdue);
   if (category === "mention") return Boolean(profile.notifyMentioned);
   if (category === "receipts") return Boolean(profile.notifyReceiptsWarranty);
-  if (category === "assist") return Boolean(profile.notifyAssist);
   return true;
 }
 
@@ -6570,17 +6526,12 @@ function handleProfileSave(event) {
     notifyOverdue: form.has("notifySlaOverdue"),
     notifyMentioned: form.has("notifyMentioned"),
     notifyReceiptsWarranty: form.has("notifyReceiptsWarranty"),
-    notifyAssist: form.has("notifyAssist"),
     notifyAssignmentEligibility: form.has("notifyAssignmentEligibility"),
     notifyAiAssigned: form.has("notifyAssigned"),
     notificationStyle: form.has("emailNotifications") ? (form.has("inAppNotifications") ? "Both" : "Email") : "In-app only",
     quietHoursEnabled: form.has("quietHoursEnabled"),
     quietHoursStart: stringFormValue(form, "quietHoursStart"),
-    quietHoursEnd: stringFormValue(form, "quietHoursEnd"),
-    assistEnabled: form.has("assistEnabled"),
-    assistTicketContextEnabled: form.has("assistTicketContextEnabled"),
-    assistAllowDraftInsertion: form.has("assistAllowDraftInsertion"),
-    assistRequireReview: form.has("assistRequireReview")
+    quietHoursEnd: stringFormValue(form, "quietHoursEnd")
   };
   profile = normalizeProfile(profile);
   persistProfile();
@@ -6695,18 +6646,6 @@ function emailCountLabel(ticket) {
 
 function threadCountDebugLabel(ticket) {
   return `emailCount: ${emailMessageCount(ticket)}; visibleEmailMessages: ${visibleEmailMessages(ticket).length}; totalThreadItems: ${visibleThreadMessages(ticket).length}`;
-}
-
-function renderAiAssignmentCard(ticket) {
-  return `
-    <section class="context-card ai-assignment-card">
-      <div class="section-title">
-        <p class="eyebrow">AI Assignment</p>
-        <h3>${escapeHtml(ticket.aiAssignment?.assignedTo || ticket.assignee)}</h3>
-      </div>
-      <p>${escapeHtml(ticket.aiAssignment?.reason || "Imported or manually assigned ticket. RepOS checks subject mentions and customer history before randomly assigning unowned incoming email.")}</p>
-    </section>
-  `;
 }
 
 function renderNav() {
@@ -8215,7 +8154,7 @@ function renderAdminPanel() {
       <div>
         <p class="eyebrow">Admin</p>
         <h1>Workspace admin</h1>
-        <p>Admin-only tools for RepOS Assist, source files, macros, assignment, reps, and workspace settings.</p>
+        <p>Admin-only tools for source files, macros, assignment, reps, and workspace settings.</p>
       </div>
       <button class="secondary-button" id="backFromAdminButton" type="button">Back to queue</button>
     </div>
@@ -8225,8 +8164,7 @@ function renderAdminPanel() {
         <h3>Workspace tools</h3>
       </div>
       <div class="admin-tool-grid">
-        ${renderAdminToolCard("assist", "RepOS Assist", "Admin access", "Open the global support copilot.")}
-        ${renderAdminToolCard("knowledge", "Knowledge Vault", "Source files", "Manage approved RepOS Assist sources.")}
+        ${renderAdminToolCard("knowledge", "Knowledge Vault", "Source files", "Manage approved workspace sources.")}
         ${renderAdminToolCard("macros", "Macros", "Canned replies", "Review the macro library and open a ticket context.")}
         ${renderAdminToolCard("assignment", "Assignment Pool / Reps", "Workload", "Manage eligible reps and reassignment.")}
         ${renderAdminToolCard("workspace", "Workspace Settings", "Profile", "Open workspace settings and admin controls.")}
@@ -8281,7 +8219,6 @@ function renderAdminPanel() {
   el.adminPanel.querySelector("#adminResetWorkspaceButton").addEventListener("click", resetDemoData);
   el.adminPanel.querySelectorAll("[data-admin-tool]").forEach((button) => {
     button.addEventListener("click", () => {
-      if (button.dataset.adminTool === "assist") openGlobalAssistDrawer();
       if (button.dataset.adminTool === "knowledge") showKnowledgeVaultScreen();
       if (button.dataset.adminTool === "macros") showMacroLibrary();
       if (button.dataset.adminTool === "assignment") el.adminPanel.querySelector("#assignmentPoolSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -8312,14 +8249,14 @@ function renderKnowledgeVaultPanel() {
       <div>
         <p class="eyebrow">RepOS Knowledge Vault</p>
         <h1>Source file library</h1>
-        <p>Upload manuals, policies, macros, troubleshooting guides, and other source files. Approved files become the source library for RepOS Assist.</p>
+        <p>Upload manuals, policies, macros, troubleshooting guides, and other source files for the workspace source library.</p>
       </div>
       <button class="secondary-button" id="backFromKnowledgeButton" type="button">Back to queue</button>
     </div>
     <section class="admin-card knowledge-source-note">
       <strong>${approvedCount ? "Using approved RepOS Knowledge Vault sources." : "No approved RepOS Knowledge Vault sources available yet."}</strong>
-      <p>${approvedCount ? approvedSources.map((doc) => `Source: ${escapeHtml(doc.fileName)}`).join("<br>") : "Approve an uploaded source before RepOS Assist uses it."}</p>
-      <p>Approved source details stay available in this workspace and help reps see which materials are cleared for RepOS Assist.</p>
+      <p>${approvedCount ? approvedSources.map((doc) => `Source: ${escapeHtml(doc.fileName)}`).join("<br>") : "Approve an uploaded source before using it as support reference material."}</p>
+      <p>Approved source details stay available in this workspace and help reps see which materials are cleared for support use.</p>
     </section>
     <section class="admin-card knowledge-controls-card">
       <div class="knowledge-controls">
@@ -8435,7 +8372,7 @@ function renderKnowledgeUploadApprovalPrompt() {
     <section class="admin-card knowledge-approval-prompt">
       <div>
         <p class="eyebrow">Upload complete</p>
-        <h3>Approve this file for RepOS Assist?</h3>
+        <h3>Approve this file as a workspace source?</h3>
         <p>${escapeHtml(names.join(", "))}</p>
       </div>
       <div class="knowledge-approval-actions">
@@ -8450,7 +8387,7 @@ function renderKnowledgeEmptyState() {
   return `
     <div class="empty-state polished knowledge-empty-state">
       <strong>No knowledge files uploaded yet.</strong>
-      <p>Upload manuals, policies, macros, troubleshooting guides, or other source files to power RepOS Assist.</p>
+      <p>Upload manuals, policies, macros, troubleshooting guides, or other source files for this workspace.</p>
     </div>
   `;
 }
@@ -8490,7 +8427,7 @@ function renderKnowledgeFileRow(doc) {
       <td>${escapeHtml(doc.uploadedBy)}</td>
       <td>${escapeHtml(doc.category)}</td>
       <td>${currentUserIsAdmin() ? `<select data-status-knowledge="${escapeHtml(doc.id)}" aria-label="Status for ${escapeHtml(doc.fileName)}">${knowledgeStatuses.map((status) => `<option value="${escapeHtml(status)}"${doc.status === status ? " selected" : ""}>${escapeHtml(status)}</option>`).join("")}</select>` : escapeHtml(doc.status)}</td>
-      <td><label class="inline-approval"><input data-approve-knowledge="${escapeHtml(doc.id)}" type="checkbox" ${doc.approvedForAi ? "checked" : ""} ${currentUserIsAdmin() ? "" : "disabled"} aria-label="Approved for RepOS Assist"><span>${doc.approvedForAi ? "Yes" : "No"}</span></label></td>
+      <td><label class="inline-approval"><input data-approve-knowledge="${escapeHtml(doc.id)}" type="checkbox" ${doc.approvedForAi ? "checked" : ""} ${currentUserIsAdmin() ? "" : "disabled"} aria-label="Approved workspace source"><span>${doc.approvedForAi ? "Yes" : "No"}</span></label></td>
       <td><input data-internal-knowledge="${escapeHtml(doc.id)}" type="checkbox" ${doc.internalOnly ? "checked" : ""} ${currentUserIsAdmin() ? "" : "disabled"} aria-label="Internal only"></td>
       <td><input data-customer-knowledge="${escapeHtml(doc.id)}" type="checkbox" ${doc.customerFacingAllowed ? "checked" : ""} ${currentUserIsAdmin() ? "" : "disabled"} aria-label="Customer-facing allowed"></td>
       <td>
@@ -8814,28 +8751,26 @@ function updateKnowledgeBoolean(docId, field, value) {
   const doc = knowledgeDocs.find((item) => item.id === docId);
   if (!doc || !["approvedForAi", "internalOnly", "customerFacingAllowed"].includes(field)) return;
   if (field === "approvedForAi") {
-    setKnowledgeAssistApproval(doc, value);
+    setKnowledgeSourceApproval(doc, value);
   } else {
     doc[field] = value;
   }
   doc.lastReviewedDate = toDateInput(new Date().toISOString());
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
-  renderAssistDrawer();
 }
 
 function approveKnowledgeFile(docId) {
   if (!currentUserIsAdmin()) return;
   const doc = knowledgeDocs.find((item) => item.id === docId && !item.archived);
   if (!doc) return;
-  setKnowledgeAssistApproval(doc, true);
+  setKnowledgeSourceApproval(doc, true);
   doc.lastReviewedDate = toDateInput(new Date().toISOString());
   uploadApprovalPrompt.docIds = uploadApprovalPrompt.docIds.filter((id) => id !== docId);
   uploadApprovalPrompt.fileNames = uploadApprovalPrompt.fileNames.filter((name) => name !== doc.fileName);
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
-  renderAssistDrawer();
-  showToast(`${doc.fileName} approved for RepOS Assist.`);
+  showToast(`${doc.fileName} approved as a workspace source.`);
 }
 
 function approveUploadedKnowledgeFiles() {
@@ -8844,14 +8779,13 @@ function approveUploadedKnowledgeFiles() {
   activeIds.forEach((id) => {
     const doc = knowledgeDocs.find((item) => item.id === id);
     if (!doc) return;
-    setKnowledgeAssistApproval(doc, true);
+    setKnowledgeSourceApproval(doc, true);
     doc.lastReviewedDate = toDateInput(new Date().toISOString());
   });
   clearUploadApprovalPrompt(false);
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
-  renderAssistDrawer();
-  showToast(`${activeIds.length} file${activeIds.length === 1 ? "" : "s"} approved for RepOS Assist.`);
+  showToast(`${activeIds.length} file${activeIds.length === 1 ? "" : "s"} approved as workspace sources.`);
 }
 
 function clearUploadApprovalPrompt(shouldRender = true) {
@@ -8864,10 +8798,9 @@ function updateKnowledgeField(docId, field, value) {
   const doc = knowledgeDocs.find((item) => item.id === docId);
   if (!doc || !["status", "owner", "title", "category", "description", "lastReviewedDate"].includes(field)) return;
   doc[field] = value;
-  if (field === "status") setKnowledgeAssistApproval(doc, value === "Approved");
+  if (field === "status") setKnowledgeSourceApproval(doc, value === "Approved");
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
-  renderAssistDrawer();
 }
 
 function removeKnowledgeFile(docId) {
@@ -8875,14 +8808,13 @@ function removeKnowledgeFile(docId) {
   const doc = knowledgeDocs.find((item) => item.id === docId);
   if (!doc) return;
   doc.archived = true;
-  setKnowledgeAssistApproval(doc, false);
+  setKnowledgeSourceApproval(doc, false);
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
-  renderAssistDrawer();
   showToast("Knowledge file removed from the active vault.");
 }
 
-function setKnowledgeAssistApproval(doc, approved) {
+function setKnowledgeSourceApproval(doc, approved) {
   doc.approvedForAi = Boolean(approved);
   doc.status = approved ? "Approved" : doc.status === "Approved" ? "Needs Review" : doc.status;
 }
@@ -8908,7 +8840,7 @@ function renderKnowledgeFileModal(doc) {
         <div>
           <p class="eyebrow">RepOS Knowledge Vault file</p>
           <h2>${escapeHtml(doc.fileName)}</h2>
-          <p>RepOS stores source details here. Connected file storage and text extraction are required before Assist can read document contents directly.</p>
+          <p>RepOS stores source details here for workspace reference and review.</p>
         </div>
         <button class="icon-button" id="closeKnowledgeFileButton" aria-label="Close" type="button">x</button>
       </div>
@@ -8923,7 +8855,7 @@ function renderKnowledgeFileModal(doc) {
         <label><span>Last reviewed date</span><input name="lastReviewedDate" type="date" value="${escapeHtml(doc.lastReviewedDate || "")}" ${disabled}></label>
         <label><span>File details</span><input value="${escapeHtml(`${doc.fileType.toUpperCase()} / ${formatFileSize(doc.size)}`)}" disabled></label>
         <label class="full-span"><span>Description</span><textarea name="description" rows="4" ${disabled}>${escapeHtml(doc.description || "")}</textarea></label>
-        <label class="profile-toggle"><input name="approvedForAi" type="checkbox" ${doc.approvedForAi ? "checked" : ""} ${disabled}><span>Approved for RepOS Assist</span></label>
+        <label class="profile-toggle"><input name="approvedForAi" type="checkbox" ${doc.approvedForAi ? "checked" : ""} ${disabled}><span>Approved workspace source</span></label>
         <label class="profile-toggle"><input name="internalOnly" type="checkbox" ${doc.internalOnly ? "checked" : ""} ${disabled}><span>Internal only</span></label>
         <label class="profile-toggle"><input name="customerFacingAllowed" type="checkbox" ${doc.customerFacingAllowed ? "checked" : ""} ${disabled}><span>Customer-facing allowed</span></label>
       </div>
@@ -8960,13 +8892,12 @@ function saveKnowledgeFileMetadata(event) {
   doc.owner = String(form.get("owner") || doc.owner).trim() || doc.owner;
   doc.status = String(form.get("status") || doc.status);
   doc.lastReviewedDate = String(form.get("lastReviewedDate") || "");
-  setKnowledgeAssistApproval(doc, form.has("approvedForAi") || doc.status === "Approved");
+  setKnowledgeSourceApproval(doc, form.has("approvedForAi") || doc.status === "Approved");
   doc.internalOnly = form.has("internalOnly");
   doc.customerFacingAllowed = form.has("customerFacingAllowed");
   persistKnowledgeDocs();
   closeKnowledgeFileModal();
   renderKnowledgeVaultPanel();
-  renderAssistDrawer();
   showToast("Knowledge file metadata saved.");
 }
 
@@ -9544,7 +9475,6 @@ function renderContext(ticket) {
   }
 
   el.contextPanel.innerHTML = `
-    ${renderAssistTicketCard(ticket)}
     ${renderCustomerSnapshot(ticket)}
     ${renderDailyMacroSection(ticket)}
     ${renderProductLinkSection(ticket)}
@@ -9599,7 +9529,6 @@ function renderContext(ticket) {
       openUnregisterWarrantyConfirmModal(ticket.id, warranty.id);
     }
   });
-  el.contextPanel.querySelector("#openTicketAssistButton")?.addEventListener("click", () => openTicketAssistDrawer(ticket.id));
   el.contextPanel.querySelector("#dailyMacroSelect")?.addEventListener("change", updateDailyMacroPreview);
   el.contextPanel.querySelector("#insertDailyMacroButton")?.addEventListener("click", () => {
     const macroId = el.contextPanel.querySelector("#dailyMacroSelect")?.value || "";
@@ -9615,21 +9544,6 @@ function renderContext(ticket) {
     button.addEventListener("click", () => copyReviewLink(button.dataset.reviewLinkId));
   });
   el.contextPanel.querySelector("#openSnapshotHistoryButton")?.addEventListener("click", () => openCustomerHistory(ticket.id));
-}
-
-function renderAssistTicketCard(ticket) {
-  if (!currentUserIsAdmin()) return "";
-  return `
-    <section class="context-card assist-ticket-card compact-context-card">
-      <div class="section-title row-title">
-        <div>
-          <p class="eyebrow">RepOS Assist</p>
-          <h3>Ticket copilot</h3>
-        </div>
-        <button class="ghost-button compact-action-button" id="openTicketAssistButton" type="button">Use RepOS Assist</button>
-      </div>
-    </section>
-  `;
 }
 
 function nextBestStepFor(ticket) {
@@ -9859,7 +9773,7 @@ function renderOrderWarranty(ticket) {
           <select id="ticketPurchaseSourceSelect" aria-label="Purchase source">
             ${workspaceConfig.purchaseSources.map((source) => `<option value="${escapeHtml(source)}"${purchaseSourceFor(ticket) === source ? " selected" : ""}>${escapeHtml(source)}</option>`).join("")}
           </select>
-          ${sourceReview ? `<small class="ai-review-note">${escapeHtml(sourceReview)}</small>` : ""}
+          ${sourceReview ? `<small class="source-review-note">${escapeHtml(sourceReview)}</small>` : ""}
         </dd></div>
         <div><dt>Receipt</dt><dd>${escapeHtml(receiptStatusFor(ticket))}</dd></div>
         <div><dt>Warranty</dt><dd>${escapeHtml(warrantyStatusFor(ticket))}</dd></div>
@@ -10664,7 +10578,6 @@ function applyUiState() {
   el.knowledgeVaultNavButton?.classList.toggle("active", uiState.activeScreen === "knowledge");
   el.dashboardNavButton.classList.toggle("active", !profileSettingsOpen && uiState.activeScreen === "dashboard");
   el.ticketsNavButton?.classList.toggle("active", !profileSettingsOpen && (uiState.activeScreen === "queue" || uiState.activeScreen === "detail"));
-  el.tessarioAssistButton?.classList.toggle("active", assistState.isOpen);
   el.macroNavButton?.classList.remove("active");
   if (!sidebarMotioning) syncSidebarActiveIndicator();
   updateQuickControlState();
@@ -10739,449 +10652,8 @@ function animateViewTransition() {
   }, cssDurationMs("--motion-normal", 200) + 40);
 }
 
-function openGlobalAssistDrawer(prompt = "") {
-  openAssistDrawer({ mode: "global", prompt });
-}
-
-function openTicketAssistDrawer(ticketId, prompt = "") {
-  openAssistDrawer({ mode: "ticket", ticketId, prompt });
-}
-
-function openAssistDrawer({ mode = "global", ticketId = "", prompt = "" } = {}) {
-  if (!currentUserIsAdmin()) {
-    showToast("RepOS Assist is available to admins only.");
-    return;
-  }
-  if (!profile.assistEnabled) {
-    showToast("RepOS Assist is disabled in settings.");
-    return;
-  }
-  const nextMode = mode === "ticket" && ticketId ? "ticket" : "global";
-  const nextTicketId = nextMode === "ticket" ? ticketId : "";
-  assistState.isOpen = true;
-  assistState.mode = nextMode;
-  assistState.openedFromTicketId = nextTicketId;
-  seedAssistChatIfEmpty();
-  renderAssistDrawer();
-  if (prompt) {
-    askAssist(prompt);
-  } else {
-    el.assistDrawer.querySelector("#assistInput")?.focus();
-  }
-}
-
-function closeAssistDrawer() {
-  assistState.isOpen = false;
-  renderAssistDrawer();
-}
-
-function renderAssistDrawer() {
-  if (!el.assistDrawer) return;
-  const ticket = assistTicket();
-  const disabled = !profile.assistEnabled;
-  const isTicketMode = assistState.mode === "ticket" && Boolean(ticket);
-  const chat = currentAssistChat();
-  const suggestions = isTicketMode
-    ? ["Summarize ticket", "Next troubleshooting step", "Draft reply"]
-    : ["What is the RO500?", "Troubleshoot low flow", "Draft a customer response"];
-  const sources = chat.lastSources.length ? chat.lastSources : assistSourcesFor("", ticket);
-  el.assistDrawer.setAttribute("aria-hidden", String(!assistState.isOpen));
-  el.assistDrawer.classList.toggle("open", assistState.isOpen);
-  document.body.classList.toggle("assist-open", assistState.isOpen);
-  el.assistDrawer.innerHTML = `
-    <div class="assist-header">
-      <div>
-        <h2>RepOS Assist</h2>
-        <span>${isTicketMode ? `Using ${escapeHtml(ticketDisplayId(ticket))} context` : "General assistant"}</span>
-      </div>
-      <button class="icon-button" id="closeAssistButton" aria-label="Close RepOS Assist" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 5 6.4l5.6 5.6L5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6 6.4 5Z"/></svg>
-      </button>
-    </div>
-    <div class="assist-messages" id="assistMessages" aria-live="polite">
-      ${chat.messages.map((message) => `
-        <article class="assist-message ${message.role}">
-          <strong>${message.role === "user" ? "You" : "RepOS Assist"}</strong>
-          <p>${escapeHtml(message.body)}</p>
-        </article>
-      `).join("")}
-    </div>
-    <details class="assist-sources">
-      <summary>Sources</summary>
-      <div>
-        ${sources.length
-          ? sources.map((source) => `<p><strong>Source: ${escapeHtml(source.name)}</strong><span>${escapeHtml(source.status)}</span></p>`).join("")
-          : `<p><strong>No approved RepOS Knowledge Vault sources available yet.</strong><span>Approve workspace sources in the Knowledge Vault before Assist uses them.</span></p>`}
-      </div>
-    </details>
-    <div class="assist-actions">
-      <button class="secondary-button" id="copyAssistResponseButton" type="button" ${chat.lastResponse ? "" : "disabled"}>Copy response</button>
-      ${isTicketMode ? `<button class="secondary-button" id="insertAssistDraftButton" type="button" ${chat.lastResponse && profile.assistAllowDraftInsertion ? "" : "disabled"}>Insert draft</button>` : ""}
-      <button class="ghost-button" id="clearAssistChatButton" type="button">Clear chat</button>
-    </div>
-    <form class="assist-input-row" id="assistForm">
-      <details class="assist-suggestion-menu">
-        <summary>Suggestions</summary>
-        <div class="assist-suggestions" aria-label="Suggested RepOS Assist prompts">
-          ${suggestions.map((item) => `<button data-assist-suggestion="${escapeHtml(item)}" type="button">${escapeHtml(item)}</button>`).join("")}
-        </div>
-      </details>
-      <div class="assist-composer">
-        <textarea id="assistInput" name="assistInput" rows="1" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" ${disabled ? "disabled" : ""} placeholder="${disabled ? "RepOS Assist is disabled" : "Message RepOS Assist"}"></textarea>
-        <button class="primary-button" type="submit" ${disabled ? "disabled" : ""}>Send</button>
-      </div>
-    </form>
-    <p class="assist-guardrail">Verify warranty, pricing, stock, compatibility, and policy before sending to customers.</p>
-  `;
-  el.assistDrawer.querySelector("#assistForm")?.addEventListener("submit", handleAssistSubmit);
-  el.assistDrawer.querySelector("#assistInput")?.addEventListener("keydown", handleAssistInputKeydown);
-  const messageList = el.assistDrawer.querySelector("#assistMessages");
-  if (messageList) messageList.scrollTop = messageList.scrollHeight;
-}
-
-function assistKnowledgeSourceNote() {
-  const approvedSources = approvedKnowledgeSources();
-  const masterSource = approvedSources.find(isMasterSupportSource);
-  if (masterSource) return "Knowledge source available: iSpring Master Support Document";
-  return approvedSources.length
-    ? `Knowledge source available: ${approvedSources.slice(0, 3).map((doc) => doc.fileName).join(", ")}`
-    : "No approved RepOS Knowledge Vault sources available yet.";
-}
-
-function createEmptyAssistChat() {
-  return {
-    messages: [],
-    lastResponse: "",
-    lastSources: []
-  };
-}
-
-function currentAssistChat() {
-  if (assistState.mode !== "ticket") return assistChats.global;
-  const key = assistState.openedFromTicketId || "unknown";
-  if (!assistChats.tickets[key]) assistChats.tickets[key] = createEmptyAssistChat();
-  return assistChats.tickets[key];
-}
-
-function seedAssistChatIfEmpty() {
-  const chat = currentAssistChat();
-  if (chat.messages.length) return;
-  chat.messages.push({
-    role: "assistant",
-    body: assistState.mode === "ticket"
-      ? "I can help with this ticket's details, conversation, customer context, model, notes, and approved workspace sources. What should we work through first?"
-      : "Hi, I am RepOS Assist. Ask a support question, search approved workspace sources, or paste text you want help with."
-  });
-}
-
-function assistSourcesFor(question, ticket) {
-  const approvedSources = approvedKnowledgeSources();
-  if (!approvedSources.length) return [];
-  const source = preferredKnowledgeSource(question, ticket) || approvedSources[0];
-  if (!source) return [];
-  const label = source.fileName;
-  return [{
-    name: label,
-    status: `${source.status} RepOS Knowledge Vault source`
-  }];
-}
-
-function handleAssistDrawerClick(event) {
-  const target = event.target.closest("button");
-  if (!target) return;
-  if (target.id === "closeAssistButton") closeAssistDrawer();
-  if (target.id === "clearAssistChatButton") clearAssistChat();
-  if (target.id === "clearAssistContextButton") clearAssistContext();
-  if (target.id === "copyAssistResponseButton") copyAssistResponse();
-  if (target.id === "insertAssistDraftButton") insertAssistDraft();
-  if (target.dataset.assistSuggestion) askAssist(target.dataset.assistSuggestion);
-}
-
-function handleAssistSubmit(event) {
-  event.preventDefault();
-  const input = event.currentTarget.elements.assistInput;
-  const question = input.value.trim();
-  if (!question) return;
-  input.value = "";
-  askAssist(question);
-}
-
-function askAssist(question) {
-  const chat = currentAssistChat();
-  chat.messages.push({ role: "user", body: question });
-  const response = tessarioAiResponse(question, assistTicket(), assistState.mode);
-  chat.messages.push({ role: "assistant", body: response });
-  chat.lastResponse = response;
-  chat.lastSources = assistSourcesFor(question, assistTicket());
-  renderAssistDrawer();
-}
-
-function handleAssistInputKeydown(event) {
-  if (event.key !== "Enter" || event.shiftKey) return;
-  event.preventDefault();
-  event.currentTarget.form?.requestSubmit();
-}
-
-function assistTicket() {
-  if (assistState.mode !== "ticket" || !profile.assistTicketContextEnabled) return null;
-  return tickets.find((ticket) => ticket.id === assistState.openedFromTicketId) || null;
-}
-
-function clearAssistChat() {
-  resetAssistChat();
-  renderAssistDrawer();
-}
-
-function resetAssistChat() {
-  const chat = currentAssistChat();
-  chat.messages = [];
-  chat.lastResponse = "";
-  chat.lastSources = [];
-  seedAssistChatIfEmpty();
-}
-
-function clearAssistContext() {
-  assistState.mode = "global";
-  assistState.openedFromTicketId = "";
-  resetAssistChat();
-  renderAssistDrawer();
-}
-
-function copyAssistResponse() {
-  const { lastResponse } = currentAssistChat();
-  if (!lastResponse) return;
-  navigator.clipboard?.writeText(lastResponse);
-  showToast("RepOS Assist response copied.");
-}
-
-function insertAssistDraft() {
-  const { lastResponse } = currentAssistChat();
-  if (!profile.assistAllowDraftInsertion || !lastResponse) return;
-  const ticket = assistTicket();
-  const editor = document.querySelector("#replyEditor");
-  if (!ticket || !editor) {
-    showToast("Open Ticket Detail to insert a draft.");
-    return;
-  }
-  editor.value = `${editor.value.trim()}${editor.value.trim() ? "\n\n" : ""}${lastResponse}`;
-  ticket.draft = editor.value;
-  persistTickets();
-  addNotification({
-    category: "assist",
-    title: "RepOS Assist draft ready",
-    description: `${ticketDisplayId(ticket)} has a draft inserted and ready for rep review.`,
-    ticketId: ticket.id
-  });
-  showToast(profile.assistRequireReview ? "Draft inserted for rep review." : "Draft inserted.");
-}
-
-function tessarioAiResponse(question, ticket, mode = assistState.mode) {
-  const query = question.toLowerCase();
-  const knowledgeResponse = knowledgeResponseFor(question, ticket);
-  if (knowledgeResponse) return knowledgeResponse;
-  const generalSupportAnswer = generalSupportResponse(question, ticket);
-  if (!ticket && generalSupportAnswer) return withKnowledgeSourceFooter(generalSupportAnswer, question, ticket);
-  if (!ticket) {
-    const asksForSpecificTicket = /this ticket|this case|selected ticket|current customer|customer said|summarize ticket|missing info for this|analyze this/i.test(query);
-    if (mode === "global" && asksForSpecificTicket) return "Open the ticket and click Use RepOS Assist so I can use its conversation, customer, model, and order context.";
-    const answer = query.includes("macro")
-      ? "A good general intake macro asks for the model number, order source, purchase date or receipt, the exact symptom, recent filter changes, photos or a short video, and any lights, beeps, pressure readings, or water-test results."
-      : "I can help like a support copilot: ask me about iSpring models, troubleshooting, what to ask next, reply drafts, tone rewrites, warranty intake, or pasted customer text. If you open a ticket, I can use that ticket's customer and conversation context too.";
-    return withKnowledgeSourceFooter(answer, question, ticket);
-  }
-
-  let answer = "";
-  if (query.includes("summary") || query.includes("summarize")) answer = ticketSummary(ticket);
-  else if (query.includes("what should") || query.includes("ask the customer") || query.includes("customer next")) answer = customerNextQuestionResponse(ticket);
-  else if (query.includes("missing") || query.includes("need from customer") || query.includes("info")) answer = missingInfoResponse(ticket);
-  else if (query.includes("draft") || query.includes("reply")) answer = draftReplyResponse(ticket);
-  else if (query.includes("shorter") || query.includes("warmer") || query.includes("firmer") || query.includes("rewrite")) answer = rewriteResponse(ticket, query);
-  else if (query.includes("macro")) answer = macroSuggestionResponse(ticket);
-  else if (query.includes("model") || query.includes("product")) answer = generalSupportAnswer || `This ticket is about ${ticket.model || "an unspecified model"} in the ${ticket.family || "unknown"} product family.`;
-  else if (query.includes("next") || query.includes("troubleshooting") || query.includes("step")) answer = nextStepResponse(ticket);
-  else if (query.includes("likely") || query.includes("issue") || query.includes("wrong")) answer = likelyIssueResponse(ticket);
-  else if (query.includes("warranty")) answer = "Verify the receipt, purchase date, seller/source, shipping address, and phone number before confirming warranty coverage or replacement options.";
-  else answer = generalSupportAnswer || likelyIssueResponse(ticket);
-  return withKnowledgeSourceFooter(answer, question, ticket);
-}
-
-// MVP note: RepOS Knowledge Vault uploads are metadata-only in this static app.
-// Real PDF/DOCX/TXT content grounding requires backend file storage, text extraction, indexing, and source citation.
-function knowledgeResponseFor(question, ticket) {
-  const approvedSources = approvedKnowledgeSources();
-  const query = question.toLowerCase();
-  if (!approvedSources.length && /knowledge|vault|source|manual|policy|file|approved/i.test(query)) {
-    return "No approved RepOS Knowledge Vault sources available yet.\n\nApprove workspace source files in RepOS Knowledge Vault before using them as support reference material.";
-  }
-  if (!/knowledge|vault|source|manual|policy|file|approved/i.test(query)) return "";
-  const doc = preferredKnowledgeSource(question, ticket);
-  if (!doc) return "";
-  return `I found an approved Knowledge Vault source for this workspace. Treat the source listing as a reference cue and verify policy details before sending customer-facing instructions.\n\nSource: ${doc.fileName}`;
-}
-
 function approvedKnowledgeSources() {
   return knowledgeDocs.filter((doc) => !doc.archived && (doc.approvedForAi || doc.status === "Approved"));
-}
-
-function preferredKnowledgeSource(question, ticket) {
-  const approvedSources = approvedKnowledgeSources();
-  if (!approvedSources.length) return null;
-  return bestKnowledgeDoc(question, ticket) ||
-    approvedSources.find(isMasterSupportSource) ||
-    approvedSources[0];
-}
-
-function isMasterSupportSource(doc) {
-  return /ispring|master support/i.test(`${doc.fileName} ${doc.title}`);
-}
-
-function sourceAwareIntro(doc, ticket) {
-  if (isMasterSupportSource(doc)) {
-    return ticket
-      ? `Based on the approved iSpring support source, RepOS Assist can reference this source for ${ticketDisplayId(ticket)}.`
-      : "Based on the approved iSpring support source, RepOS Assist can reference this workspace source.";
-  }
-  return "Using approved RepOS Knowledge Vault sources.";
-}
-
-function withKnowledgeSourceFooter(answer, question, ticket) {
-  const doc = preferredKnowledgeSource(question, ticket);
-  if (!doc) return answer;
-  return `${answer}\n\nSource: ${doc.fileName}`;
-}
-
-function bestKnowledgeDoc(question, ticket) {
-  const query = question.toLowerCase();
-  const candidates = approvedKnowledgeSources()
-    .map((doc) => ({ doc, score: knowledgeScore(doc, query, ticket) }))
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score);
-  return candidates[0]?.doc || null;
-}
-
-function knowledgeScore(doc, query, ticket) {
-  const text = knowledgeSearchText(doc);
-  let score = 0;
-  const terms = query.split(/\s+/).filter((term) => term.length > 2);
-  terms.forEach((term) => {
-    if (text.includes(term)) score += 1;
-  });
-  if (ticket) {
-    ticket.tags.forEach((tag) => {
-      if (text.includes(tag.replaceAll("-", " "))) score += 2;
-    });
-    if (text.includes(ticket.model.toLowerCase())) score += 4;
-    if (isMasterSupportSource(doc)) score += 6;
-  }
-  if (isMasterSupportSource(doc) && /ispring|master|support|source|knowledge|vault|manual|policy|troubleshooting|warranty|reply|draft|summary|likely|issue|next|macro/i.test(query)) score += 8;
-  if (query.includes("warranty") && doc.category === "Warranty / Return Policy") score += 4;
-  if (query.includes("return") && doc.title.toLowerCase().includes("return")) score += 5;
-  if (query.includes("macro") && doc.category === "Macro Sheet") score += 4;
-  if (query.includes("compatibility") && text.includes("compatibility")) score += 5;
-  if (query.includes("water test") && text.includes("water test")) score += 5;
-  if ((query.includes("likely") || query.includes("issue") || query.includes("troubleshooting") || query.includes("next")) && doc.category === "Troubleshooting Guide") score += 2;
-  return score;
-}
-
-function knowledgeWarning(doc) {
-  const warnings = [];
-  if (!doc.approvedForAi) warnings.push("Not approved for AI.");
-  if (doc.status !== "Approved") warnings.push(`Source status is ${doc.status}.`);
-  if (doc.internalOnly) warnings.push("Internal only.");
-  if (!doc.customerFacingAllowed) warnings.push("Not customer-facing approved.");
-  return warnings.join(" ");
-}
-
-function generalSupportResponse(question, ticket) {
-  const query = question.toLowerCase();
-  const context = ticket ? `${ticket.subject} ${ticket.model} ${ticket.family} ${lastCustomerMessage(ticket)}`.toLowerCase() : "";
-  const combined = `${query} ${context}`;
-  if (/\bro500\b|ro500ak|tankless/.test(combined)) {
-    if (/beep|error|light|reset|rinse|filter/.test(combined)) {
-      return "For an RO500 or RO500AK with beeping, filter lights, or a reset issue, first confirm the exact filter changed, whether the cartridge is fully seated, the display/light color or error pattern, and whether the reset plus rinse sequence was completed after replacement. Ask for a short video if the beeping pattern is unclear.";
-    }
-    return "The RO500 is an iSpring tankless reverse osmosis system. It uses integrated filter cartridges and does not use a storage tank like RCC7 systems. For support, the main things to check are inlet pressure, filter reset and rinse steps after replacement, filter light colors, and any beeping or error patterns.";
-  }
-  if (/rcc7ak|rcc7p-ak|rcc7|under sink/.test(combined) && /low flow|slow flow|not filling|tank|pressure|troubleshoot/.test(combined)) {
-    return "For low flow on an RCC7AK or related RCC7 system, separate faucet-side flow from tank-side storage. Confirm the feed valve is fully open, check whether the tank is heavy or empty, measure empty tank pressure around 7-10 psi, inspect tubing for kinks, and verify recent filter changes were flushed correctly. If the tank pressure is off, adjust it only while the tank is empty.";
-  }
-  if (/wgb32|whole house|pressure drop|sediment/.test(combined)) {
-    return "For whole-house pressure drop, the fastest split test is bypass versus service mode. If pressure returns on bypass, inspect the sediment stage, install direction, cartridge condition, and incoming water load. If pressure is still low on bypass, look upstream at plumbing, valves, or house pressure rather than the filter system.";
-  }
-  if (/uvf|uv|ballast|lamp/.test(combined)) {
-    return "For UV alarms, confirm the lamp is seated correctly, the connector is fully engaged, the quartz sleeve is clean and intact, and the ballast indicator behavior matches the manual. Avoid promising replacement until the lamp, ballast, and installation details are confirmed.";
-  }
-  if (/water test|iron|manganese|hardness|well water/.test(combined)) {
-    return "For well-water recommendations, ask for a recent water test with iron, manganese, hardness, pH, TDS, sulfur/odor notes, sediment level, and whether the home has a softener. Product guidance is much safer once those values are known.";
-  }
-  if (/what should.*ask|ask.*customer|customer.*next|next question/.test(query)) {
-    return "Ask for the model number, order source or receipt, when the issue started, what changed recently, the exact symptom, photos or a short video, and any readings or light/error patterns. Then add one targeted test based on the product family, such as tank pressure for RCC7 systems, reset/rinse details for RO500 systems, or bypass testing for whole-house units.";
-  }
-  if (/draft|write.*response|customer response|reply/.test(query)) {
-    return `Hi,\n\nThanks for reaching out. To help narrow this down, please send the model number, order source or receipt, when the issue started, and any photos, videos, pressure readings, lights, beeps, or error messages you are seeing.\n\nOnce we have those details, we can confirm the best next troubleshooting step.\n\nThanks,\n${macroRepName()}`;
-  }
-  if (/error|beep|light|code|mean/.test(query)) {
-    return "The meaning depends on the model and the exact light, beep, or code pattern. Ask the customer for the model number, a photo of the display, the color and blink pattern, when it started, and whether filters were recently changed. For RO500-style tankless systems, reset/rinse sequence and filter seating are common first checks.";
-  }
-  return "";
-}
-
-function customerNextQuestionResponse(ticket) {
-  const missing = missingInfoResponse(ticket).replace(/^Ask the customer for: /, "").replace(/\.$/, "");
-  const base = missing.startsWith("No major")
-    ? "Ask the customer to confirm the current symptom and run the next targeted test."
-    : `Ask for ${missing}.`;
-  return `${base}\n\nFor this ${ticket.model || "system"}, I would also ask: when did it start, what changed recently, and can they send photos or a short video of the symptom?`;
-}
-
-function likelyIssueResponse(ticket) {
-  if (ticket.family === "Under Sink RO" && /tank|fill|flow/i.test(`${ticket.subject} ${lastCustomerMessage(ticket)}`)) {
-    return "Most likely pressure or tank-side restriction. First confirm the tank valve is open and check empty tank pressure. It should be around 7-10 psi when empty.";
-  }
-  if (ticket.family === "Tankless RO" || /beep|filter light|rinse/i.test(`${ticket.subject} ${lastCustomerMessage(ticket)}`)) {
-    return "Most likely reset/rinse sequence issue. Confirm which filter was changed, reset the filter light, and complete the required rinse cycle.";
-  }
-  if (ticket.family === "Whole House" && /pressure|sediment|drop/i.test(`${ticket.subject} ${lastCustomerMessage(ticket)}`)) {
-    return "Most likely sediment restriction. First test is to bypass the filter system and see if pressure returns.";
-  }
-  if (ticket.family === "Warranty" || /warranty|registration|receipt/i.test(`${ticket.subject} ${lastCustomerMessage(ticket)}`)) {
-    return "This looks like a warranty or registration intake issue. Ask for a copy of the purchase receipt, shipping address, and phone number.";
-  }
-  return `Most likely: ${ticket.diagnosis.issue}. Best first test: ${ticket.diagnosis.firstTest}`;
-}
-
-function nextStepResponse(ticket) {
-  return `Next troubleshooting step: ${ticket.diagnosis.firstTest} What confirms it: ${ticket.diagnosis.confirms}`;
-}
-
-function missingInfoResponse(ticket) {
-  const missing = previewMissingIndicators(ticket);
-  if (!ticket.order) missing.push("Needs order number");
-  if (receiptStatusFor(ticket) !== "On file" && !ticket.receipt) missing.push("Needs receipt");
-  return missing.length ? `Ask the customer for: ${[...new Set(missing)].join(", ")}.` : "No major missing-info flags are showing. Confirm symptoms and proceed with the next troubleshooting step.";
-}
-
-function draftReplyResponse(ticket) {
-  return `Hi ${ticket.customer.name.split(" ")[0]},\n\nThanks for reaching out. Based on what you described with ${ticket.model}, the next best step is to ${ticket.diagnosis.firstTest.toLowerCase()}\n\nPlease reply with the result and any photos or readings you can share, and we will confirm the next step.\n\nThanks,\n${macroRepName()}`;
-}
-
-function rewriteResponse(ticket, query) {
-  const tone = query.includes("firmer") ? "firmer" : query.includes("shorter") ? "shorter" : "warmer";
-  if (tone === "firmer") return `Hi ${ticket.customer.name.split(" ")[0]},\n\nBefore we can confirm warranty or replacement options, we need the requested order details, receipt, and troubleshooting result. Once we have those, we can review the next step accurately.\n\nThanks,\n${macroRepName()}`;
-  if (tone === "shorter") return `Hi ${ticket.customer.name.split(" ")[0]}, please try this next: ${ticket.diagnosis.firstTest} Reply with the result and any photos/readings so we can confirm the next step. Thanks, ${macroRepName()}`;
-  return `Hi ${ticket.customer.name.split(" ")[0]},\n\nThanks for the details. I know this can be frustrating, and we can help narrow it down. For ${ticket.model}, please start with this check: ${ticket.diagnosis.firstTest}\n\nSend us what you find, and we will take it from there.\n\nThanks,\n${macroRepName()}`;
-}
-
-function macroSuggestionResponse(ticket) {
-  const macro = macroLibrary.find((item) => ticket.tags.some((tag) => `${item.id} ${item.name} ${item.category}`.toLowerCase().includes(tag))) ||
-    macroLibrary.find((item) => item.category === ticket.family || item.body.includes(ticket.family)) ||
-    macroLibrary.find((item) => item.favorite);
-  return macro ? `Suggested macro: ${macro.name}. It fits this ticket because the case is tagged around ${ticket.tags.slice(0, 2).join(", ") || ticket.family}. Review and tailor it before sending.` : "Suggested macro: start with a photo/video request and ask for model, order number, receipt, and symptom details.";
-}
-
-function ticketSummary(ticket) {
-  const notes = ticket.conversation.filter((message) => message.type === "note").map((message) => message.body);
-  return `${ticketDisplayId(ticket)}: ${ticket.subject}. Customer reports: ${lastCustomerMessage(ticket)} Status is ${displayStatusFor(ticket)}, assigned to ${ticket.assignee}. Model: ${ticket.model}, family: ${ticket.family}, order/warranty: ${ticket.order || "no order"} / ${ticket.warranty}. Internal notes: ${notes.join(" ") || "none"}`;
 }
 
 function resetDemoData() {
@@ -11201,8 +10673,6 @@ function resetDemoData() {
   closingTicketIds.clear();
   pendingStatusChanges.clear();
   replyMode = "reply";
-  assistState = { isOpen: false, mode: "global", openedFromTicketId: "" };
-  assistChats = { global: createEmptyAssistChat(), tickets: {} };
   closeTicketModal();
   clearFilters(false);
   applyProfilePreferences({ initialize: true });
@@ -11327,17 +10797,17 @@ function handleComposerAttachmentSelection(event) {
   if (proofAttachments.length) {
     const detected = detectPurchaseSourceFromAttachments(proofAttachments);
     if (detected !== "Unknown") {
-      const updated = setTicketPurchaseSource(ticket, detected, "RepOS Assist", false, { fromAttachment: true, timestamp: uploadedAt });
+      const updated = setTicketPurchaseSource(ticket, detected, "System", false, { fromAttachment: true, timestamp: uploadedAt });
       if (!updated) {
         ticket.conversation.push({
           type: "timeline",
-          author: "RepOS Assist",
+          author: "System",
           timestamp: uploadedAt,
-          body: `RepOS Assist detected possible purchase source from attachment: ${detected}. Needs rep review.`
+          body: `System detected possible purchase source from attachment: ${detected}. Needs rep review.`
         });
       }
     } else {
-      recordAiPurchaseSourceDetection(ticket, "Unknown", "RepOS Assist", { timestamp: uploadedAt, fromAttachment: true });
+      recordAiPurchaseSourceDetection(ticket, "Unknown", "System", { timestamp: uploadedAt, fromAttachment: true });
     }
   }
   persistTickets();
