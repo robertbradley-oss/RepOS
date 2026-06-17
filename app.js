@@ -424,10 +424,10 @@ const seedProductLinks = [
 const tableColumns = [
   { key: "select", label: "", className: "check-col" },
   { key: "id", label: "Ticket #" },
-  { key: "updated", label: "Last Updated" },
-  { key: "emails", label: "Emails", className: "emails-col" },
+  { key: "updated", label: "Last Activity" },
+  { key: "emails", label: "Messages", className: "emails-col" },
   { key: "subject", label: "Subject" },
-  { key: "customer", label: "From" },
+  { key: "customer", label: "Customer" },
   { key: "assignee", label: "Assigned To" },
   { key: "status", label: "Status" }
 ];
@@ -5629,7 +5629,8 @@ function renderQueueTabs() {
       ${queueTabConfig
         .map((tab) => `
           <button class="queue-view-tab" data-queue-tab="${tab.id}" aria-pressed="false" type="button">
-            <span class="queue-tab-label">${escapeHtml(tab.label)}</span>${tab.id === "closed" ? "" : `<span class="queue-tab-count" data-queue-tab-count="${tab.id}"></span>`}
+            <span class="queue-tab-label">${escapeHtml(tab.label)}</span>
+            <span class="queue-tab-count" data-queue-tab-count="${tab.id}"></span>
           </button>
           ${tab.id === "closed" ? renderClosedDateSelect(false) : ""}
         `)
@@ -6886,19 +6887,22 @@ function renderTicketRow(ticket) {
   const displayId = ticketDisplayId(ticket);
   const locked = isTicketActionLocked(ticket.id);
   const disabledAttrs = locked ? ` disabled aria-disabled="true"` : "";
+  const attachmentCount = Array.isArray(ticket.attachments) ? ticket.attachments.length : 0;
+  const attachmentLabel = `${attachmentCount} ${attachmentCount === 1 ? "file" : "files"}`;
+  const emailCount = emailMessageCount(ticket);
 
   return `
     <div class="queue-row-shell motion-row-hover motion-row-enter ${previewed ? "previewed" : ""} ${checked ? "checked" : ""} ${locked ? "row-action-disabled" : ""}" role="row" data-ticket-id="${escapeHtml(ticket.id)}" data-ticket-number="${escapeHtml(displayId)}" tabindex="0" ${previewed ? `aria-current="true"` : ""} ${locked ? `aria-disabled="true"` : ""}>
       <div class="queue-row-content">
       <div class="queue-row-cell check-col" role="cell"><input data-select-ticket="${escapeHtml(ticket.id)}" type="checkbox" aria-label="Select ${escapeHtml(displayId)}" ${checked ? "checked" : ""}${disabledAttrs}></div>
       <div class="queue-row-cell" role="cell"><button class="table-link table-ticket-id" data-open-ticket="${escapeHtml(ticket.id)}" data-open-ticket-number="${escapeHtml(displayId)}" type="button"${disabledAttrs}>${escapeHtml(displayId)}</button></div>
-      <div class="queue-row-cell" role="cell"><span class="table-date">${dateTimeLabel(lastUpdatedAt(ticket))}</span></div>
-      <div class="queue-row-cell emails-cell" role="cell"><span class="email-count-pill" title="${escapeHtml(emailCountLabel(ticket))}">${emailMessageCount(ticket)}</span></div>
+      <div class="queue-row-cell activity-cell" role="cell"><span class="table-date">${dateTimeLabel(lastUpdatedAt(ticket))}</span><small class="queue-sla-line ${isOverdue(ticket) ? "overdue" : ""}">${escapeHtml(dueLabel(ticket.dueAt))}</small></div>
+      <div class="queue-row-cell emails-cell" role="cell"><span class="email-count-pill" title="${escapeHtml(emailCountLabel(ticket))}"><strong>${emailCount}</strong><span>${emailCount === 1 ? "email" : "emails"}</span></span></div>
       <div class="queue-row-cell subject-cell" role="cell">
         <span class="subject-row-inner">
           <span class="subject-copy">
             <button class="table-link subject-link" data-open-ticket="${escapeHtml(ticket.id)}" data-open-ticket-number="${escapeHtml(displayId)}" type="button"${disabledAttrs}>${escapeHtml(ticket.subject)}</button>
-            <small>${escapeHtml(ticket.model)}${ticket.order ? ` / ${escapeHtml(ticket.order)}` : ""}</small>
+            <small class="subject-meta-line"><span>${escapeHtml(ticket.model || "No model")}</span><span>${escapeHtml(ticket.order || "No order")}</span><span>${escapeHtml(attachmentLabel)}</span></small>
           </span>
         </span>
       </div>
@@ -9223,6 +9227,7 @@ function renderConversation(ticket) {
   const debugLabel = threadCountDebugLabel(ticket);
   const customerTicketCount = ticketCountForCustomerEmail(ticket.customer?.email);
   const ticketLocked = isTicketActionLocked(ticket.id);
+  const lastActivity = dateTimeLabel(lastUpdatedAt(ticket));
 
   el.conversationPanel.innerHTML = `
     <div class="ticket-header compact">
@@ -9242,21 +9247,39 @@ function renderConversation(ticket) {
       <div class="ticket-header-main">
         <div class="ticket-title-stack">
           <h2>${escapeHtml(ticket.subject)}</h2>
-          <div class="ticket-context-line">
-            <button class="link-button" id="customerHistoryButton" type="button">${escapeHtml(ticket.customer.name)} (${customerTicketCount})</button>
-            <span class="ticket-context-sep" aria-hidden="true">/</span>
-            <span>${escapeHtml(ticket.model)}</span>
-            <span class="ticket-context-sep" aria-hidden="true">/</span>
-            <span>${escapeHtml(ticket.order || "No order")}</span>
+          <div class="ticket-summary-grid">
+            <button class="ticket-summary-item ticket-summary-customer" id="customerHistoryButton" type="button">
+              <span>Customer</span>
+              <strong>${escapeHtml(ticket.customer.name)} (${customerTicketCount})</strong>
+              <small>${escapeHtml(ticket.customer.email)}</small>
+            </button>
+            <span class="ticket-summary-item">
+              <span>Model</span>
+              <strong>${escapeHtml(ticket.model || "Not provided")}</strong>
+            </span>
+            <span class="ticket-summary-item">
+              <span>Order</span>
+              <strong>${escapeHtml(ticket.order || "No order")}</strong>
+            </span>
+            <span class="ticket-summary-item">
+              <span>Last activity</span>
+              <strong>${escapeHtml(lastActivity)}</strong>
+            </span>
           </div>
         </div>
         <div class="ticket-header-controls">
-          <select id="ticketStatusSelect" aria-label="Change ticket status" ${ticketLocked ? "disabled" : ""}>
-            ${statusSelectOptions(displayStatusFor(ticket), "Change status")}
-          </select>
-          <select id="ticketAssigneeSelect" aria-label="Reassign ticket" ${ticketLocked ? "disabled" : ""}>
-            ${assignmentSelectOptions(ticket.assignee)}
-          </select>
+          <label>
+            <span>Status</span>
+            <select id="ticketStatusSelect" aria-label="Change ticket status" ${ticketLocked ? "disabled" : ""}>
+              ${statusSelectOptions(displayStatusFor(ticket), "Change status")}
+            </select>
+          </label>
+          <label>
+            <span>Assignee</span>
+            <select id="ticketAssigneeSelect" aria-label="Reassign ticket" ${ticketLocked ? "disabled" : ""}>
+              ${assignmentSelectOptions(ticket.assignee)}
+            </select>
+          </label>
         </div>
       </div>
       ${renderTicketDetailsPanel(ticket)}

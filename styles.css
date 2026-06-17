@@ -2510,8 +2510,9 @@ body:not(.is-admin) .admin-only {
   position: relative;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 7px 12px 8px;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--tessario-border);
 }
@@ -2542,9 +2543,9 @@ body:not(.is-admin) .admin-only {
   z-index: var(--z-local-raised);
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 30px;
-  padding: 0 10px;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 11px;
   color: var(--muted);
   background: transparent;
   border: 1px solid transparent;
@@ -2562,9 +2563,9 @@ body:not(.is-admin) .admin-only {
 
 .queue-tab-count {
   display: grid;
-  min-width: 22px;
-  height: 18px;
-  padding: 0 7px;
+  min-width: 25px;
+  height: 19px;
+  padding: 0 8px;
   place-items: center;
   color: var(--tessario-deep-blue);
   background: rgba(124, 92, 255, 0.09);
@@ -2631,7 +2632,8 @@ body:not(.is-admin) .admin-only {
   grid-template-columns: auto minmax(142px, auto);
   align-items: center;
   gap: 7px;
-  margin-left: 2px;
+  margin-left: 0;
+  padding-left: 2px;
   color: var(--muted);
   font-size: 10.5px;
   font-weight: 700;
@@ -2818,9 +2820,9 @@ body:not(.is-admin) .admin-only {
 }
 
 .queue-table {
-  --queue-table-columns: 36px 120px 145px 70px minmax(280px, 1.8fr) minmax(180px, 1fr) 140px 120px;
+  --queue-table-columns: 36px 118px 150px 92px minmax(320px, 1.8fr) minmax(190px, 1fr) 140px 124px;
   width: 100%;
-  min-width: 1220px;
+  min-width: 1270px;
   min-height: calc(100% + 1px);
   color: var(--tessario-text);
 }
@@ -2849,7 +2851,7 @@ body:not(.is-admin) .admin-only {
 .queue-table-header-cell,
 .queue-row-cell {
   overflow: hidden;
-  padding: 13px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid rgba(15, 23, 42, 0.045);
   font-size: 12.5px;
   text-align: left;
@@ -2880,7 +2882,7 @@ body:not(.is-admin) .admin-only {
 
 .queue-row-content {
   position: relative;
-  min-height: 56px;
+  min-height: 62px;
   background: inherit;
   transform-origin: 50% 50%;
   transition:
@@ -2894,11 +2896,12 @@ body:not(.is-admin) .admin-only {
 }
 
 .queue-row-shell:hover:not(.checked) {
-  background: rgba(124, 92, 255, 0.05);
+  background: rgba(124, 92, 255, 0.045);
 }
 
 .queue-row-shell.previewed:not(.checked) {
-  box-shadow: inset 2px 0 0 rgba(124, 92, 255, 0.34);
+  background: linear-gradient(90deg, rgba(124, 92, 255, 0.09), rgba(124, 92, 255, 0.025));
+  box-shadow: inset 3px 0 0 rgba(124, 92, 255, 0.48);
 }
 
 .queue-row-shell.checked {
@@ -3137,6 +3140,12 @@ body:not(.is-admin) .admin-only {
   font-weight: 750;
 }
 
+.activity-cell {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+}
+
 .subject-link {
   display: block;
   width: 100%;
@@ -3146,6 +3155,12 @@ body:not(.is-admin) .admin-only {
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.queue-sla-line {
+  color: var(--tessario-muted);
+  font-size: 10.5px;
+  font-weight: 700;
 }
 
 .subject-cell {
@@ -3166,6 +3181,7 @@ body:not(.is-admin) .admin-only {
 .subject-copy {
   display: grid;
   grid-template-rows: minmax(0, auto) minmax(0, auto);
+  gap: 4px;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -3177,6 +3193,8 @@ body:not(.is-admin) .admin-only {
 
 .customer-link {
   display: grid;
+  align-content: center;
+  gap: 3px;
   width: 100%;
   min-width: 0;
   overflow: hidden;
@@ -3214,6 +3232,27 @@ body:not(.is-admin) .admin-only {
   font-weight: 750;
 }
 
+.subject-meta-line {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+}
+
+.subject-meta-line span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--tessario-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subject-meta-line span:not(:last-child)::after {
+  margin-left: 7px;
+  color: #c3bbd4;
+  content: "/";
+}
+
 .emails-cell {
   text-align: center;
 }
@@ -3223,6 +3262,7 @@ body:not(.is-admin) .admin-only {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   min-width: 26px;
   min-height: 20px;
   padding: 2px 8px;
@@ -3233,6 +3273,12 @@ body:not(.is-admin) .admin-only {
   font-size: 10.5px;
   font-weight: 750;
   line-height: 1;
+}
+
+.email-count-pill span {
+  color: rgba(96, 52, 224, 0.72);
+  font-size: 9.5px;
+  font-weight: 750;
 }
 
 .email-count-badge {
@@ -8870,7 +8916,7 @@ body:not(.is-admin) .admin-only {
 
 .detail-screen .ticket-header {
   display: block;
-  padding: 7px 12px 8px;
+  padding: 10px 14px 12px;
   border-bottom: 1px solid var(--line-soft);
   background: linear-gradient(180deg, #FFFFFF 0%, #fbfafe 100%);
 }
@@ -8882,7 +8928,7 @@ body:not(.is-admin) .admin-only {
   justify-content: space-between;
   gap: 10px;
   min-height: 25px;
-  margin-bottom: 2px;
+  margin-bottom: 8px;
 }
 
 .ticket-header.compact .ticket-header-top .header-row {
@@ -8943,7 +8989,7 @@ body:not(.is-admin) .admin-only {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
+  gap: 18px;
   margin: 0;
   min-width: 0;
   flex-wrap: nowrap;
@@ -8953,15 +8999,16 @@ body:not(.is-admin) .admin-only {
   display: grid;
   flex: 1 1 auto;
   min-width: 0;
-  gap: 2px;
+  gap: 9px;
 }
 
 .detail-screen .ticket-header h2 {
   max-width: 920px;
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.2;
+  color: var(--tessario-text);
+  font-size: 18px;
+  font-weight: 760;
+  line-height: 1.18;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -9042,31 +9089,74 @@ body:not(.is-admin) .admin-only {
 .detail-screen .ticket-header-controls {
   display: flex;
   flex-wrap: nowrap;
-  align-items: center;
-  gap: 6px;
+  align-items: end;
+  gap: 8px;
   margin: 0;
   flex: 0 0 auto;
   padding-top: 0;
 }
 
-.ticket-context-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 11.5px;
-  line-height: 1.2;
+.ticket-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.3fr) minmax(110px, .62fr) minmax(128px, .72fr) minmax(138px, .86fr);
+  gap: 8px;
+  min-width: 0;
 }
 
-.ticket-context-line .link-button {
-  font-size: 11.5px;
+.ticket-summary-item {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 50px;
+  padding: 7px 9px;
+  color: var(--tessario-text);
+  text-align: left;
+  background: rgba(244, 241, 251, 0.74);
+  border: 1px solid rgba(229, 225, 239, 0.82);
+  border-radius: 9px;
 }
 
-.ticket-context-sep {
-  color: var(--line);
-  user-select: none;
+.ticket-summary-item span,
+.ticket-header-controls label > span {
+  color: var(--tessario-muted);
+  font-size: 9.5px;
+  font-weight: 780;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.ticket-summary-item strong,
+.ticket-summary-item small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-summary-item strong {
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.ticket-summary-item small {
+  color: var(--tessario-muted);
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+.ticket-summary-customer {
+  border-color: rgba(124, 92, 255, 0.18);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.ticket-summary-customer:hover,
+.ticket-summary-customer:focus-visible {
+  color: var(--tessario-blue);
+  background: rgba(124, 92, 255, 0.08);
+  border-color: rgba(124, 92, 255, 0.34);
+  outline: none;
 }
 
 .detail-screen .ticket-header p {
@@ -10202,6 +10292,10 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 
   .detail-screen .ticket-header-controls {
     flex-wrap: wrap;
+  }
+
+  .ticket-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .queue-controls {
