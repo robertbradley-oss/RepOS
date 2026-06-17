@@ -8080,6 +8080,9 @@ function renderAdminToolCard(id, title, meta, body) {
 }
 
 function renderAdminMacroSection() {
+  const favoriteCount = macroLibrary.filter((macro) => macro.favorite).length;
+  const dailyCount = macroLibrary.filter((macro) => macro.dailyUse).length;
+  const categoryCount = new Set(macroLibrary.map((macro) => macro.category)).size;
   const rows = macroLibrary
     .map((macro) => `
       <tr>
@@ -8093,12 +8096,18 @@ function renderAdminMacroSection() {
 
   return `
     <section class="admin-card admin-macro-card">
-      <div class="section-title">
+      <div class="section-title row-title">
         <div>
           <p class="eyebrow">Macros</p>
           <h3>Canned response library</h3>
         </div>
-        <button class="ghost-button" data-admin-tool="macros" type="button">Open in ticket context</button>
+        <button class="ghost-button" data-admin-tool="macros" type="button">Open selected ticket macros</button>
+      </div>
+      <div class="admin-macro-summary" aria-label="Macro library summary">
+        <div><span>Total</span><strong>${macroLibrary.length}</strong></div>
+        <div><span>Favorites</span><strong>${favoriteCount}</strong></div>
+        <div><span>Daily use</span><strong>${dailyCount}</strong></div>
+        <div><span>Categories</span><strong>${categoryCount}</strong></div>
       </div>
       <div class="admin-table-wrap">
         <table class="admin-table">
@@ -9261,8 +9270,9 @@ function renderConversation(ticket) {
           <span>Insert macro</span>
           <select id="composerMacroSelect" aria-label="Insert Macro">
             <option value="">Select a canned response</option>
-            ${macroLibrary.map((macro) => `<option value="${macro.id}">${escapeHtml(macro.name)}</option>`).join("")}
+            ${renderMacroSelectOptions()}
           </select>
+          <small class="composer-tool-hint">Appends to the current draft with ticket details filled in.</small>
         </label>
         <button class="attachment-dropzone composer-attachment-control" id="attachmentDropzone" type="button"><strong>Add files</strong><span>Photos, PDFs, order screenshots, receipts</span></button>
       </div>
@@ -9705,6 +9715,46 @@ function renderMacroCard(macro, ticket, isPinned) {
   `;
 }
 
+function renderMacroSelectOptions(macros = macroLibrary) {
+  const orderedMacros = [
+    ...macroCategories.flatMap((category) => macros.filter((macro) => macro.category === category)),
+    ...macros.filter((macro) => !macroCategories.includes(macro.category))
+  ];
+  return orderedMacros
+    .map((macro) => `<option value="${escapeHtml(macro.id)}">${escapeHtml(macroOptionLabel(macro))}</option>`)
+    .join("");
+}
+
+function macroOptionLabel(macro) {
+  const badges = [macro.dailyUse ? "daily" : "", macro.favorite ? "favorite" : ""].filter(Boolean);
+  return `${macro.category}: ${macro.name}${badges.length ? ` (${badges.join(", ")})` : ""}`;
+}
+
+function macroSelectionMeta(macro, ticket) {
+  if (!macro) {
+    return {
+      category: "No macro selected",
+      detail: "Choose a macro to preview the reply copy."
+    };
+  }
+  const flags = [macro.dailyUse ? "Daily" : "", macro.favorite ? "Favorite" : ""].filter(Boolean).join(" / ");
+  const ticketLabel = ticket ? ticketDisplayId(ticket) : "current ticket";
+  return {
+    category: [macro.category, flags].filter(Boolean).join(" / "),
+    detail: `Preview filled for ${ticketLabel}`
+  };
+}
+
+function renderDailyMacroMeta(macro, ticket) {
+  const meta = macroSelectionMeta(macro, ticket);
+  return `
+    <div class="daily-macro-meta" id="dailyMacroMeta">
+      <span>${escapeHtml(meta.category)}</span>
+      <small>${escapeHtml(meta.detail)}</small>
+    </div>
+  `;
+}
+
 function renderCustomerSnapshot(ticket) {
   return `
     <section class="context-card compact-context-card customer-snapshot-card">
@@ -9758,9 +9808,10 @@ function renderDailyMacroSection(ticket) {
           ${macros.map((macro) => `<option value="${escapeHtml(macro.id)}">${escapeHtml(macro.name)}</option>`).join("")}
         </select>
       </label>
+      ${renderDailyMacroMeta(selectedMacro, ticket)}
       <div class="macro-preview macro-preview-scroll" id="dailyMacroPreview" tabindex="0">${escapeHtml(preview)}</div>
-      <div class="context-actions split-actions">
-        <button class="ghost-button compact-action-button" id="insertDailyMacroButton" type="button">Insert into reply</button>
+      <div class="context-actions split-actions daily-macro-actions">
+        <button class="primary-button compact-action-button" id="insertDailyMacroButton" type="button">Insert macro</button>
         <button class="ghost-button compact-action-button" id="copyDailyMacroButton" type="button">Copy</button>
       </div>
     </section>
@@ -9774,6 +9825,11 @@ function updateDailyMacroPreview() {
   const preview = macro && ticket ? applyVariables(macro.body, ticket) : "";
   const previewNode = el.contextPanel.querySelector("#dailyMacroPreview");
   if (previewNode) previewNode.textContent = preview;
+  const metaNode = el.contextPanel.querySelector("#dailyMacroMeta");
+  if (metaNode) {
+    const meta = macroSelectionMeta(macro, ticket);
+    metaNode.innerHTML = `<span>${escapeHtml(meta.category)}</span><small>${escapeHtml(meta.detail)}</small>`;
+  }
 }
 
 function renderOrderWarranty(ticket) {
@@ -10376,6 +10432,8 @@ function showMacroLibrary() {
   if (ticket) {
     openTicketDetail(ticket.id);
     showToast("Macros are available in the ticket context panel.");
+  } else {
+    showToast("Select a ticket to use macros in context.");
   }
 }
 
@@ -10999,6 +11057,7 @@ function copyMacro(macroId) {
   const macro = macroLibrary.find((item) => item.id === macroId);
   if (!macro) return;
   navigator.clipboard?.writeText(applyVariables(macro.body, ticket));
+  showToast("Macro copied.");
 }
 
 function insertProductLink(ticket) {
