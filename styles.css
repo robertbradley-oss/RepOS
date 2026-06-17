@@ -435,30 +435,14 @@ h6 {
 .app-shell {
   display: grid;
   grid-template-columns: var(--sidebar-expanded-width) minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-areas:
-    "header header"
-    "sidebar workspace";
-  gap: 10px 18px;
+  gap: 18px;
   width: 100%;
   height: 100vh;
   min-height: 0;
-  padding: 10px 18px 16px;
+  padding: 18px;
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: hidden;
-}
-
-.app-shell > .topbar {
-  grid-area: header;
-}
-
-.app-shell > .sidebar {
-  grid-area: sidebar;
-}
-
-.app-shell > .workspace {
-  grid-area: workspace;
 }
 
 .sidebar-layout-collapsed .app-shell {
@@ -2002,11 +1986,24 @@ body:not(.is-admin) .admin-only {
   gap: 10px;
 }
 
-/* Search relocated from the topbar onto the queue card header */
+/* Brand logo now lives in the queue card header (where the title was) */
+.panel-header .app-brand {
+  min-height: 0;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+/* Search + actions sit on the right of the card header */
 .queue-header-actions .global-search {
-  flex: 0 1 360px;
-  min-width: 200px;
-  max-width: 380px;
+  flex: 1 1 220px;
+  min-width: 150px;
+  max-width: 360px;
+}
+
+.queue-header-actions .new-ticket-button,
+.queue-header-actions .notification-bell,
+.queue-header-actions .user-profile {
+  flex: 0 0 auto;
 }
 
 /* Topbar now holds only the action buttons — keep them top-right */
