@@ -583,8 +583,8 @@ h6 {
 }
 
 .logo-badge {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   flex: 0 0 auto;
   border-radius: 0;
 }
@@ -604,9 +604,9 @@ h6 {
 
 .brand-copy {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
-  max-width: 160px;
+  max-width: 240px;
   overflow: hidden;
   transition:
     opacity var(--motion-fast) var(--ease-out),
@@ -627,16 +627,23 @@ h6 {
 
 .brand-copy strong {
   color: var(--ink);
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.12;
-  letter-spacing: -0.01em;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.brand-copy strong .brand-os {
+  display: inline;
+  color: var(--accent);
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .brand-copy span {
   color: var(--ink-tertiary);
   font-size: 12px;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
 .nav-list,
