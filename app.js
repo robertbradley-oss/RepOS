@@ -8251,8 +8251,11 @@ function renderKnowledgeVaultPanel() {
 
   const visibleDocs = getVisibleKnowledgeDocs();
   const visibleProductLinks = getVisibleProductLinks();
+  const activeDocs = knowledgeDocs.filter((doc) => !doc.archived);
   const approvedSources = approvedKnowledgeSources();
   const approvedCount = approvedSources.length;
+  const reviewCount = activeDocs.filter((doc) => doc.status === "Needs Review" || doc.status === "Draft").length;
+  const customerFacingCount = activeDocs.filter((doc) => doc.customerFacingAllowed).length;
   el.knowledgePanel.innerHTML = `
     <div class="admin-header knowledge-header">
       <div>
@@ -8262,12 +8265,25 @@ function renderKnowledgeVaultPanel() {
       </div>
       <button class="secondary-button" id="backFromKnowledgeButton" type="button">Back to queue</button>
     </div>
+    <section class="admin-card knowledge-vault-summary" aria-label="Knowledge Vault summary">
+      <div><span>Total files</span><strong>${activeDocs.length}</strong></div>
+      <div><span>Approved sources</span><strong>${approvedCount}</strong></div>
+      <div><span>Needs review</span><strong>${reviewCount}</strong></div>
+      <div><span>Customer-facing</span><strong>${customerFacingCount}</strong></div>
+    </section>
     <section class="admin-card knowledge-source-note">
       <strong>${approvedCount ? "Using approved RepOS Knowledge Vault sources." : "No approved RepOS Knowledge Vault sources available yet."}</strong>
       <p>${approvedCount ? approvedSources.map((doc) => `Source: ${escapeHtml(doc.fileName)}`).join("<br>") : "Approve an uploaded source before using it as support reference material."}</p>
       <p>Approved source details stay available in this workspace and help reps see which materials are cleared for support use.</p>
     </section>
     <section class="admin-card knowledge-controls-card">
+      <div class="section-title row-title">
+        <div>
+          <p class="eyebrow">Browse sources</p>
+          <h3>Search and filter files</h3>
+        </div>
+        <span class="mini-count">${visibleDocs.length}</span>
+      </div>
       <div class="knowledge-controls">
         <label>
           <span>Search</span>
@@ -8286,6 +8302,7 @@ function renderKnowledgeVaultPanel() {
           </select>
         </label>
       </div>
+      <p class="knowledge-filter-hint">Search checks file name, title, owner, category, status, and description.</p>
     </section>
     ${currentUserIsAdmin() ? renderKnowledgeUploadArea() : ""}
     ${currentUserIsAdmin() ? renderKnowledgeUploadApprovalPrompt() : ""}
@@ -8429,7 +8446,7 @@ function renderKnowledgeFileTable(files) {
 function renderKnowledgeFileRow(doc) {
   return `
     <tr>
-      <td><button class="link-button" data-view-knowledge="${escapeHtml(doc.id)}" type="button">${escapeHtml(doc.fileName)}</button><small>${escapeHtml(doc.title)}</small></td>
+      <td><button class="link-button" data-view-knowledge="${escapeHtml(doc.id)}" type="button">${escapeHtml(doc.fileName)}</button><small>${escapeHtml(doc.title)}</small>${doc.description ? `<small>${escapeHtml(doc.description.slice(0, 96))}${doc.description.length > 96 ? "..." : ""}</small>` : ""}</td>
       <td>${escapeHtml(doc.fileType)}</td>
       <td>${escapeHtml(formatFileSize(doc.size))}</td>
       <td>${escapeHtml(doc.uploadDate)}</td>
@@ -8621,6 +8638,48 @@ function knowledgeSearchText(doc) {
     doc.uploadDate,
     doc.lastReviewedDate
   ].join(" ").toLowerCase();
+}
+
+function relevantKnowledgeSourcesFor(ticket, limit = 3) {
+  const sources = approvedKnowledgeSources();
+  if (!ticket || !sources.length) return [];
+  const text = ticketKnowledgeSearchText(ticket);
+  return sources
+    .map((doc) => ({ doc, score: knowledgeSourceScore(doc, text) }))
+    .sort((a, b) => b.score - a.score || new Date(b.doc.lastReviewedDate || b.doc.uploadDate) - new Date(a.doc.lastReviewedDate || a.doc.uploadDate))
+    .slice(0, limit)
+    .map(({ doc, score }) => ({ ...doc, matchScore: score }));
+}
+
+function ticketKnowledgeSearchText(ticket) {
+  return [
+    ticket.model,
+    ticket.family,
+    ticket.subject,
+    ticket.issue,
+    ticket.source,
+    ticket.purchaseSource,
+    ...(ticket.tags || [])
+  ].join(" ").toLowerCase();
+}
+
+function knowledgeSourceScore(doc, ticketText) {
+  const docText = knowledgeSearchText(doc);
+  const terms = ticketText
+    .split(/[^a-z0-9]+/i)
+    .map((term) => term.trim())
+    .filter((term) => term.length > 2);
+  return [...new Set(terms)].reduce((score, term) => score + (docText.includes(term) ? 1 : 0), 0);
+}
+
+function knowledgeSourceReason(doc) {
+  if (doc.matchScore > 0) return "Matched this ticket";
+  if (doc.customerFacingAllowed) return "Approved customer-facing source";
+  return "Approved support source";
+}
+
+function knowledgeSourcePreview(doc) {
+  return doc.description || doc.title || `${doc.category} source file`;
 }
 
 function getVisibleProductLinks() {
@@ -8867,6 +8926,24 @@ function renderKnowledgeFileModal(doc) {
         <button class="icon-button" id="closeKnowledgeFileButton" aria-label="Close" type="button">x</button>
       </div>
       <input type="hidden" name="id" value="${escapeHtml(doc.id)}">
+      <div class="knowledge-preview-summary">
+        <article>
+          <span>Status</span>
+          <strong>${escapeHtml(doc.status)}</strong>
+        </article>
+        <article>
+          <span>Source approval</span>
+          <strong>${doc.approvedForAi ? "Approved" : "Not approved"}</strong>
+        </article>
+        <article>
+          <span>Audience</span>
+          <strong>${doc.customerFacingAllowed ? "Customer-facing OK" : doc.internalOnly ? "Internal only" : "Internal review"}</strong>
+        </article>
+        <article>
+          <span>Last reviewed</span>
+          <strong>${escapeHtml(doc.lastReviewedDate || "Not reviewed")}</strong>
+        </article>
+      </div>
       <div class="form-grid">
         <label><span>Title</span><input name="title" value="${escapeHtml(doc.title)}" ${disabled}></label>
         <label><span>Category</span><select name="category" ${disabled}>${knowledgeCategories.map((category) => `<option value="${escapeHtml(category)}"${doc.category === category ? " selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label>
@@ -9514,6 +9591,7 @@ function renderContext(ticket) {
     <details class="context-accordion">
       <summary>Diagnostics</summary>
       ${renderNextBestStep(ticket)}
+      ${renderTicketKnowledgeSources(ticket)}
       ${renderProductCard(ticket)}
       ${renderAttachments(ticket)}
       ${renderChecklist(ticket)}
@@ -9570,6 +9648,9 @@ function renderContext(ticket) {
   el.contextPanel.querySelector("#insertSuggestedProductLinkButton")?.addEventListener("click", () => insertProductLink(ticket));
   el.contextPanel.querySelectorAll("[data-review-link-id]").forEach((button) => {
     button.addEventListener("click", () => copyReviewLink(button.dataset.reviewLinkId));
+  });
+  el.contextPanel.querySelectorAll("[data-view-ticket-knowledge]").forEach((button) => {
+    button.addEventListener("click", () => openKnowledgeFileModal(button.dataset.viewTicketKnowledge));
   });
   el.contextPanel.querySelector("#openSnapshotHistoryButton")?.addEventListener("click", () => openCustomerHistory(ticket.id));
 }
@@ -9645,6 +9726,39 @@ function renderNextBestStep(ticket) {
         <div><dt>What to check next</dt><dd>${escapeHtml(step.check)}</dd></div>
         <div><dt>What confirms it</dt><dd>${escapeHtml(step.confirms)}</dd></div>
       </dl>
+    </section>
+  `;
+}
+
+function renderTicketKnowledgeSources(ticket) {
+  const approvedCount = approvedKnowledgeSources().length;
+  const sources = relevantKnowledgeSourcesFor(ticket);
+  return `
+    <section class="context-card nested-card ticket-knowledge-card">
+      <div class="section-title row-title">
+        <div>
+          <p class="eyebrow">Knowledge Vault</p>
+          <h3>Ticket sources</h3>
+        </div>
+        <span class="mini-count">${approvedCount}</span>
+      </div>
+      ${sources.length ? `
+        <div class="ticket-knowledge-list">
+          ${sources.map((doc) => `
+            <article class="ticket-knowledge-source">
+              <div>
+                <span class="knowledge-source-reason">${escapeHtml(knowledgeSourceReason(doc))}</span>
+                <strong>${escapeHtml(doc.title || doc.fileName)}</strong>
+                <p>${escapeHtml(knowledgeSourcePreview(doc).slice(0, 118))}${knowledgeSourcePreview(doc).length > 118 ? "..." : ""}</p>
+                <small>${escapeHtml(doc.category)} / ${escapeHtml(doc.status)}${doc.lastReviewedDate ? ` / Reviewed ${escapeHtml(doc.lastReviewedDate)}` : ""}</small>
+              </div>
+              <button class="ghost-button compact-action-button" data-view-ticket-knowledge="${escapeHtml(doc.id)}" type="button">Preview</button>
+            </article>
+          `).join("")}
+        </div>
+      ` : `
+        <p class="compact-context-note">${approvedCount ? "No strong match for this ticket yet. Use the Knowledge Vault screen to search all approved sources." : "No approved Knowledge Vault sources yet."}</p>
+      `}
     </section>
   `;
 }
