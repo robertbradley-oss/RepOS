@@ -13,17 +13,6 @@
   <body class="queue-screen table-view-active metrics-collapsed filters-collapsed">
     <div class="app-shell">
       <aside class="sidebar" aria-label="Primary navigation">
-        <div class="brand">
-          <span class="logo-badge" aria-hidden="true">
-            <img src="./assets/repos-mark.png" alt="" onerror="this.hidden=true; this.nextElementSibling.hidden=false">
-            <span hidden>R</span>
-          </span>
-          <div class="brand-copy">
-            <strong>RepOS</strong>
-            <span id="brandTagline">Ticketing made clear</span>
-          </div>
-        </div>
-
         <nav class="nav-list sidebar-main-nav" aria-label="Main navigation">
           <span class="sidebar-nav-indicator motion-tab-indicator" aria-hidden="true"></span>
           <button class="nav-item" id="dashboardNavButton" type="button" title="Dashboard" aria-label="Dashboard" data-tooltip="Dashboard">
@@ -65,9 +54,18 @@
         </div>
       </aside>
 
-      <main class="workspace">
-        <header class="topbar">
-          <div class="topbar-actions">
+      <header class="topbar">
+        <div class="brand">
+          <span class="logo-badge" aria-hidden="true">
+            <img src="./assets/repos-mark.png" alt="" onerror="this.hidden=true; this.nextElementSibling.hidden=false">
+            <span hidden>R</span>
+          </span>
+          <div class="brand-copy">
+            <strong>RepOS</strong>
+            <span id="brandTagline">Ticketing made clear</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
             <button class="secondary-button topbar-action-button assist-launch-button admin-only" id="tessarioAssistButton" type="button" title="RepOS Assist" aria-label="Open RepOS Assist">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8 10.1 9 5 10.9l5.1 1.9L12 18l1.9-5.2 5.1-1.9L13.9 9 12 3.8Z"></path><path d="M5.7 15.4 5 17.3l-1.9.7 1.9.7.7 1.9.7-1.9 1.9-.7-1.9-.7-.7-1.9Z"></path><path d="m18 16 .8 2.1 2.1.8-2.1.8-.8 2.1-.8-2.1-2.1-.8 2.1-.8L18 16Z"></path></svg>
               <span>Assist</span>
@@ -91,8 +89,9 @@
               </div>
             </button>
           </div>
-        </header>
+      </header>
 
+      <main class="workspace">
         <section class="ticket-workspace">
           <aside class="queue-panel" aria-label="Ticket queue">
             <div class="panel-header">
