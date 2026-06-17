@@ -3814,9 +3814,14 @@ body:not(.is-admin) .admin-only {
 
 .composer-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.composer-title-block {
+  display: grid;
+  gap: 7px;
 }
 
 .composer-head span {
@@ -3853,18 +3858,20 @@ body:not(.is-admin) .admin-only {
 
 .composer-fields {
   display: grid;
-  grid-template-columns: minmax(170px, .8fr) minmax(210px, 1fr) minmax(190px, 1fr);
+  grid-template-columns: minmax(170px, .8fr) minmax(260px, 1fr);
   gap: 8px;
 }
 
 .composer-fields label,
-.recipient-field {
+.recipient-field,
+.composer-tool-field {
   display: grid;
   gap: 4px;
   min-width: 0;
 }
 
 .composer-fields span,
+.composer-tool-field span,
 .signature-options > span {
   color: var(--tessario-muted);
   font-size: 10px;
@@ -3889,6 +3896,13 @@ body:not(.is-admin) .admin-only {
   justify-self: start;
   font-size: 11px;
   text-decoration: none;
+}
+
+.composer-tool-row {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(260px, .95fr);
+  gap: 8px;
+  align-items: end;
 }
 
 .format-toolbar {
@@ -8901,7 +8915,7 @@ body:not(.is-admin) .admin-only {
 .reply-dock {
   gap: 10px;
   margin: 0 14px 16px;
-  padding: 14px;
+  padding: 15px;
   background: #FFFFFF;
   border-top: 1px solid var(--line-soft);
   border: 1px solid rgba(229, 225, 239, 0.96);
@@ -8951,10 +8965,16 @@ body:not(.is-admin) .admin-only {
 }
 
 .composer-head {
-  padding-bottom: 2px;
+  padding-bottom: 4px;
 }
 
-.composer-head > span {
+.composer-kicker {
+  color: var(--tessario-deep-blue);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.composer-mode-badge {
   padding: 3px 8px;
   color: #3D5870;
   background: #f0ecf9;
@@ -9022,11 +9042,12 @@ body:not(.is-admin) .admin-only {
 }
 
 .composer-fields {
-  grid-template-columns: minmax(170px, 0.78fr) minmax(220px, 1fr) minmax(230px, 1fr);
-  gap: 7px;
+  grid-template-columns: minmax(180px, 0.72fr) minmax(260px, 1fr);
+  gap: 8px;
 }
 
 .composer-fields span,
+.composer-tool-field span,
 .signature-options > span {
   letter-spacing: 0;
 }
@@ -9049,6 +9070,25 @@ body:not(.is-admin) .admin-only {
   font-size: 12px;
   color: var(--tessario-muted);
   user-select: all;
+}
+
+.composer-tool-row {
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 0.92fr);
+  gap: 8px;
+  padding: 8px;
+  background: linear-gradient(180deg, #fbfafe, #f6f3fc);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+}
+
+.composer-tool-field select {
+  height: 34px;
+  color: var(--tessario-text);
+  background: #FFFFFF;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .composer-editor-card {
@@ -9139,9 +9179,16 @@ body:not(.is-admin) .admin-only {
   align-items: center;
   justify-content: flex-start;
   gap: 7px;
-  min-height: 28px;
-  padding: 0 10px;
+  min-height: 34px;
+  padding: 0 12px;
   font-size: 11px;
+}
+
+.composer-attachment-control {
+  align-self: end;
+  width: 100%;
+  background: #FFFFFF;
+  border-color: rgba(124, 92, 255, 0.24);
 }
 
 .attachment-dropzone strong,
@@ -9165,6 +9212,8 @@ body:not(.is-admin) .admin-only {
 
 .composer-bar {
   gap: 12px;
+  padding-top: 2px;
+  border-top: 1px solid var(--line-soft);
 }
 
 .signature-options {
@@ -9949,6 +9998,11 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
   .knowledge-grid,
   .knowledge-controls,
   .knowledge-add-form {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-fields,
+  .composer-tool-row {
     grid-template-columns: 1fr;
   }
 

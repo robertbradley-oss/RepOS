@@ -9223,12 +9223,15 @@ function renderConversation(ticket) {
 
     <div class="reply-dock">
       <div class="composer-head">
-        <div class="reply-tabs" role="tablist" aria-label="Composer mode">
-          <span class="reply-tab-pill motion-tab-indicator" aria-hidden="true"></span>
-          <button class="${replyMode === "reply" ? "active" : ""}" data-reply-mode="reply" type="button">Reply</button>
-          <button class="${replyMode === "note" ? "active" : ""}" data-reply-mode="note" type="button">Internal note</button>
+        <div class="composer-title-block">
+          <span class="composer-kicker">Reply composer</span>
+          <div class="reply-tabs" role="tablist" aria-label="Composer mode">
+            <span class="reply-tab-pill motion-tab-indicator" aria-hidden="true"></span>
+            <button class="${replyMode === "reply" ? "active" : ""}" data-reply-mode="reply" type="button">Reply</button>
+            <button class="${replyMode === "note" ? "active" : ""}" data-reply-mode="note" type="button">Internal note</button>
+          </div>
         </div>
-        <span>${replyMode === "reply" ? "Customer visible" : "Team only"}</span>
+        <span class="composer-mode-badge" id="composerModeBadge">${replyMode === "reply" ? "Customer visible" : "Team only"}</span>
       </div>
       <div class="composer-fields">
         <label>
@@ -9239,13 +9242,16 @@ function renderConversation(ticket) {
           <span>Recipients</span>
           <strong>${escapeHtml(ticket.customer.name)} &lt;${escapeHtml(ticket.customer.email)}&gt;</strong>
         </div>
-        <label>
-          <span>Reply type / canned response</span>
+      </div>
+      <div class="composer-tool-row">
+        <label class="composer-tool-field">
+          <span>Insert macro</span>
           <select id="composerMacroSelect" aria-label="Insert Macro">
             <option value="">Select a canned response</option>
             ${macroLibrary.map((macro) => `<option value="${macro.id}">${escapeHtml(macro.name)}</option>`).join("")}
           </select>
         </label>
+        <button class="attachment-dropzone composer-attachment-control" id="attachmentDropzone" type="button"><strong>Add files</strong><span>Photos, PDFs, order screenshots, receipts</span></button>
       </div>
       <div class="composer-editor-card">
         <div class="format-toolbar" aria-label="Formatting toolbar">
@@ -9259,7 +9265,6 @@ function renderConversation(ticket) {
         <textarea id="replyEditor" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" placeholder="${replyMode === "reply" ? "Write a customer-visible reply..." : "Write an internal note..."}">${escapeHtml(ticket.draft || "")}</textarea>
       </div>
       <input id="composerAttachmentInput" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple hidden>
-      <button class="attachment-dropzone" id="attachmentDropzone" type="button"><strong>Attach files</strong><span>Photos, PDFs, order screenshots, or receipts</span></button>
       <p class="composer-validation" id="composerValidation" role="status" aria-live="polite"></p>
       <div class="composer-bar">
         <div class="composer-bottom-controls">
@@ -9342,10 +9347,10 @@ function renderConversation(ticket) {
         btn.classList.toggle("active", btn.dataset.replyMode === replyMode);
       });
       positionReplyTabPill(true, 0);
-      const badge = document.querySelector(".composer-head > span");
-      if (badge) badge.textContent = replyMode === "reply" ? "Customer visible" : "Team only";
       const editor = document.querySelector("#replyEditor");
       if (editor) editor.placeholder = replyMode === "reply" ? "Write a customer-visible reply..." : "Write an internal note...";
+      const modeBadge = document.querySelector("#composerModeBadge");
+      if (modeBadge) modeBadge.textContent = replyMode === "reply" ? "Customer visible" : "Team only";
       const sendBtn = document.querySelector("#sendReplyButton");
       if (sendBtn) sendBtn.textContent = replyMode === "reply" ? "Send Reply" : "Add Note";
       syncComposerState();
