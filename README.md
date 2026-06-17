@@ -98,8 +98,9 @@ The important deployed files are:
 - `index.html`
 - `styles.css`
 - `app.js`
-- `assets/tessario-mark.svg`
-- `assets/tessario-logo.svg`
+- `assets/repos-mark.svg`
+- `assets/repos-mark.png`
+- `assets/repos-logo.png`
 - `assets/ispring-logo.png`
 
 For a backend-backed demo, run `server.mjs` on a Node host with durable storage settings:
@@ -117,8 +118,9 @@ Use mounted/persistent paths for `TESSARIO_DATA_FILE` and `TESSARIO_UPLOAD_DIR`,
 - `index.html`: Static app shell. Contains the sidebar, top bar, metric strip, two-screen ticket workspace, queue controls, admin assignment screen, customer-history modal, and create-ticket modal.
 - `styles.css`: Desktop-first CRM styling. Defines the dark navy sidebar, compact metric cards, queue/detail screen layouts, card/table queue views, conversation thread, reply dock, and right context panel.
 - `app.js`: Main front-end application logic. Contains the `workspaceConfig` demo configuration, mock ticket data, assignment users, fair-routing logic, main support views, screen state, view/filter/sort state, table queue rendering, conversation rendering, smart diagnosis, macros, attachments, guardrails, customer history, admin controls, and create-ticket behavior.
-- `assets/tessario-mark.svg`: RepOS icon-only mark used for the left sidebar brand mark and browser favicon.
-- `assets/tessario-logo.svg`: Full RepOS logo asset retained for product-brand treatments when needed outside the current workspace header.
+- `assets/repos-mark.svg`: Active RepOS icon mark used for the in-app product lockup and browser favicon.
+- `assets/repos-mark.png`: PNG fallback for the RepOS icon mark.
+- `assets/repos-logo.png`: Full RepOS logo asset retained for product-brand treatments when needed outside the current workspace header.
 - `assets/ispring-logo.png`: Active iSpring workspace logo used in the top header.
 - `server.mjs`: Node server for static hosting and MVP JSON API persistence.
 - `docs/backend.md`: Backend MVP notes and next upgrade path.

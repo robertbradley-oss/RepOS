@@ -40,7 +40,7 @@ const workspaceConfig = {
   workspaceName: "iSpring Water Systems",
   workspaceShortName: "iSpring",
   workspaceLabel: "Workspace: iSpring Water Systems",
-  tagline: "Ticketing made clear",
+  tagline: "Ticketing made clear.",
   workspaceNote: "iSpring Water Systems is the active workspace in this RepOS session.",
   ticketPrefix: "ISP",
   departments: ["3-CS", "Support", "Technical Support", "Warranty", "Returns"],
