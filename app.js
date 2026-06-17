@@ -1151,6 +1151,7 @@ let tickets = normalizeTickets(loadTickets());
 if (ensureReceiptTestTickets(tickets)) localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
 let backendSyncReady = false;
 let backendSyncTimer = 0;
+let backendSyncAvailable = false;
 const backendSyncQueue = new Map();
 let lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 let profile = loadProfile();
@@ -4484,12 +4485,14 @@ function persistCustomerAccounts() {
 async function hydrateBackendState() {
   if (!window.fetch) {
     backendSyncReady = true;
+    backendSyncAvailable = false;
     return;
   }
 
   try {
     const response = await fetch("/api/bootstrap", { cache: "no-store" });
     if (!response.ok) throw new Error(`Backend bootstrap failed: ${response.status}`);
+    backendSyncAvailable = true;
     const payload = await response.json();
     const state = payload?.state || {};
     let hydrated = false;
@@ -4543,6 +4546,7 @@ async function hydrateBackendState() {
       render({ preserveQueueList: false, suppressQueueRowEnter: true });
     }
   } catch (error) {
+    backendSyncAvailable = false;
     console.warn("RepOS backend sync is unavailable; using browser localStorage.", error);
   } finally {
     backendSyncReady = true;
@@ -5823,8 +5827,7 @@ function renderProfileModal() {
     showAdminScreen();
   });
   el.profileModal.querySelector("#resetWorkspaceDataButton")?.addEventListener("click", () => {
-    resetDemoData();
-    closeProfileModal();
+    if (resetDemoData()) closeProfileModal();
   });
   updateProfileTabState();
 }
@@ -5956,19 +5959,30 @@ function renderWorkspaceTab(workload) {
     <section class="profile-tab-panel" data-profile-panel="workspace" role="tabpanel">
       <div class="profile-section-title">
         <h3>Workspace</h3>
-        <p>Current workspace/account details for this RepOS session.</p>
+        <p>Current workspace/account details for this RepOS session. ${escapeHtml(demoStateSentence())}</p>
       </div>
       <div class="workspace-profile-grid">
         ${workspaceFact("Workspace", workspaceConfig.workspaceName)}
+        ${workspaceFact("State mode", demoStateModeLabel())}
         ${workspaceFact("Department", workspaceConfig.defaultDepartment)}
         ${workspaceFact("Queue", workspaceConfig.defaultQueue)}
         ${workspaceFact("Role", profile.role)}
         ${workspaceFact("Assignment eligible", currentAssignmentUser()?.assignmentEligible ? "Yes" : "No")}
         ${workspaceFact("Assignment workload count", workload)}
       </div>
-      ${currentUserIsAdmin() ? `<div class="profile-admin-callout"><span class="admin-badge">Admin</span><p>CS14 Robert can manage reps who are eligible for ticket assignment.</p><div class="profile-admin-actions">${adminControls}<button class="secondary-button danger-soft" id="resetWorkspaceDataButton" type="button">Reset workspace data</button></div></div>` : ""}
+      ${currentUserIsAdmin() ? `<div class="profile-admin-callout"><span class="admin-badge">Admin</span><p>CS14 Robert can manage reps and restore the local iSpring demo workspace back to seeded data. Restoring overwrites persisted local demo changes.</p><div class="profile-admin-actions">${adminControls}<button class="secondary-button danger-soft" id="resetWorkspaceDataButton" type="button">Restore seed demo data</button></div></div>` : ""}
     </section>
   `;
+}
+
+function demoStateModeLabel() {
+  return backendSyncAvailable ? "Local backend persisted demo state" : "Browser localStorage demo state";
+}
+
+function demoStateSentence() {
+  return backendSyncAvailable
+    ? "Counts reflect the current local backend demo state, not a fresh seed snapshot."
+    : "Counts reflect this browser's local demo state, not a fresh seed snapshot.";
 }
 
 function updateProfileTabState() {
@@ -7086,7 +7100,7 @@ function renderDashboardPanel() {
     <div class="dashboard-header">
       <div>
         <h1>${currentDashboardView === "manager" ? "RepOS command center" : "My support dashboard"}</h1>
-        <p>${currentDashboardView === "manager" ? "Team view for workload, SLA risk, and support queue movement." : "Your tickets first, with team trends shown only in aggregate."}</p>
+        <p>${currentDashboardView === "manager" ? "Team view for workload, SLA risk, and support queue movement." : "Your tickets first, with team trends shown only in aggregate."} ${escapeHtml(demoStateSentence())}</p>
       </div>
       <div class="dashboard-header-actions">
         ${renderDashboardViewToggle(currentDashboardView)}
@@ -8315,8 +8329,8 @@ function renderAdminPanel() {
         <p class="eyebrow">Admin tools</p>
         <h3>Workspace recovery</h3>
       </div>
-      <p>Restore the current workspace to the standard support queue, assignment pool, profile preferences, and an empty RepOS Knowledge Vault.</p>
-      <button class="secondary-button danger-soft" id="adminResetWorkspaceButton" type="button">Reset workspace data</button>
+      <p>Restore this local iSpring demo workspace to the seeded support queue, assignment pool, profile preferences, Product Link Library, customer accounts, notifications, and an empty RepOS Knowledge Vault. This overwrites persisted local demo changes.</p>
+      <button class="secondary-button danger-soft" id="adminResetWorkspaceButton" type="button">Restore seed demo data</button>
     </section>
     ${renderAdminMacroSection()}
     <section class="admin-card admin-assignment-card" id="assignmentPoolSection">
@@ -10993,6 +11007,8 @@ function approvedKnowledgeSources() {
 }
 
 function resetDemoData() {
+  const confirmed = window.confirm("Restore seeded iSpring demo data? This overwrites tickets, assignment pool, profile preferences, Knowledge Vault metadata, product links, customer accounts, and notifications saved in this local demo state. Uploaded files are not deleted.");
+  if (!confirmed) return false;
   tickets = normalizeTickets(JSON.parse(JSON.stringify(workspaceConfig.tickets)));
   lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
   profile = JSON.parse(JSON.stringify(seedProfile));
@@ -11020,7 +11036,8 @@ function resetDemoData() {
   persistProfile();
   persistNotifications();
   render();
-  showToast("Workspace data restored.");
+  showToast("Local demo state restored to seed data.");
+  return true;
 }
 
 function selectedTicket() {

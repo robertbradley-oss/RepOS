@@ -79,6 +79,12 @@ Supported file types:
 
 Customer receipt uploads create both a protected file record and customer receipt metadata. Knowledge Vault uploads are admin-guarded and add a document record to `knowledgeDocs`.
 
+## Local Demo State
+
+RepOS uses iSpring Water Systems as the demo workspace context. The default Node backend persists that local demo state to `.data/tessario-state.json`, so dashboard counts and queue totals reflect the current saved state rather than a fresh seed snapshot after local sessions have changed tickets, reps, customer accounts, Knowledge Vault metadata, product links, or profile preferences.
+
+The existing Admin Hub and Profile > Workspace recovery controls restore seeded iSpring demo data only after confirmation. That restore overwrites synced local demo state for app data resources, but it does not delete files from `.uploads/`.
+
 ## Auth Mode
 
 By default, RepOS runs in development auth mode. The server auto-creates an admin user for `CS14 Robert` and sets an HTTP-only session cookie when protected routes are used.

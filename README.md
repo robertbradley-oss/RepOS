@@ -58,6 +58,14 @@ The app has no build step. It is plain HTML, CSS, JavaScript, and a lightweight 
 
 The backend persists synced demo state to `.data/tessario-state.json` and local uploads to `.uploads/`, both intentionally ignored by Git. Development mode auto-creates an admin session for CS14 Robert; set `TESSARIO_AUTH_MODE=strict` when you want API routes to require an explicit session. See `.env.example` for supported runtime settings and `docs/backend.md` for the backend plan and next upgrades.
 
+## Demo State And Workspace Context
+
+RepOS is the product. iSpring Water Systems is the active demo workspace/customer context used to show the ticketing workflow, sample products, support language, macros, and customer history.
+
+Local demo sessions are persisted by design. When the Node backend is running, dashboard counts and ticket data reflect the current `.data/tessario-state.json` state. In static or backend-unavailable mode, they reflect the browser's localStorage fallback. This means counts can differ from the original seed data after tickets, reps, customer accounts, Knowledge Vault metadata, product links, or profile settings are changed during demos.
+
+Admin users can use the existing Workspace recovery controls in Admin Hub or Profile > Workspace to restore the seeded iSpring demo data. The restore action asks for confirmation and overwrites local demo state for tickets, assignment users, profile preferences, Knowledge Vault metadata, Product Link Library, customer accounts, and notifications. Uploaded local files are not deleted by that UI restore.
+
 Common runtime settings:
 
 - `HOST`: Defaults to `127.0.0.1`. Use `0.0.0.0` only when a Node hosting platform requires it.
@@ -151,7 +159,7 @@ Use mounted/persistent paths for `TESSARIO_DATA_FILE` and `TESSARIO_UPLOAD_DIR`,
 ## Next Planned Upgrades
 
 - Split `app.js` into smaller modules for mock data, rendering, macros, and utilities.
-- Add a manual reset/demo data button for support demos.
+- Add more granular demo-state recovery and export options for support demos.
 - Add a richer ticket creation/editing flow with product/order/warranty fields.
 - Add saved custom views and visible column preferences.
 - Add admin audit history for assignment pool changes.
