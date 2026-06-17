@@ -2829,8 +2829,8 @@ body:not(.is-admin) .admin-only {
 .queue-table-header-cell,
 .queue-row-cell {
   overflow: hidden;
-  padding: 11px 14px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.045);
   font-size: 12.5px;
   text-align: left;
   vertical-align: middle;
@@ -2860,7 +2860,7 @@ body:not(.is-admin) .admin-only {
 
 .queue-row-content {
   position: relative;
-  min-height: 50px;
+  min-height: 56px;
   background: inherit;
   transform-origin: 50% 50%;
   transition:
