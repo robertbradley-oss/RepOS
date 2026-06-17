@@ -5638,6 +5638,12 @@ function renderQueueTabs() {
 
   const closedDateFilter = el.queueViewTabs.querySelector(".closed-date-filter");
   if (closedDateFilter) closedDateFilter.hidden = activeView !== "closed";
+  const closedDateHint = el.queueViewTabs.querySelector("[data-closed-date-hint]");
+  if (closedDateHint) {
+    const rangeCount = closedCountForRange(filters.closedDateRange);
+    const totalCount = queueTabCount(queueTabConfig.find((tab) => tab.id === "closed"));
+    closedDateHint.textContent = `${rangeCount} ticket${rangeCount === 1 ? "" : "s"} in ${filters.closedDateRange}; ${totalCount} total in Closed tab.`;
+  }
   const closedDateSelect = el.queueViewTabs.querySelector("#closedDateRangeSelect");
   if (closedDateSelect) {
     closedDateSelect.innerHTML = closedDateRangeOptions.map((option) => `
@@ -5656,7 +5662,7 @@ function queueTabCount(tab) {
 function queueTabCountLabel(tab, count) {
   if (tab.id === "open") return `${count} open tickets across all reps`;
   if (tab.id === "assigned") return `${count} active tickets assigned to you`;
-  return `${count} closed or waiting-on-response tickets`;
+  return `${count} total tickets in Closed tab`;
 }
 
 function renderClosedDateSelect(visible) {
@@ -5668,6 +5674,7 @@ function renderClosedDateSelect(visible) {
           <option value="${escapeHtml(option)}"${filters.closedDateRange === option ? " selected" : ""}>${escapeHtml(option)} (${closedCountForRange(option)})</option>
         `).join("")}
       </select>
+      <small data-closed-date-hint></small>
     </label>
   `;
 }
@@ -6714,11 +6721,14 @@ function renderMetrics() {
 function renderTicketList(visibleTickets, { animateRows = true } = {}) {
   el.ticketList.classList.toggle("suppress-row-enter", !animateRows);
   if (!visibleTickets.length) {
+    const closedRangeCopy = activeView === "closed"
+      ? `<p>The Closed badge shows the all-time Closed tab total. This date range has no matching tickets.</p>`
+      : `<p>Clear the search and filters to return to the active queue.</p>`;
     el.ticketList.classList.remove("table-mode", "card-mode");
     el.ticketList.innerHTML = `
       <div class="empty-state polished">
         <strong>No tickets match this view</strong>
-        <p>Clear the search and filters to return to the active queue.</p>
+        ${closedRangeCopy}
         <button class="secondary-button" id="clearFiltersButton" type="button">Clear filters</button>
       </div>
     `;
