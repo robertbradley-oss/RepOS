@@ -4103,6 +4103,68 @@ body:not(.is-admin) .admin-only {
   border-color: rgba(124, 92, 255, 0.18);
 }
 
+.product-link-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
+  box-shadow: inset 3px 0 0 rgba(124, 92, 255, 0.72);
+}
+
+.product-link-status {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.product-link-status.is-ready {
+  color: #0b6b6b;
+  background: rgba(26, 188, 180, 0.14);
+  border: 1px solid rgba(26, 188, 180, 0.22);
+}
+
+.product-link-status.is-missing {
+  color: #6d6380;
+  background: #f4f1fb;
+  border: 1px solid rgba(124, 92, 255, 0.14);
+}
+
+.product-link-match-summary {
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  margin: 6px 0 7px;
+  background: rgba(236, 231, 251, 0.58);
+  border: 1px solid rgba(124, 92, 255, 0.16);
+  border-radius: 8px;
+}
+
+.product-link-match-summary span,
+.product-link-muted {
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.product-link-match-summary strong {
+  color: #241a54;
+  font-size: 11.5px;
+  line-height: 1.2;
+}
+
+.product-link-match-summary small {
+  color: #4d6070;
+  font-size: 10.5px;
+  line-height: 1.25;
+}
+
+.product-link-muted {
+  display: block;
+  margin-top: 2px;
+  text-transform: none;
+}
+
 .customer-snapshot-card {
   border-color: rgba(107, 102, 128, 0.16);
 }
@@ -4167,6 +4229,26 @@ body:not(.is-admin) .admin-only {
   text-decoration: underline;
 }
 
+.product-link-actions {
+  margin-top: 8px;
+}
+
+.product-link-actions .primary-button,
+.product-link-actions .ghost-button {
+  justify-content: center;
+  min-height: 28px;
+  padding-inline: 7px;
+  font-size: 10.5px;
+  white-space: normal;
+}
+
+.product-link-actions .primary-button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.1);
+  opacity: 0.52;
+  transform: none;
+}
+
 .review-link-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
@@ -4182,6 +4264,23 @@ body:not(.is-admin) .admin-only {
   font-size: 10px;
   font-weight: 750;
   text-transform: uppercase;
+}
+
+.product-link-card .review-link-row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.review-link-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.review-link-actions .ghost-button {
+  justify-content: center;
+  min-width: 0;
+  white-space: normal;
 }
 
 .quick-action-grid {
@@ -6301,6 +6400,35 @@ body:not(.is-admin) .admin-only {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
+}
+
+.product-link-library-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+
+.product-link-library-summary div {
+  display: grid;
+  gap: 3px;
+  padding: 10px 11px;
+  background: linear-gradient(180deg, #fbfaff 0%, #f4f9fb 100%);
+  border: 1px solid rgba(124, 92, 255, 0.14);
+  border-radius: 8px;
+}
+
+.product-link-library-summary span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.product-link-library-summary strong {
+  color: #241a54;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .knowledge-dropzone {
@@ -9999,6 +10127,10 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
   .knowledge-controls,
   .knowledge-add-form {
     grid-template-columns: 1fr;
+  }
+
+  .product-link-library-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .composer-fields,

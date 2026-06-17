@@ -8441,13 +8441,26 @@ function renderKnowledgeFileRow(doc) {
 }
 
 function renderProductLinkLibrarySection(links) {
+  const activeCount = productLinks.filter((link) => link.active).length;
+  const modelLinkCount = productLinks.filter((link) => link.active && link.model).length;
+  const reviewLinkCount = reviewProductLinks().length;
+  const inactiveCount = productLinks.filter((link) => !link.active).length;
   return `
     <section class="admin-card product-link-library-card">
-      <div class="section-title">
-        <p class="eyebrow">Product Link Library</p>
-        <h3>Saved product and review links</h3>
+      <div class="section-title row-title">
+        <div>
+          <p class="eyebrow">Product Link Library</p>
+          <h3>Saved product and review links</h3>
+        </div>
+        <span class="mini-count">${links.length}</span>
       </div>
-      <p class="knowledge-source-note-text">Ticket Detail uses this library to suggest source-specific product links and review links.</p>
+      <div class="product-link-library-summary" aria-label="Product link library summary">
+        <div><span>Active</span><strong>${activeCount}</strong></div>
+        <div><span>Model links</span><strong>${modelLinkCount}</strong></div>
+        <div><span>Review links</span><strong>${reviewLinkCount}</strong></div>
+        <div><span>Inactive</span><strong>${inactiveCount}</strong></div>
+      </div>
+      <p class="knowledge-source-note-text">Ticket Detail matches active links by ticket model and purchase source.</p>
       <div class="knowledge-controls product-link-library-controls">
         <label>
           <span>Search</span>
@@ -9795,24 +9808,41 @@ function renderProductLinkSection(ticket) {
   const productLink = suggestedProductLink(ticket);
   const reviewNeeded = productReviewNeeded(ticket);
   const reviewLinks = reviewProductLinks();
+  const purchaseSource = purchaseSourceFor(ticket);
+  const platform = productSourceKey(purchaseSource) || purchaseSource;
+  const modelKey = normalizedModelKey(ticket.model);
+  const matchLabel = productLink
+    ? `${productLink.model || ticket.model || "Model"} / ${productLink.platform}`
+    : `${ticket.model || "No model"} / ${platform || "No source"}`;
   return `
     <section class="context-card compact-context-card product-link-card">
-      <div class="section-title">
-        <p class="eyebrow">Product Link</p>
-        <h3>${productLink ? escapeHtml(productLink.label) : "No saved link found"}</h3>
+      <div class="section-title row-title">
+        <div>
+          <p class="eyebrow">Product Link</p>
+          <h3>${productLink ? escapeHtml(productLink.label) : "No saved link found"}</h3>
+        </div>
+        <span class="product-link-status ${productLink ? "is-ready" : "is-missing"}">${productLink ? "Ready" : "Missing"}</span>
+      </div>
+      <div class="product-link-match-summary">
+        <span>Library match</span>
+        <strong>${escapeHtml(matchLabel)}</strong>
+        <small>${productLink ? "Active link available for this ticket" : "Add an active link for this model and source"}</small>
       </div>
       <dl class="info-list">
-        <div><dt>Model</dt><dd>${escapeHtml(ticket.model || "Not provided")}</dd></div>
-        <div><dt>Link</dt><dd class="link-value">${productLink ? `<a href="${escapeHtml(productLink.url)}" target="_blank" rel="noreferrer">${escapeHtml(productLink.url)}</a>` : "No saved link found."}</dd></div>
+        <div><dt>Ticket model</dt><dd>${escapeHtml(ticket.model || "Not provided")}${modelKey && modelKey !== ticket.model ? `<small class="product-link-muted">Matched ${escapeHtml(modelKey)}</small>` : ""}</dd></div>
+        <div><dt>Source</dt><dd>${escapeHtml(purchaseSource || "Not provided")}</dd></div>
+        <div><dt>Saved link</dt><dd class="link-value">${productLink ? `<a href="${escapeHtml(productLink.url)}" target="_blank" rel="noreferrer">${escapeHtml(productLink.url)}</a>` : "No saved link found."}</dd></div>
       </dl>
-      <div class="context-actions split-actions">
-        <button class="ghost-button compact-action-button" id="copySuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Copy link</button>
-        <button class="ghost-button compact-action-button" id="insertSuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Insert into reply</button>
+      <div class="context-actions split-actions product-link-actions">
+        <button class="primary-button compact-action-button" id="insertSuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Insert product URL</button>
+        <button class="ghost-button compact-action-button" id="copySuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Copy URL</button>
       </div>
       ${reviewNeeded && reviewLinks.length ? `
         <div class="review-link-row">
           <span>Review links</span>
-          ${reviewLinks.map((link) => `<button class="ghost-button compact-action-button" data-review-link-id="${escapeHtml(link.id)}" type="button">Copy ${escapeHtml(link.label)}</button>`).join("")}
+          <div class="review-link-actions">
+            ${reviewLinks.map((link) => `<button class="ghost-button compact-action-button" data-review-link-id="${escapeHtml(link.id)}" type="button">Copy ${escapeHtml(link.label)}</button>`).join("")}
+          </div>
         </div>
       ` : ""}
     </section>
