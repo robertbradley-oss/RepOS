@@ -2859,6 +2859,12 @@ body:not(.is-admin) .admin-only {
   white-space: nowrap;
 }
 
+.queue-row-cell:not(.check-col) {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+}
+
 .queue-table-header-cell {
   color: var(--ink-tertiary);
   background: transparent;
@@ -3036,6 +3042,15 @@ body:not(.is-admin) .admin-only {
 .queue-table-header-cell:nth-child(4),
 .queue-row-cell:nth-child(4) {
   text-align: center;
+}
+
+.queue-row-cell:nth-child(7) {
+  color: var(--tessario-muted);
+  font-weight: 700;
+}
+
+.queue-row-cell:nth-child(8) {
+  justify-items: start;
 }
 
 .sort-header {
@@ -3254,6 +3269,7 @@ body:not(.is-admin) .admin-only {
 }
 
 .emails-cell {
+  justify-items: center;
   text-align: center;
 }
 
@@ -3279,6 +3295,11 @@ body:not(.is-admin) .admin-only {
   color: rgba(96, 52, 224, 0.72);
   font-size: 9.5px;
   font-weight: 750;
+}
+
+.queue-row-shell:hover .subject-link,
+.queue-row-shell.previewed .subject-link {
+  color: var(--tessario-deep-blue);
 }
 
 .email-count-badge {
@@ -8928,13 +8949,13 @@ body:not(.is-admin) .admin-only {
   justify-content: space-between;
   gap: 10px;
   min-height: 25px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .ticket-header.compact .ticket-header-top .header-row {
   flex: 1 1 auto;
   min-width: 0;
-  gap: 6px;
+  gap: 7px;
 }
 
 .ticket-header.compact .ticket-header-top .ticket-back-button {
@@ -8980,8 +9001,8 @@ body:not(.is-admin) .admin-only {
 }
 
 .ticket-header.compact #copyLinkInlineButton {
-  min-height: 24px;
-  padding: 0 8px;
+  min-height: 28px;
+  padding: 0 10px;
   font-size: 11px;
 }
 
@@ -9006,9 +9027,9 @@ body:not(.is-admin) .admin-only {
   max-width: 920px;
   margin: 0;
   color: var(--tessario-text);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 760;
-  line-height: 1.18;
+  line-height: 1.22;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -9096,6 +9117,11 @@ body:not(.is-admin) .admin-only {
   padding-top: 0;
 }
 
+.detail-screen .ticket-header-controls label {
+  gap: 5px;
+  min-width: 0;
+}
+
 .ticket-summary-grid {
   display: grid;
   grid-template-columns: minmax(190px, 1.3fr) minmax(110px, .62fr) minmax(128px, .72fr) minmax(138px, .86fr);
@@ -9109,10 +9135,10 @@ body:not(.is-admin) .admin-only {
   gap: 2px;
   min-width: 0;
   min-height: 50px;
-  padding: 7px 9px;
+  padding: 8px 10px;
   color: var(--tessario-text);
   text-align: left;
-  background: rgba(244, 241, 251, 0.74);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(244, 241, 251, 0.78));
   border: 1px solid rgba(229, 225, 239, 0.82);
   border-radius: 9px;
 }
@@ -9135,7 +9161,7 @@ body:not(.is-admin) .admin-only {
 }
 
 .ticket-summary-item strong {
-  font-size: 12px;
+  font-size: 12.2px;
   font-weight: 760;
 }
 
