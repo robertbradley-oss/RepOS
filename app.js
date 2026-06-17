@@ -7076,13 +7076,14 @@ function renderDashboardPanel() {
     <div class="dashboard-header">
       <div>
         <h1>${currentDashboardView === "manager" ? "RepOS command center" : "My support dashboard"}</h1>
-        <p>${currentDashboardView === "manager" ? "Team command center for iSpring support." : "Your tickets first, with team trends shown only in aggregate."}</p>
+        <p>${currentDashboardView === "manager" ? "Team view for workload, SLA risk, and support queue movement." : "Your tickets first, with team trends shown only in aggregate."}</p>
       </div>
       <div class="dashboard-header-actions">
         ${renderDashboardViewToggle(currentDashboardView)}
         <button class="secondary-button" id="dashboardRefreshButton" type="button">Refresh</button>
       </div>
     </div>
+    ${renderDashboardOverview(currentDashboardView, scopedTickets, primaryTickets)}
     ${currentDashboardView === "manager" ? renderManagerDashboard(scopedTickets, primaryTickets) : renderRepDashboard(scopedTickets, primaryTickets)}
     ${renderAppFooter("dashboard-footer")}
   `;
@@ -7148,6 +7149,28 @@ function setDashboardView(nextView) {
   render();
 }
 
+function renderDashboardOverview(currentDashboardView, scopedTickets, primaryTickets) {
+  const managerView = currentDashboardView === "manager";
+  const metrics = managerView ? dashboardManagerMetricCards(scopedTickets) : dashboardRepMetricCards(primaryTickets, scopedTickets);
+  const activeScope = managerView ? scopedTickets.filter(isActiveTicket).length : primaryTickets.filter(isActiveTicket).length;
+  const scopeLabel = managerView ? "Team snapshot" : "My snapshot";
+  const scopeText = managerView
+    ? `${activeScope} active team tickets across the current dashboard filters.`
+    : `${activeScope} active assigned tickets in your current dashboard view.`;
+  return `
+    <section class="dashboard-overview" aria-label="${escapeHtml(scopeLabel)}">
+      <div class="dashboard-overview-copy">
+        <p class="eyebrow">${escapeHtml(scopeLabel)}</p>
+        <h2>${managerView ? "Queue health at a glance" : "Your queue at a glance"}</h2>
+        <p>${escapeHtml(scopeText)}</p>
+      </div>
+      <div class="dashboard-metrics dashboard-overview-metrics">
+        ${metrics.map(renderDashboardMetricCard).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderManagerDashboard(scopedTickets, primaryTickets) {
   return `
     ${renderTodayPriority(primaryTickets, "Manager Priority", "What needs action now")}
@@ -7195,6 +7218,13 @@ function renderRepDashboard(scopedTickets, primaryTickets) {
   return `
     ${renderTodayPriority(primaryTickets, "My Priority", "My work to move next", repPriorityCards(primaryTickets))}
     <section class="dashboard-grid">
+      <article class="dashboard-card rep-workload-card">
+        <div class="section-title">
+          <p class="eyebrow">My Workload</p>
+          <h3>Status summary</h3>
+        </div>
+        ${renderMyWorkload(primaryTickets)}
+      </article>
       <article class="dashboard-card needs-action-card">
         <div class="section-title">
           <p class="eyebrow">My Needs Action</p>
@@ -7330,12 +7360,42 @@ function dashboardMetricCards(scopedTickets) {
   ];
 }
 
+function dashboardManagerMetricCards(scopedTickets) {
+  const activeTickets = scopedTickets.filter(isActiveTicket);
+  const needsAction = needsActionTickets(scopedTickets);
+  const activeReps = visibleAssignmentUsers().filter((user) => activeTickets.some((ticket) => ticket.assignee === user.name)).length;
+  const customerReplies = scopedTickets.filter(customerRepliedWithoutRep);
+  const dueSoon = scopedTickets.filter(isSlaDueSoon);
+  const overdue = scopedTickets.filter(isOverdue);
+  return [
+    { label: "Active tickets", value: activeTickets.length, meta: `${activeReps} reps with open work`, tone: activeTickets.length > 14 ? "warn" : "neutral" },
+    { label: "Needs action", value: needsAction.length, meta: "Ranked by customer wait and SLA", tone: needsAction.length ? "risk" : "good" },
+    { label: "Customer replies", value: customerReplies.length, meta: "Waiting for a rep response", tone: customerReplies.length ? "warn" : "good" },
+    { label: "SLA due soon", value: dueSoon.length, meta: "Due within 8 hours", tone: dueSoon.length ? "warn" : "good" },
+    { label: "Overdue", value: overdue.length, meta: "Past due or breached", tone: overdue.length ? "risk" : "good" }
+  ];
+}
+
+function dashboardRepMetricCards(primaryTickets, scopedTickets) {
+  const activeTickets = primaryTickets.filter(isActiveTicket);
+  const customerReplies = primaryTickets.filter(customerRepliedWithoutRep);
+  const dueSoon = primaryTickets.filter(isSlaDueSoon);
+  const overdue = primaryTickets.filter(isOverdue);
+  return [
+    { label: "My active tickets", value: activeTickets.length, meta: `${scopedTickets.length} tickets in filtered scope`, tone: activeTickets.length > 8 ? "warn" : "neutral" },
+    { label: "Replies waiting", value: customerReplies.length, meta: "Customers need your next response", tone: customerReplies.length ? "warn" : "good" },
+    { label: "SLA due soon", value: dueSoon.length, meta: "Due within 8 hours", tone: dueSoon.length ? "warn" : "good" },
+    { label: "My overdue", value: overdue.length, meta: "Past due or breached", tone: overdue.length ? "risk" : "good" },
+    { label: "Closed today", value: primaryTickets.filter(closedToday).length, meta: "Completed from your queue", tone: "good" }
+  ];
+}
+
 function renderDashboardMetricCard(metric) {
   return `
     <article class="dashboard-metric tone-${metric.tone}">
       <span>${escapeHtml(metric.label)}</span>
       <strong>${escapeHtml(metric.value)}</strong>
-      <small class="trend">${escapeHtml(metric.trend)} vs previous period</small>
+      <small>${escapeHtml(metric.meta || metric.trend || "Current filtered view")}</small>
     </article>
   `;
 }
@@ -7349,7 +7409,7 @@ function renderActivityChart(scopedTickets) {
   const colors = {
     Created: "#7C5CFF",
     Closed: "#A78BFF",
-    Reopened: "#8a5208",
+    Reopened: "#0F766E",
     "SLA risk": "#D8453B",
     "Customer replied": "#6034E0"
   };
@@ -7611,6 +7671,7 @@ function renderRepWorkloadTable(scopedTickets) {
   const rows = visibleAssignmentUsers().map((user) => managerWorkloadRowData(user, scopedTickets));
   const maxActive = Math.max(1, ...rows.map((row) => row.active));
   return `
+    ${renderManagerWorkloadSnapshot(rows)}
     <div class="dashboard-table-wrap">
       <table class="dashboard-table rep-table manager-workload-table">
         <thead><tr><th>Rep name</th><th>Active tickets</th><th>Assigned today</th><th>Customer replies waiting</th><th>Overdue tickets</th><th>SLA due soon</th><th>Closed today</th><th>Oldest open ticket age</th><th>Assignment eligible</th><th>Risk level</th><th>Actions</th></tr></thead>
@@ -7641,6 +7702,30 @@ function renderRepWorkloadTable(scopedTickets) {
           }).join("")}
         </tbody>
       </table>
+    </div>
+  `;
+}
+
+function renderManagerWorkloadSnapshot(rows) {
+  const watchCount = rows.filter((row) => row.risk.tone === "watch").length;
+  const behindCount = rows.filter((row) => row.risk.tone === "behind").length;
+  const busiest = [...rows].sort((a, b) => b.active - a.active)[0];
+  const customerReplies = rows.reduce((total, row) => total + row.customerReplies, 0);
+  const summary = [
+    ["Watch reps", watchCount, "Need a check-in before risk grows"],
+    ["Behind reps", behindCount, "Need manager attention"],
+    ["Customer replies waiting", customerReplies, "Across eligible rep queues"],
+    ["Busiest rep", busiest ? busiest.user.name : "None", busiest ? `${busiest.active} active tickets` : "No active workload"]
+  ];
+  return `
+    <div class="workload-summary-grid manager-workload-summary">
+      ${summary.map(([label, value, detail]) => `
+        <article>
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+          <small>${escapeHtml(detail)}</small>
+        </article>
+      `).join("")}
     </div>
   `;
 }

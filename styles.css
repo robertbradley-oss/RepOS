@@ -4635,6 +4635,7 @@ body:not(.is-admin) .admin-only {
 }
 
 .dashboard-header,
+.dashboard-overview,
 .dashboard-filter-bar,
 .dashboard-card,
 .dashboard-metric,
@@ -4672,6 +4673,38 @@ body:not(.is-admin) .admin-only {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+}
+
+.dashboard-overview {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.62fr) minmax(0, 1.38fr);
+  gap: 14px;
+  align-items: stretch;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.dashboard-overview-copy {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 2px;
+}
+
+.dashboard-overview-copy h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.dashboard-overview-copy p:not(.eyebrow) {
+  margin: 0;
+  color: #516170;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
 }
 
 .dashboard-view-toggle {
@@ -4744,15 +4777,22 @@ body:not(.is-admin) .admin-only {
 
 .dashboard-metrics {
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
   margin-bottom: 12px;
+}
+
+.dashboard-overview-metrics {
+  margin-bottom: 0;
 }
 
 .dashboard-metric {
   display: grid;
   gap: 5px;
-  padding: 12px;
+  align-content: start;
+  min-height: 104px;
+  padding: 13px;
+  background: linear-gradient(180deg, #ffffff, #fbfafe);
   border-left: 4px solid var(--tessario-blue);
 }
 
@@ -4779,7 +4819,7 @@ body:not(.is-admin) .admin-only {
 }
 
 .dashboard-metric.tone-warn {
-  border-left-color: #d58a00;
+  border-left-color: #0891B2;
 }
 
 .dashboard-metric.tone-risk {
@@ -4932,8 +4972,8 @@ body:not(.is-admin) .admin-only {
 }
 
 .manager-risk-row.risk-watch {
-  background: rgba(213, 138, 0, 0.045);
-  box-shadow: inset 3px 0 0 #d58a00;
+  background: rgba(8, 145, 178, 0.055);
+  box-shadow: inset 3px 0 0 #0891B2;
 }
 
 .manager-risk-row.risk-behind {
@@ -4942,7 +4982,7 @@ body:not(.is-admin) .admin-only {
 }
 
 .manager-risk-row.risk-watch:hover {
-  background: rgba(213, 138, 0, 0.075);
+  background: rgba(8, 145, 178, 0.085);
 }
 
 .manager-risk-row.risk-behind:hover {
@@ -5134,7 +5174,7 @@ body:not(.is-admin) .admin-only {
 }
 
 .priority-card.tone-warn {
-  border-top-color: #D58A00;
+  border-top-color: #0891B2;
 }
 
 .priority-card.tone-risk {
@@ -5367,6 +5407,16 @@ body:not(.is-admin) .admin-only {
   gap: 8px;
 }
 
+.manager-workload-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.manager-workload-summary strong {
+  font-size: 18px;
+  line-height: 1.14;
+}
+
 .workload-summary-grid article {
   padding: 11px;
   background: #fbfafe;
@@ -5409,9 +5459,9 @@ body:not(.is-admin) .admin-only {
 
 .workload-chip.chip-warn,
 .trend-change.up {
-  color: #7A4A00;
-  background: rgba(213, 138, 0, 0.11);
-  border-color: rgba(213, 138, 0, 0.28);
+  color: #075985;
+  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(8, 145, 178, 0.28);
 }
 
 .workload-chip.chip-risk {
@@ -5439,9 +5489,9 @@ body:not(.is-admin) .admin-only {
 }
 
 .risk-pill.risk-watch {
-  color: #7A4A00;
-  background: rgba(213, 138, 0, 0.12);
-  border-color: rgba(213, 138, 0, 0.3);
+  color: #075985;
+  background: rgba(8, 145, 178, 0.12);
+  border-color: rgba(8, 145, 178, 0.3);
 }
 
 .risk-pill.risk-behind {
@@ -7656,6 +7706,26 @@ body:not(.is-admin) .admin-only {
 }
 
 @media (max-width: 720px) {
+  .dashboard-header,
+  .dashboard-header-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-overview,
+  .dashboard-priority,
+  .dashboard-card {
+    padding: 12px;
+  }
+
+  .manager-workload-summary,
+  .workload-summary-grid,
+  .team-trend-stats,
+  .team-trend-widget-grid,
+  .dashboard-widget-grid {
+    grid-template-columns: 1fr;
+  }
+
   .receipt-edit-grid.two-column,
   .receipt-edit-grid.three-column,
   .receipt-edit-grid.four-column {
@@ -10316,6 +10386,16 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 @media (max-width: 1280px) {
   .app-shell {
     grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  .dashboard-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-workload-summary,
+  .team-trend-widget-grid,
+  .dashboard-widget-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .ticket-header.compact .ticket-header-main {
