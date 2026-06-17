@@ -598,7 +598,7 @@ h6 {
 
 .logo-badge span {
   color: var(--tessario-navy);
-  font-weight: 900;
+  font-weight: 750;
   line-height: 1;
 }
 
@@ -628,7 +628,7 @@ h6 {
 .brand-copy strong {
   color: var(--ink);
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.12;
   letter-spacing: -0.01em;
 }
@@ -702,7 +702,7 @@ h6 {
   max-width: 160px;
   overflow: hidden;
   font-size: 13px;
-  font-weight: 820;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition:
@@ -1139,7 +1139,7 @@ kbd {
   height: 38px;
   padding: 0 13px;
   font-size: 13px;
-  font-weight: 850;
+  font-weight: 700;
   line-height: 1;
   white-space: nowrap;
 }
@@ -1275,7 +1275,7 @@ kbd {
   border: 1px solid var(--line-soft);
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .notification-filters button.active,
@@ -1332,7 +1332,7 @@ kbd {
   flex: 0 0 auto;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .notification-item p {
@@ -1350,7 +1350,7 @@ kbd {
   background: rgba(124, 92, 255, 0.08);
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .notification-actions {
@@ -1430,7 +1430,7 @@ kbd {
   background: var(--tessario-soft-active);
   border: 1px solid rgba(124, 92, 255, 0.12);
   border-radius: 10px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .user-profile strong,
@@ -1522,7 +1522,7 @@ kbd {
 .icon-button {
   min-height: 34px;
   border-radius: var(--radius-md);
-  font-weight: 780;
+  font-weight: 650;
   box-shadow: var(--shadow-control);
   transform: translateY(0);
   transition: var(--motion-transition-interactive);
@@ -1720,7 +1720,7 @@ kbd {
   padding: 0 10px;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
   list-style: none;
   cursor: pointer;
 }
@@ -1766,7 +1766,7 @@ kbd {
   margin-top: 5px;
   color: #304754;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   line-height: 1.2;
 }
 
@@ -2032,7 +2032,7 @@ body:not(.is-admin) .admin-only {
   flex: 0 0 auto;
   color: inherit;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 750;
   white-space: nowrap;
 }
 
@@ -2046,7 +2046,7 @@ body:not(.is-admin) .admin-only {
   border-radius: 6px;
   box-shadow: none;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -2115,7 +2115,7 @@ body:not(.is-admin) .admin-only {
 .preview-copy .badge span,
 .preview-copy .sla span {
   font-size: 9px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
   opacity: 0.7;
 }
@@ -2140,7 +2140,7 @@ body:not(.is-admin) .admin-only {
   display: block;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -2149,7 +2149,7 @@ body:not(.is-admin) .admin-only {
   overflow: hidden;
   color: #263943;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2315,7 +2315,7 @@ body:not(.is-admin) .admin-only {
   min-width: 94px;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 850;
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -2345,7 +2345,7 @@ body:not(.is-admin) .admin-only {
   border-radius: 8px;
   box-shadow: var(--shadow-button), inset 0 1px 0 rgba(255, 255, 255, 0.86);
   font-size: 11.5px;
-  font-weight: 850;
+  font-weight: 700;
   white-space: nowrap;
   transition:
     color var(--motion-fast) var(--ease-out),
@@ -2531,7 +2531,7 @@ body:not(.is-admin) .admin-only {
   border-radius: 6px;
   box-shadow: none;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
   transform: translateY(0);
   transition: var(--motion-transition-interactive);
 }
@@ -2551,7 +2551,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid rgba(124, 92, 255, 0.16);
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
   line-height: 1;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
@@ -2614,7 +2614,7 @@ body:not(.is-admin) .admin-only {
   margin-left: 2px;
   color: var(--muted);
   font-size: 10.5px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .closed-date-filter[hidden] {
@@ -2701,7 +2701,7 @@ body:not(.is-admin) .admin-only {
   gap: 2px;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -2760,7 +2760,7 @@ body:not(.is-admin) .admin-only {
   gap: 3px;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .control-row select {
@@ -2809,6 +2809,9 @@ body:not(.is-admin) .admin-only {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .queue-table-header-row,
@@ -2826,19 +2829,22 @@ body:not(.is-admin) .admin-only {
 .queue-table-header-cell,
 .queue-row-cell {
   overflow: hidden;
-  padding: 5px 8px;
-  border-bottom: 1px solid var(--line-soft);
-  font-size: 11.5px;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  font-size: 12.5px;
   text-align: left;
   vertical-align: middle;
   white-space: nowrap;
 }
 
 .queue-table-header-cell {
-  color: var(--tessario-muted);
-  background: #f4f1fb;
-  border-bottom-color: var(--tessario-border);
-  font-weight: 900;
+  color: var(--ink-tertiary);
+  background: transparent;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .queue-row-shell {
@@ -2854,7 +2860,7 @@ body:not(.is-admin) .admin-only {
 
 .queue-row-content {
   position: relative;
-  min-height: 36px;
+  min-height: 50px;
   background: inherit;
   transform-origin: 50% 50%;
   transition:
@@ -2867,13 +2873,8 @@ body:not(.is-admin) .admin-only {
   animation: none;
 }
 
-.queue-row-shell:nth-child(even) {
-  background: #fbfafe;
-}
-
 .queue-row-shell:hover:not(.checked) {
-  background: rgba(124, 92, 255, 0.04);
-  box-shadow: inset 2px 0 0 rgba(124, 92, 255, 0.18);
+  background: rgba(124, 92, 255, 0.05);
 }
 
 .queue-row-shell.previewed:not(.checked) {
@@ -2904,7 +2905,7 @@ body:not(.is-admin) .admin-only {
 .queue-pagination p {
   margin: 0;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .queue-pagination-controls,
@@ -2924,7 +2925,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid var(--line-soft);
   border-radius: 7px;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -3113,7 +3114,7 @@ body:not(.is-admin) .admin-only {
 
 .table-ticket-id {
   color: var(--tessario-blue);
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .subject-link {
@@ -3210,7 +3211,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid rgba(124, 92, 255, 0.18);
   border-radius: 999px;
   font-size: 10.5px;
-  font-weight: 900;
+  font-weight: 750;
   line-height: 1;
 }
 
@@ -3292,14 +3293,14 @@ body:not(.is-admin) .admin-only {
 .ticket-id {
   color: var(--tessario-blue);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .age,
 .sla {
   color: var(--muted);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .overdue {
@@ -3343,7 +3344,7 @@ body:not(.is-admin) .admin-only {
   padding: 0 7px;
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .badge.status {
@@ -3404,7 +3405,7 @@ body:not(.is-admin) .admin-only {
   color: var(--tessario-blue);
   background: transparent;
   border: 0;
-  font-weight: 900;
+  font-weight: 750;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -3434,7 +3435,7 @@ body:not(.is-admin) .admin-only {
   gap: 3px;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -3447,7 +3448,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid var(--line);
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: none;
 }
 
@@ -3468,7 +3469,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid var(--line-soft);
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .thread {
@@ -3541,7 +3542,7 @@ body:not(.is-admin) .admin-only {
 .message-subject span {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -3616,7 +3617,7 @@ body:not(.is-admin) .admin-only {
 
 .timeline-row strong {
   color: #627084;
-  font-weight: 850;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -3706,7 +3707,7 @@ body:not(.is-admin) .admin-only {
     linear-gradient(135deg, #f0ecf9 0%, #b7a7f3 46%, #7c5cff 100%);
   border-radius: 7px;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .attachment-file-icon {
@@ -3717,7 +3718,7 @@ body:not(.is-admin) .admin-only {
   background: #6b6680;
   border-radius: 7px;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .thread-attachment-meta {
@@ -3764,7 +3765,7 @@ body:not(.is-admin) .admin-only {
 .composer-head span {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .reply-tabs {
@@ -3780,7 +3781,7 @@ body:not(.is-admin) .admin-only {
   background: #f6f3fc;
   border: 1px solid var(--line-soft);
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 700;
   transform: translateY(0);
   transition: var(--motion-transition-interactive);
 }
@@ -3810,7 +3811,7 @@ body:not(.is-admin) .admin-only {
 .signature-options > span {
   color: var(--tessario-muted);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -3854,7 +3855,7 @@ body:not(.is-admin) .admin-only {
   border: 0;
   border-radius: 5px;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .format-toolbar button:hover {
@@ -3968,7 +3969,7 @@ body:not(.is-admin) .admin-only {
   background: #ece7fb;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .diagnosis-list,
@@ -3989,7 +3990,7 @@ body:not(.is-admin) .admin-only {
 .info-list dt {
   color: var(--muted);
   font-size: 9.5px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .diagnosis-list dd,
@@ -4041,7 +4042,7 @@ body:not(.is-admin) .admin-only {
   margin-bottom: 7px;
   color: var(--muted);
   font-size: 9.5px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -4108,7 +4109,7 @@ body:not(.is-admin) .admin-only {
 .review-link-row span {
   color: var(--muted);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -4125,7 +4126,7 @@ body:not(.is-admin) .admin-only {
   min-width: 0;
   color: var(--muted);
   font-size: 9.5px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -4180,7 +4181,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid var(--line-soft);
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .macro-category-row button.active {
@@ -4202,7 +4203,7 @@ body:not(.is-admin) .admin-only {
   padding: 7px 9px;
   color: #314754;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 750;
   cursor: pointer;
 }
 
@@ -4250,7 +4251,7 @@ body:not(.is-admin) .admin-only {
   gap: 8px;
   color: #324852;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .macro-section-title span {
@@ -4293,7 +4294,7 @@ body:not(.is-admin) .admin-only {
 .macro-card span {
   color: var(--tessario-cyan);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .macro-card p {
@@ -4317,7 +4318,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid #eadfb3;
   border-radius: 8px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .inline-details {
@@ -4330,7 +4331,7 @@ body:not(.is-admin) .admin-only {
   color: var(--muted);
   cursor: pointer;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .inline-details p {
@@ -4416,7 +4417,7 @@ body:not(.is-admin) .admin-only {
   border: 0;
   border-radius: 6px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
   white-space: nowrap;
   transition:
     background-color var(--motion-fast) var(--ease-out),
@@ -4452,7 +4453,7 @@ body:not(.is-admin) .admin-only {
 .dashboard-filter-bar span {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .dashboard-filter-bar select {
@@ -4483,7 +4484,7 @@ body:not(.is-admin) .admin-only {
 .dashboard-metric span {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .dashboard-metric strong {
@@ -4564,7 +4565,7 @@ body:not(.is-admin) .admin-only {
   gap: 9px 14px;
   color: #465a69;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .chart-legend span {
@@ -4603,7 +4604,7 @@ body:not(.is-admin) .admin-only {
   color: var(--muted);
   background: #f4f1fb;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -4643,7 +4644,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid rgba(124, 92, 255, 0.28);
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 850;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -4754,7 +4755,7 @@ body:not(.is-admin) .admin-only {
   display: block;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .sla-health-grid strong {
@@ -4875,7 +4876,7 @@ body:not(.is-admin) .admin-only {
 .priority-card span {
   color: #405366;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
   line-height: 1.25;
 }
 
@@ -4929,7 +4930,7 @@ body:not(.is-admin) .admin-only {
   display: block;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .team-trend-stats strong {
@@ -5022,7 +5023,7 @@ body:not(.is-admin) .admin-only {
   margin-bottom: 10px;
   color: #35495A;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .created-closed-bars,
@@ -5043,7 +5044,7 @@ body:not(.is-admin) .admin-only {
   background: transparent;
   border: 0;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
   text-align: left;
 }
 
@@ -5103,7 +5104,7 @@ body:not(.is-admin) .admin-only {
   display: block;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .workload-summary-grid strong {
@@ -5127,7 +5128,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid #e0daf0;
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   white-space: nowrap;
 }
 
@@ -5313,7 +5314,7 @@ body:not(.is-admin) .admin-only {
   background: #6b6680;
   border-radius: 8px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .attachment-preview-image {
@@ -5347,7 +5348,7 @@ body:not(.is-admin) .admin-only {
   background: #eaf1f4;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .attachment-card small,
@@ -5404,7 +5405,7 @@ body:not(.is-admin) .admin-only {
   background: rgba(26, 26, 46, 0.16);
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .mock-file-preview span {
@@ -5491,7 +5492,7 @@ body:not(.is-admin) .admin-only {
   background: var(--tessario-soft-active);
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -5537,7 +5538,7 @@ body:not(.is-admin) .admin-only {
 .receipt-brand-row small {
   color: var(--tessario-muted);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -5572,7 +5573,7 @@ body:not(.is-admin) .admin-only {
 .receipt-phone-frame dt {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -5580,7 +5581,7 @@ body:not(.is-admin) .admin-only {
 .receipt-phone-frame dd {
   margin: 0;
   color: var(--ink);
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .receipt-line-item,
@@ -5597,7 +5598,7 @@ body:not(.is-admin) .admin-only {
 .receipt-total-row span {
   color: var(--tessario-text);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .receipt-line-item strong,
@@ -5643,7 +5644,7 @@ body:not(.is-admin) .admin-only {
   border-radius: 999px;
   color: var(--tessario-blue);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .receipt-phone-frame strong {
@@ -5798,7 +5799,7 @@ body:not(.is-admin) .admin-only {
   gap: 5px;
   color: #2a2a3e;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .form-grid input,
@@ -5875,13 +5876,13 @@ body:not(.is-admin) .admin-only {
 
 .create-ticket-advanced summary span {
   font-size: 13px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .create-ticket-advanced summary small {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -5923,7 +5924,7 @@ body:not(.is-admin) .admin-only {
   gap: 5px;
   color: #2a2a3e;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .message-field textarea {
@@ -6006,7 +6007,7 @@ body:not(.is-admin) .admin-only {
   gap: 6px;
   color: #2a2a3e;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .confirmation-field select,
@@ -6154,7 +6155,7 @@ body:not(.is-admin) .admin-only {
 .admin-tool-card span {
   margin-top: 4px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0;
@@ -6223,7 +6224,7 @@ body:not(.is-admin) .admin-only {
   gap: 4px;
   color: var(--tessario-muted);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -6341,7 +6342,7 @@ body:not(.is-admin) .admin-only {
   color: var(--muted);
   background: #f4f1fb;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -6377,7 +6378,7 @@ body:not(.is-admin) .admin-only {
   align-items: center;
   gap: 6px;
   color: var(--tessario-text);
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .knowledge-actions {
@@ -6402,7 +6403,7 @@ body:not(.is-admin) .admin-only {
   margin-bottom: 4px;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -6448,7 +6449,7 @@ body:not(.is-admin) .admin-only {
   padding: 3px 8px;
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .status-approved {
@@ -6485,7 +6486,7 @@ body:not(.is-admin) .admin-only {
 .knowledge-meta dt {
   color: var(--tessario-muted);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -6521,7 +6522,7 @@ body:not(.is-admin) .admin-only {
   gap: 5px;
   color: var(--tessario-muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .admin-table-wrap {
@@ -6589,7 +6590,7 @@ body:not(.is-admin) .admin-only {
 .history-summary span {
   color: var(--muted);
   font-size: 10px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .history-account-card,
@@ -6675,7 +6676,7 @@ body:not(.is-admin) .admin-only {
 .history-table th {
   color: var(--muted);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
   background: #f6f3fc;
 }
@@ -6690,7 +6691,7 @@ body:not(.is-admin) .admin-only {
   min-height: 22px;
   padding: 2px 9px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border: 1px solid var(--hairline);
@@ -6756,7 +6757,7 @@ body:not(.is-admin) .admin-only {
 .account-note-card span {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .warranty-toggle {
@@ -6768,7 +6769,7 @@ body:not(.is-admin) .admin-only {
   padding: 7px 10px;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
   background: #fff;
   border: 1px solid var(--line-soft);
   border-radius: 8px;
@@ -6857,7 +6858,7 @@ body:not(.is-admin) .admin-only {
   padding: 6px 10px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -6917,7 +6918,7 @@ body:not(.is-admin) .admin-only {
 .section-helper {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .history-two-column {
@@ -7005,7 +7006,7 @@ body:not(.is-admin) .admin-only {
   margin-top: 6px;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
 }
 
@@ -7138,7 +7139,7 @@ body:not(.is-admin) .admin-only {
   min-width: 0;
   color: #2a2a3e;
   font-size: 12px;
-  font-weight: 820;
+  font-weight: 700;
 }
 
 .receipt-field.wide-field {
@@ -7304,7 +7305,7 @@ body:not(.is-admin) .admin-only {
   gap: 4px;
   color: #2a2a3e;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .customer-edit-form input {
@@ -7330,7 +7331,7 @@ body:not(.is-admin) .admin-only {
   padding: 7px 9px;
   color: #8a4b00;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   background: rgba(245, 158, 11, 0.14);
   border: 1px solid rgba(245, 158, 11, 0.22);
   border-radius: 8px;
@@ -7466,7 +7467,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid transparent;
   border-bottom: 0;
   border-radius: 8px 8px 0 0;
-  font-weight: 850;
+  font-weight: 700;
   position: relative;
   transition: color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
 }
@@ -7577,7 +7578,7 @@ body:not(.is-admin) .admin-only {
   gap: 5px;
   color: var(--tessario-text);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .profile-field span,
@@ -7719,7 +7720,7 @@ body:not(.is-admin) .admin-only {
   border-radius: 8px;
   box-shadow: var(--shadow-toast);
   font-size: 13px;
-  font-weight: 850;
+  font-weight: 700;
   transform: translateY(0);
   opacity: 1;
   transition:
@@ -7811,7 +7812,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid rgba(124, 92, 255, 0.18);
   border-radius: 8px;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .assist-messages {
@@ -7851,7 +7852,7 @@ body:not(.is-admin) .admin-only {
   margin-bottom: 6px;
   color: inherit;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .assist-message p {
@@ -7877,7 +7878,7 @@ body:not(.is-admin) .admin-only {
   color: var(--tessario-muted);
   cursor: pointer;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .assist-sources summary {
@@ -8257,7 +8258,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid rgba(124, 92, 255, 0.18);
   border-radius: 11px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .user-profile div {
@@ -8634,7 +8635,7 @@ body:not(.is-admin) .admin-only {
 .toolbar-select .tessario-select-trigger {
   min-height: 36px;
   font-size: 11.5px;
-  font-weight: 820;
+  font-weight: 700;
 }
 
 .bulk-actions .tessario-select {
@@ -8650,7 +8651,7 @@ body:not(.is-admin) .admin-only {
 .bulk-actions .tessario-select-trigger {
   min-height: 32px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .bulk-actions .tessario-select-value {
@@ -8675,7 +8676,7 @@ body:not(.is-admin) .admin-only {
   min-height: 32px;
   padding: 0 9px 0 11px;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
   background: linear-gradient(180deg, #FFFFFF 0%, #f4f1fb 100%);
   border-color: rgba(199, 219, 236, 0.92);
   border-radius: 8px;
@@ -8934,7 +8935,7 @@ body:not(.is-admin) .admin-only {
   max-width: 920px;
   margin: 0;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   min-width: 0;
   overflow: hidden;
@@ -8969,7 +8970,7 @@ body:not(.is-admin) .admin-only {
 .ticket-details-panel summary span {
   color: var(--tessario-text);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 750;
 }
 
 .ticket-details-panel summary strong {
@@ -8977,7 +8978,7 @@ body:not(.is-admin) .admin-only {
   overflow: hidden;
   color: var(--tessario-muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -8999,7 +9000,7 @@ body:not(.is-admin) .admin-only {
 .composer-status-field span {
   color: var(--tessario-muted);
   font-size: 9.5px;
-  font-weight: 900;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -9008,7 +9009,7 @@ body:not(.is-admin) .admin-only {
   overflow: hidden;
   color: var(--tessario-text);
   font-size: 11.5px;
-  font-weight: 780;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -9151,7 +9152,7 @@ body:not(.is-admin) .admin-only {
   border: none;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.01em;
   box-shadow: var(--shadow-button);
   cursor: pointer;
@@ -9355,7 +9356,7 @@ body:not(.is-admin) .admin-only {
   border: 1px solid var(--field-border);
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .reply-dock textarea:focus {
@@ -9388,7 +9389,7 @@ body:not(.is-admin) .admin-only {
   margin: -2px 0 0;
   color: var(--red);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .composer-bar {
@@ -9805,7 +9806,7 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 .dashboard-header h1,
 .knowledge-header h1,
 .profile-hero h2 {
-  font-weight: 850;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
@@ -9822,7 +9823,7 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 .receipt-field label {
   color: #6b6680;
   font-size: 10.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
@@ -9834,7 +9835,7 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 .queue-view-tab,
 .tessario-select-trigger,
 .tessario-select-option {
-  font-weight: 780;
+  font-weight: 650;
   letter-spacing: 0;
 }
 
@@ -9847,12 +9848,12 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 .queue-table-header-cell {
   color: #4f6275;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
 .table-ticket-id {
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .subject-link,
@@ -9879,7 +9880,7 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 
 .preview-copy strong {
   font-size: 14.5px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .preview-copy p {
@@ -9915,7 +9916,7 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
   border-radius: 8px;
   box-shadow: 0 8px 18px rgba(124, 92, 255, 0.16);
   font-size: 12.5px;
-  font-weight: 850;
+  font-weight: 700;
   text-align: center;
 }
 
