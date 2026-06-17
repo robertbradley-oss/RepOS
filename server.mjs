@@ -71,7 +71,7 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, "127.0.0.1", () => {
-  console.log(`RepOS (iSpring Model) running at http://127.0.0.1:${port}`);
+  console.log(`RepOS running at http://127.0.0.1:${port}`);
   console.log(`Persistence: ${store.mode}`);
 });
 
@@ -79,7 +79,7 @@ async function handleApi(request, response, url) {
   if (request.method === "GET" && url.pathname === "/api/health") {
     sendJson(response, 200, {
       ok: true,
-      app: "RepOS (iSpring Model)",
+      app: "RepOS",
       mode: "mvp-backend",
       persistence: store.mode,
       authMode

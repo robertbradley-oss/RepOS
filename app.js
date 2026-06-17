@@ -36,11 +36,11 @@ const legacyRepNameMap = {
 };
 
 const workspaceConfig = {
-  productName: "RepOS (iSpring Model)",
+  productName: "RepOS",
   workspaceName: "iSpring Water Systems",
   workspaceShortName: "iSpring",
   workspaceLabel: "Workspace: iSpring Water Systems",
-  tagline: "Support · Resolve · Deliver",
+  tagline: "Ticketing made clear",
   workspaceNote: "iSpring Water Systems is the active workspace in this RepOS session.",
   ticketPrefix: "ISP",
   departments: ["3-CS", "Support", "Technical Support", "Warranty", "Returns"],

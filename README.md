@@ -1,10 +1,10 @@
-﻿# RepOS (iSpring Model)
+﻿# RepOS
 
 ## Project Purpose
 
-RepOS, short for Rep Operating System, is a front-end prototype for a modern internal ticketing workspace. This version is the iSpring model, a demo workspace built around realistic water-system support tickets, customer history, rep workflows, macros, and follow-up context.
+RepOS, short for Rep Operating System, is a front-end prototype for a modern internal ticketing workspace. The current demo workspace uses iSpring Water Systems, with realistic water-system support tickets, customer history, rep workflows, macros, and follow-up context.
 
-The product concept is workspace-agnostic: RepOS provides the ticketing, dashboard, customer-history, assignment, macro, and assistant experience, while the iSpring model supplies the sample departments, products, policies, tickets, and support language used to demonstrate the workflow.
+The product concept is workspace-agnostic: RepOS provides the ticketing, dashboard, customer-history, assignment, and macro experience, while the iSpring demo workspace supplies the sample departments, products, policies, tickets, and support language used to demonstrate the workflow.
 
 This is currently an MVP prototype with a lightweight local backend. It includes server-side JSON persistence for demo data, optional Postgres support, MVP auth, and protected local file uploads. It does not yet include production login, email sync, order lookup, inventory lookup, cloud file storage, or document text extraction.
 

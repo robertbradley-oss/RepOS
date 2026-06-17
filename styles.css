@@ -3,8 +3,8 @@
   /* ===== RepStack/RepReport design system (Apple glass + soft-UI), RepOS purple colorway =====
      Shared system tokens are identical to RepStack/RepReport; the only per-app
      "colorway" knobs are --accent (+ soft/ring) and the three background glows. */
-  --accent: #7c5cff;            /* vivid violet — active states, focus, fills */
-  --accent-strong: #6034e0;     /* deeper violet — text/links/solid fills on white */
+  --accent: #7c5cff;            /* vivid violet for active states, focus, fills */
+  --accent-strong: #6034e0;     /* deeper violet for text, links, solid fills */
   --accent-deep: #4a23b8;
   --accent-soft: rgba(124, 92, 255, 0.16);
   --accent-ring: rgba(124, 92, 255, 0.34);
@@ -47,20 +47,36 @@
   --bg-glow-2: #e0c8fb;
   --bg-glow-3: #c0bef4;
 
-  /* ---- Legacy RepOS aliases, repointed onto the system above (names kept for compatibility) ---- */
-  --tessario-navy: var(--ink);
-  --tessario-deep-blue: var(--accent-strong);
-  --tessario-blue: var(--accent);
-  --tessario-bright-blue: #8f73ff;
-  --tessario-cyan: #a78bff;
-  --tessario-violet: var(--accent);
-  --tessario-bg: #ece8f6;
-  --tessario-card: #ffffff;
-  --tessario-border: var(--hairline);
-  --tessario-muted: var(--ink-secondary);
-  --tessario-text: var(--ink);
-  --tessario-gradient: linear-gradient(135deg, #8f73ff 0%, #7c5cff 52%, #6034e0 100%);
-  --tessario-soft-active: linear-gradient(135deg, rgba(124, 92, 255, 0.16), rgba(124, 92, 255, 0.08));
+  /* ---- RepOS product brand tokens ---- */
+  --repos-navy: var(--ink);
+  --repos-deep-blue: var(--accent-strong);
+  --repos-blue: var(--accent);
+  --repos-bright-blue: #8f73ff;
+  --repos-cyan: #19c9ff;
+  --repos-teal: #0f766e;
+  --repos-violet: var(--accent);
+  --repos-bg: #ece8f6;
+  --repos-card: #ffffff;
+  --repos-border: var(--hairline);
+  --repos-muted: var(--ink-secondary);
+  --repos-text: var(--ink);
+  --repos-gradient: linear-gradient(135deg, #8f73ff 0%, #7c5cff 52%, #6034e0 100%);
+  --repos-soft-active: linear-gradient(135deg, rgba(124, 92, 255, 0.16), rgba(124, 92, 255, 0.08));
+
+  /* ---- Legacy CSS aliases retained for selector/token compatibility only ---- */
+  --tessario-navy: var(--repos-navy);
+  --tessario-deep-blue: var(--repos-deep-blue);
+  --tessario-blue: var(--repos-blue);
+  --tessario-bright-blue: var(--repos-bright-blue);
+  --tessario-cyan: var(--repos-cyan);
+  --tessario-violet: var(--repos-violet);
+  --tessario-bg: var(--repos-bg);
+  --tessario-card: var(--repos-card);
+  --tessario-border: var(--repos-border);
+  --tessario-muted: var(--repos-muted);
+  --tessario-text: var(--repos-text);
+  --tessario-gradient: var(--repos-gradient);
+  --tessario-soft-active: var(--repos-soft-active);
   --surface-raised: var(--surface-glass-strong);
   --surface-subtle: rgba(255, 255, 255, 0.5);
   --field-bg: var(--neu-surface);
