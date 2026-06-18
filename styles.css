@@ -16,7 +16,7 @@
 
   --surface-glass: rgba(255, 255, 255, 0.55);
   --surface-glass-strong: rgba(255, 255, 255, 0.8);
-  --card-fade-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.8) 116px);
+  --card-fade-bg: rgba(255, 255, 255, 0.88);
   --hairline: rgba(15, 23, 42, 0.08);
   --hairline-strong: rgba(15, 23, 42, 0.14);
   --glass-blur: blur(20px) saturate(180%);
@@ -42,7 +42,7 @@
   --shadow-resting: 0 1px 2px rgba(15, 23, 42, 0.035), 0 10px 24px -12px rgba(15, 23, 42, 0.14);
   --shadow-raised: 0 2px 4px rgba(15, 23, 42, 0.06), 0 18px 36px -16px rgba(15, 23, 42, 0.2);
   --shadow-floating: 0 4px 8px rgba(15, 23, 42, 0.08), 0 28px 54px -18px rgba(15, 23, 42, 0.26);
-  --shadow-neu-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 28px -20px rgba(15, 23, 42, 0.22);
+  --shadow-neu-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -14px rgba(15, 23, 42, 0.17);
 
   --bg-glow-1: #c3b0ff;
   --bg-glow-2: #e0c8fb;
@@ -1640,7 +1640,7 @@ kbd {
   fill: currentColor;
 }
 
-/* ---- Neumorphic recessed buttons (per request) ---- */
+/* ---- Neumorphic soft-UI buttons (per request) ---- */
 .secondary-button,
 .ghost-button,
 .icon-button,
@@ -1649,11 +1649,17 @@ kbd {
 .toolbar-clear-button,
 .queue-page-button {
   color: var(--ink-secondary);
-  background: #e9e7f3;
-  border: 1.5px solid #d6d3e7;
+  background: #e8e7ef;
+  border: 2px solid #d6d4e2;
+  border-radius: 999px;
+  font-weight: 650;
   box-shadow:
-    inset 3px 3px 7px #c6c2da,
-    inset -3px -3px 7px #ffffff;
+    inset 4px 4px 10px #c5c3d4,
+    inset -4px -4px 10px #ffffff;
+  transition:
+    color 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
 }
 
 .secondary-button:hover,
@@ -1668,44 +1674,49 @@ kbd {
 .icon-button:focus-visible,
 .toolbar-icon-button:focus-visible {
   color: var(--accent-strong);
-  border-color: rgba(124, 92, 255, 0.34);
+  border-color: rgba(124, 92, 255, 0.30);
+  transform: none;
   box-shadow:
-    inset 2px 2px 5px #c6c2da,
+    inset 2px 2px 5px #c5c3d4,
     inset -2px -2px 5px #ffffff,
-    3px 3px 7px #cac6dd,
-    -3px -3px 7px #ffffff;
+    3px 3px 6px #c9c7d8,
+    -3px -3px 6px #ffffff;
 }
 
 .secondary-button:active,
 .ghost-button:active,
 .icon-button:active,
 .toolbar-icon-button:active,
-.reset-filter-button:active {
+.reset-filter-button:active,
+.queue-page-button:active {
+  transform: none;
   box-shadow:
-    inset 4px 4px 9px #c0bcd4,
-    inset -4px -4px 9px #ffffff;
+    inset 5px 5px 11px #bfbdce,
+    inset -5px -5px 11px #ffffff;
 }
 
-/* Primary keeps the purple but gains a raised neu cushion */
+/* Round icon buttons so the neu pillow reads as a circle */
+.icon-button,
+.toolbar-icon-button {
+  border-radius: 999px;
+}
+
+/* Primary: clean, polished raised purple pill */
 .primary-button {
   border: none;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.30),
-    4px 4px 11px rgba(124, 92, 255, 0.30),
-    -3px -3px 9px rgba(255, 255, 255, 0.5);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 7px 18px -5px rgba(124, 92, 255, 0.55);
 }
 
 .primary-button:hover {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    5px 5px 14px rgba(124, 92, 255, 0.38),
-    -4px -4px 11px rgba(255, 255, 255, 0.55);
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 10px 24px -6px rgba(124, 92, 255, 0.62);
 }
 
 .primary-button:active {
-  box-shadow:
-    inset 2px 2px 6px rgba(74, 35, 184, 0.45),
-    inset -2px -2px 6px rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 2px 6px rgba(56, 26, 150, 0.45);
 }
 
 .primary-button:focus-visible,
