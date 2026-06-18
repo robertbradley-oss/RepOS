@@ -498,7 +498,7 @@ h6 {
   display: none;
 }
 
-.sidebar-collapsed .brand-copy,
+.sidebar-collapsed .sidebar .brand-copy,
 .sidebar-collapsed .nav-label {
   position: absolute;
   width: max-content;
@@ -510,12 +510,12 @@ h6 {
   transform: translateX(calc(var(--motion-distance-sm) * -1));
 }
 
-.sidebar-collapsed .brand,
+.sidebar-collapsed .sidebar .brand,
 .sidebar-collapsed .nav-item {
   justify-content: center;
 }
 
-.sidebar-collapsed .brand {
+.sidebar-collapsed .sidebar .brand {
   padding-inline: 0;
 }
 
@@ -623,7 +623,7 @@ h6 {
     transform var(--motion-fast) var(--ease-out);
 }
 
-.sidebar-labels-hidden .brand-copy,
+.sidebar-labels-hidden .sidebar .brand-copy,
 .sidebar-labels-hidden .nav-label {
   opacity: 0;
   transform: translateX(calc(var(--motion-distance-sm) * -1));
@@ -1718,13 +1718,13 @@ kbd {
 /* ---- Collapse the right (details) card ---- */
 .panel-collapse-button {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  bottom: 16px;
+  right: 16px;
   z-index: 6;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   color: var(--ink-secondary);
   background: #e7e6ee;
   border: none;
@@ -1733,12 +1733,15 @@ kbd {
   box-shadow:
     4px 4px 11px #c6c4d4,
     -4px -4px 11px rgba(255, 255, 255, 0.85);
-  transition: all 200ms ease-in-out;
+  transition: color 200ms ease, box-shadow 200ms ease;
 }
 
 .panel-collapse-button svg {
   width: 18px;
   height: 18px;
+  /* expanded: arrow points right — the direction the card collapses */
+  transform: scaleX(-1);
+  transition: transform 250ms var(--ease-out);
 }
 
 .panel-collapse-button:hover {
@@ -1748,18 +1751,38 @@ kbd {
     inset -4px -4px 7px #ffffff;
 }
 
+/* collapsed: arrow points left — the direction it will reopen */
 .preview-collapsed .panel-collapse-button svg {
-  transform: scaleX(-1);
+  transform: none;
+}
+
+/* Smooth width collapse (matches the sidebar feel) */
+.ticket-workspace {
+  transition: grid-template-columns var(--sidebar-motion-duration) var(--ease-out);
 }
 
 .preview-collapsed .queue-preview,
 .preview-collapsed .context-panel {
-  display: none !important;
+  opacity: 0;
+  overflow: hidden;
+  min-width: 0;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease-out);
 }
 
 .preview-collapsed.table-view-active.queue-screen .ticket-workspace,
 .preview-collapsed.detail-screen .ticket-workspace {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 0px !important;
+  column-gap: 0 !important;
+}
+
+/* Sidebar collapse arrow flips to point right (reopen direction) when collapsed */
+.sidebar-collapse-button svg {
+  transition: transform 250ms var(--ease-out);
+}
+
+.sidebar-collapsed .sidebar-collapse-button svg {
+  transform: scaleX(-1);
 }
 
 .primary-button:focus-visible,
@@ -2969,9 +2992,10 @@ body:not(.is-admin) .admin-only {
 .queue-table-header-cell,
 .queue-row-cell {
   overflow: hidden;
-  padding: 5px 14px;
+  padding: 2px 14px;
   border-bottom: 1px solid rgba(15, 23, 42, 0.045);
-  font-size: 12.5px;
+  font-size: 12px;
+  line-height: 1.25;
   text-align: left;
   vertical-align: middle;
   white-space: nowrap;
@@ -3006,7 +3030,7 @@ body:not(.is-admin) .admin-only {
 
 .queue-row-content {
   position: relative;
-  min-height: 38px;
+  min-height: 30px;
   background: inherit;
   transform-origin: 50% 50%;
   transition:
