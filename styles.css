@@ -15,26 +15,24 @@
   --ink-inverse: #f5f5f7;
 
   --surface-glass: rgba(255, 255, 255, 0.55);
-  --surface-glass-strong: rgba(255, 255, 255, 0.8);
-  --card-fade-bg: rgba(255, 255, 255, 0.88);
+  --surface-glass-strong: rgba(255, 255, 255, 0.95);
+  --card-fade-bg: rgba(255, 255, 255, 0.96);
   --hairline: rgba(15, 23, 42, 0.08);
   --hairline-strong: rgba(15, 23, 42, 0.14);
-  --glass-blur: blur(20px) saturate(180%);
+  --glass-blur: none;
   --glass-bevel:
     inset 1.5px 1.5px 0 0 rgba(255, 255, 255, 0.9),
     inset -1px -1px 0 0 rgba(255, 255, 255, 0.55),
     inset 0 0 0 1px rgba(15, 23, 42, 0.04);
 
-  --neu-surface: rgba(255, 255, 255, 0.5);
-  --neu-surface-focus: rgba(255, 255, 255, 0.85);
+  --neu-surface: #eae9f1;
+  --neu-surface-focus: #eae9f1;
   --neu-shadow-out:
-    0 0 0 1px rgba(15, 23, 42, 0.05),
-    3px 3px 8px rgba(15, 23, 42, 0.05),
-    -3px -3px 8px rgba(255, 255, 255, 0.65);
+    6px 6px 16px #cbc9d6,
+    -6px -6px 16px #ffffff;
   --neu-shadow-in:
-    0 0 0 1px rgba(124, 92, 255, 0.30),
-    inset 2px 2px 5px rgba(15, 23, 42, 0.07),
-    inset -2px -2px 5px rgba(255, 255, 255, 0.55);
+    inset 6px 6px 15px #cbc9d6,
+    inset -6px -6px 15px #ffffff;
   --neu-card-bg: #e9edf3;
   --neu-card-shadow-dark: #c7cdd7;
   --neu-card-shadow-light: #ffffff;
@@ -756,8 +754,7 @@ h6 {
     transform var(--motion-fast) var(--ease-standard);
 }
 
-.nav-icon svg,
-.sidebar-collapse-button svg {
+.nav-icon svg {
   display: block;
   width: 19px;
   height: 19px;
@@ -871,28 +868,33 @@ h6 {
   width: 34px;
   min-width: 34px;
   height: 34px;
-  color: var(--ink-secondary);
-  background: var(--surface-glass);
-  border: 1px solid var(--hairline);
-  border-radius: 12px;
-  box-shadow: var(--shadow-resting);
+  color: #1c1f21;
+  background: #eae9f1;
+  border: none;
+  border-radius: 10px;
+  box-shadow:
+    4px 4px 11px #cbc9d6,
+    -4px -4px 11px rgba(255, 255, 255, 0.85);
   font-size: 18px;
   font-weight: 700;
-  transition: var(--motion-transition-interactive);
+  transition: color 200ms ease, box-shadow 200ms ease;
 }
 
 .sidebar-collapse-button:hover,
 .sidebar-collapse-button:focus-visible {
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: transparent;
-  box-shadow: var(--shadow-raised);
+  color: #1c1f21;
   outline: none;
-  transform: translateY(var(--motion-distance-lift));
+  transform: none;
+  box-shadow:
+    inset 4px 4px 7px #c3c1d1,
+    inset -4px -4px 7px #ffffff;
 }
 
 .sidebar-collapse-button:active {
-  transform: translateY(var(--motion-distance-press));
+  transform: none;
+  box-shadow:
+    inset 5px 5px 9px #bdbbcc,
+    inset -5px -5px 9px #ffffff;
 }
 
 .sidebar-collapsed .sidebar-collapse-button svg {
@@ -1649,12 +1651,12 @@ kbd {
 .toolbar-clear-button,
 .queue-page-button {
   color: var(--ink-secondary);
-  background: #e7e6ee;
+  background: #eae9f1;
   border: none;
   border-radius: 14px;
   font-weight: 600;
   box-shadow:
-    5px 5px 14px #c6c4d4,
+    5px 5px 14px #cbc9d6,
     -5px -5px 14px rgba(255, 255, 255, 0.85);
   transition: all 250ms ease-in-out;
 }
@@ -1725,13 +1727,13 @@ kbd {
   place-items: center;
   width: 34px;
   height: 34px;
-  color: var(--ink-secondary);
-  background: #e7e6ee;
+  color: #1c1f21;
+  background: #eae9f1;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   box-shadow:
-    4px 4px 11px #c6c4d4,
+    4px 4px 11px #cbc9d6,
     -4px -4px 11px rgba(255, 255, 255, 0.85);
   transition: color 200ms ease, box-shadow 200ms ease;
 }
@@ -1745,7 +1747,7 @@ kbd {
 }
 
 .panel-collapse-button:hover {
-  color: var(--accent-strong);
+  color: #1c1f21;
   box-shadow:
     inset 4px 4px 7px #c3c1d1,
     inset -4px -4px 7px #ffffff;
@@ -2200,19 +2202,23 @@ body:not(.is-admin) .admin-only {
   flex: 0 0 auto;
   min-height: 24px;
   padding: 0 7px;
-  color: var(--tessario-blue);
-  background: #ffffff;
-  border: 1px solid rgba(124, 92, 255, 0.18);
+  color: #1c1f21;
+  background: #eae9f1;
+  border: none;
   border-radius: 6px;
-  box-shadow: none;
+  box-shadow:
+    4px 4px 10px #cbc9d6,
+    -4px -4px 10px rgba(255, 255, 255, 0.85);
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .toolbar-clear-button:hover {
-  border-color: rgba(124, 92, 255, 0.34);
-  box-shadow: var(--shadow-button);
+  color: #1c1f21;
+  box-shadow:
+    inset 4px 4px 7px #c3c1d1,
+    inset -4px -4px 7px #ffffff;
 }
 
 .queue-preview {
@@ -2972,9 +2978,7 @@ body:not(.is-admin) .admin-only {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  background: rgba(255, 255, 255, 0.92);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: #f6f5fb;
 }
 
 .queue-table-header-row,
@@ -3091,20 +3095,25 @@ body:not(.is-admin) .admin-only {
 .queue-page-step {
   min-height: 30px;
   padding: 0 10px;
-  color: var(--tessario-muted);
-  background: #FFFFFF;
-  border: 1px solid var(--line-soft);
+  color: #1c1f21;
+  background: #eae9f1;
+  border: none;
   border-radius: 7px;
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
+  box-shadow:
+    4px 4px 10px #cbc9d6,
+    -4px -4px 10px rgba(255, 255, 255, 0.85);
 }
 
 .queue-page-button:hover,
 .queue-page-step:hover {
-  color: var(--tessario-blue);
-  background: var(--tessario-soft-active);
-  border-color: rgba(124, 92, 255, 0.24);
+  color: #1c1f21;
+  background: #eae9f1;
+  box-shadow:
+    inset 4px 4px 7px #c3c1d1,
+    inset -4px -4px 7px #ffffff;
 }
 
 .queue-page-button.active {
@@ -10278,7 +10287,7 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 }
 
 .sidebar-collapse-button {
-  color: #d8f6ff;
+  color: #1c1f21;
 }
 
 .sidebar-collapse-button svg {
