@@ -1715,6 +1715,53 @@ kbd {
   box-shadow: inset 6px 6px 11px rgba(60, 28, 150, 0.55);
 }
 
+/* ---- Collapse the right (details) card ---- */
+.panel-collapse-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--ink-secondary);
+  background: #e7e6ee;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow:
+    4px 4px 11px #c6c4d4,
+    -4px -4px 11px rgba(255, 255, 255, 0.85);
+  transition: all 200ms ease-in-out;
+}
+
+.panel-collapse-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.panel-collapse-button:hover {
+  color: var(--accent-strong);
+  box-shadow:
+    inset 4px 4px 7px #c3c1d1,
+    inset -4px -4px 7px #ffffff;
+}
+
+.preview-collapsed .panel-collapse-button svg {
+  transform: scaleX(-1);
+}
+
+.preview-collapsed .queue-preview,
+.preview-collapsed .context-panel {
+  display: none !important;
+}
+
+.preview-collapsed.table-view-active.queue-screen .ticket-workspace,
+.preview-collapsed.detail-screen .ticket-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .primary-button:focus-visible,
 .secondary-button:focus-visible,
 .ghost-button:focus-visible,
