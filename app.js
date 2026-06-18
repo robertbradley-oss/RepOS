@@ -1912,9 +1912,9 @@ function buildConversation(config, createdAt, lastCustomerAt, lastRepAt) {
   if (detectedPurchaseSource !== "Unknown") {
     messages.push({
       type: "timeline",
-      author: "RepOS Assist",
+      author: "System",
       timestamp: hoursAgo(Math.max(0.45, config.ageHours - 0.75)),
-      body: `RepOS Assist detected possible purchase source from attachment: ${detectedPurchaseSource}. Needs rep review.`
+      body: `System detected possible purchase source from attachment: ${detectedPurchaseSource}. Needs rep review.`
     });
   }
 
@@ -1990,7 +1990,7 @@ function extendedThreadForCase(config) {
   return [
     { type: "customer", ageHours: config.ageHours, body: config.opening },
     { type: "timeline", author: "System", ageHours: config.ageHours - 0.2, body: `Assigned to ${rep}.` },
-    { type: "timeline", author: "RepOS Assist", ageHours: config.ageHours - 0.4, body: `RepOS Assist detected possible purchase source from attachment: ${source}. Needs rep review.` },
+    { type: "timeline", author: "System", ageHours: config.ageHours - 0.4, body: `System detected possible purchase source from attachment: ${source}. Needs rep review.` },
     { type: "rep", author: rep, ageHours: config.ageHours - 2, body: config.intakeReply },
     { type: "customer", ageHours: config.ageHours - 10, body: config.customerDetail },
     { type: "timeline", author: "System", ageHours: config.ageHours - 10.2, body: `Attachment received: ${receiptFile}.` },
@@ -2578,7 +2578,7 @@ function generateLongThreadMockTickets() {
       thread: [
         { type: "customer", ageHours: 70, body: "The RCC7P-AK tank still is not filling after I changed filters. Faucet flow dies after one cup." },
         { type: "timeline", author: "System", ageHours: 69.8, body: "Assigned to CS14 Robert." },
-        { type: "timeline", author: "RepOS Assist", ageHours: 69.6, body: "RepOS Assist detected possible purchase source from attachment: iSpring direct. Needs rep review." },
+        { type: "timeline", author: "System", ageHours: 69.6, body: "System detected possible purchase source from attachment: iSpring direct. Needs rep review." },
         { type: "rep", ageHours: 68, body: "Thanks Ellen. Please drain the tank fully, check empty tank pressure, and confirm the tank valve handle is parallel with the tubing." },
         { type: "customer", ageHours: 52, body: "The tank was around 3 PSI empty, so I raised it to 8. It filled some overnight but still runs out fast." },
         { type: "note", author: lead, ageHours: 51.5, body: "Pressure was low, but refill is still slow. Next check feed valve, ASO/check valve, and possible post-filter restriction." },
@@ -2738,7 +2738,7 @@ function generateLongThreadMockTickets() {
       thread: [
         { type: "customer", ageHours: 88, body: "The box arrived crushed and one fitting is cracked. Amazon told me to contact iSpring." },
         { type: "timeline", author: "System", ageHours: 87.8, body: "Assigned to CS5 Michelle." },
-        { type: "timeline", author: "RepOS Assist", ageHours: 87.6, body: "RepOS Assist detected possible purchase source from attachment: Amazon. Needs rep review." },
+        { type: "timeline", author: "System", ageHours: 87.6, body: "System detected possible purchase source from attachment: Amazon. Needs rep review." },
         { type: "rep", author: "CS5 Michelle", ageHours: 85, body: "I am sorry it arrived damaged. Please send photos of the box label, damaged part, and Amazon order page." },
         { type: "customer", ageHours: 61, body: "I already uploaded all of that. I do not want to be bounced between Amazon and iSpring." },
         { type: "timeline", author: "System", ageHours: 60.8, body: "Attachments received: amazon-box-crushed.jpg, cracked-fitting.jpg, amazon-order-1134419021.pdf." },
@@ -3125,7 +3125,7 @@ function generateLongThreadMockTickets() {
       thread: [
         { type: "customer", ageHours: 120, body: "Can you confirm whether my RO500AK warranty registration went through? I uploaded the Amazon invoice." },
         { type: "timeline", author: "System", ageHours: 119.8, body: "Assigned to CS14 Robert." },
-        { type: "timeline", author: "RepOS Assist", ageHours: 119.6, body: "RepOS Assist detected possible purchase source from attachment: Amazon. Needs rep review." },
+        { type: "timeline", author: "System", ageHours: 119.6, body: "System detected possible purchase source from attachment: Amazon. Needs rep review." },
         { type: "rep", ageHours: 118, body: "I can check. Please confirm the email you want tied to the warranty record." },
         { type: "customer", ageHours: 98, body: "Use this email address. The invoice is attached to the ticket." },
         { type: "timeline", author: "System", ageHours: 97.8, body: "Receipt verified: amazon-ro500ak-invoice.pdf." },
@@ -3617,7 +3617,7 @@ function normalizeTicketPurchaseSource(ticket) {
     return { ...message, body, author: normalizedAuthor };
   });
 
-  const seenAiReviewEvents = new Set();
+  const seenWorkflowReviewEvents = new Set();
   ticket.conversation = (ticket.conversation || []).filter((message) => {
     const body = String(message?.body || "");
     const author = String(message?.author || "");
@@ -3626,11 +3626,11 @@ function normalizeTicketPurchaseSource(ticket) {
       /(Needs rep review|purchase source needs review)/i.test(body);
     if (!isReviewEvent) return true;
     const key = body.toLowerCase();
-    if (seenAiReviewEvents.has(key)) {
+    if (seenWorkflowReviewEvents.has(key)) {
       changed = true;
       return false;
     }
-    seenAiReviewEvents.add(key);
+    seenWorkflowReviewEvents.add(key);
     return true;
   });
 
@@ -3811,7 +3811,7 @@ function ticketReferenceDisplay(value) {
 function timelineDisplayBody(ticket, message) {
   const author = String(message?.author || "");
   let body = replaceLegacyRepNamesInText(ticketReferenceDisplay(statusDisplayText(String(message?.body || "")))).trim();
-  if (/(?:tessario ai|repos assist)/i.test(author)) {
+  if (/(?:tessario ai|repos assist)/i.test(author) || /^(?:RepOS Assist|Tessario AI)\s+/i.test(body)) {
     body = body.replace(/^(?:RepOS Assist|Tessario AI)\s+/i, "").replace(/^detected/i, "System detected");
   }
   if (/^system\s+/i.test(body)) body = body.replace(/^system\s+/i, "");
