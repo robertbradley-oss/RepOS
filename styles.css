@@ -3433,18 +3433,11 @@ body:not(.is-admin) .admin-only {
   to { height: 8px; }
 }
 
-.queue-table-header-cell:nth-child(4),
-.queue-row-cell:nth-child(4) {
-  text-align: center;
-}
-
-.queue-row-cell:nth-child(7) {
+/* Columns now: 1 check, 2 ticket#, 3 last activity, 4 subject, 5 customer,
+   6 assigned to, 7 status. Keep the muted/bold treatment on the assignee. */
+.queue-row-cell:nth-child(6) {
   color: var(--tessario-muted);
   font-weight: 700;
-}
-
-.queue-row-cell:nth-child(8) {
-  justify-items: start;
 }
 
 .sort-header {
@@ -4152,57 +4145,104 @@ body:not(.is-admin) .admin-only {
 .thread {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 2px;
   overflow-y: auto;
-  padding: 16px;
-  background: #fafafc;
+  padding: 18px 20px;
+  background: #fbfbfd;
 }
 
+/* Each message is an avatar + a bubble, so the panel reads as a conversation. */
 .message {
-  max-width: 780px;
-  padding: 13px 15px;
-  background: #fff;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 11px;
+  max-width: 840px;
+  padding: 8px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.message-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  background: #64748b;
+  box-shadow: 0 1px 2px rgba(26, 26, 46, 0.12);
+}
+
+.message.rep .message-avatar {
+  background: linear-gradient(150deg, #8b6cff, #6034e0);
+}
+
+.message.note .message-avatar {
+  background: #c98a1e;
+}
+
+.message-body {
+  min-width: 0;
+  padding: 10px 14px;
+  background: #ffffff;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-  box-shadow: 0 1px 2px rgba(26, 26, 46, 0.04);
+  border-radius: 12px;
+  border-top-left-radius: 4px;
 }
 
-.message.customer {
-  border-left: 3px solid var(--tessario-blue);
+.message.rep .message-body {
+  background: #f5f2fd;
+  border-color: #e4dcf7;
 }
 
-.message.rep {
-  margin-left: 34px;
-  background: #f4f1fb;
-  border-color: #d6cfee;
-  border-left: 3px solid var(--tessario-cyan);
-}
-
-.message.note {
-  background: #fffaf0;
-  border-color: #eadfb3;
-  border-left: 3px solid #a36f2b;
+.message.note .message-body {
+  background: #fff8eb;
+  border-color: #f0e2bd;
 }
 
 .message-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
-  margin-bottom: 6px;
+  gap: 8px;
+  margin-bottom: 5px;
 }
 
 .message-head strong {
   font-size: 13px;
+  color: var(--ink);
 }
 
-.message.note .message-head strong {
-  color: #713f12;
+.message-role {
+  padding: 1px 7px;
+  color: #5b6472;
+  background: #eef0f3;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.message-head span {
+.message.rep .message-role {
+  color: var(--accent-strong);
+  background: rgba(124, 92, 255, 0.12);
+}
+
+.message.note .message-role {
+  color: #8a5208;
+  background: rgba(255, 159, 10, 0.16);
+}
+
+.message-head time {
+  margin-left: auto;
   color: var(--muted);
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .message-subject {
@@ -4243,7 +4283,7 @@ body:not(.is-admin) .admin-only {
   gap: 6px;
   width: 100%;
   max-width: 100%;
-  padding: 3px 0;
+  padding: 8px 0;
   color: var(--tessario-muted);
   background: transparent;
   border: 0;
@@ -10825,7 +10865,7 @@ textarea,
 .knowledge-add-form textarea,
 .knowledge-admin-row input,
 .admin-add-form input {
-  cursor: text !important;
+  cursor: url("./assets/text-cursor.svg") 12 12, text !important;
   caret-color: #1a1a2e !important;
   color: #1a1a2e !important;
 }
@@ -11630,4 +11670,115 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
   width: 20px;
   height: 20px;
   display: block;
+}
+
+/* ===========================================================================
+   Conversation thread, final pass: supersede the older full-width "card with a
+   coloured left-bar" overrides. .message is only the avatar + bubble wrapper
+   (transparent, no box); the single bubble lives on .message-body.
+   =========================================================================== */
+.detail-screen .thread {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 26px 18px 18px;
+  background: #fbfbfd;
+}
+
+.detail-screen .message,
+.detail-screen .message.customer,
+.detail-screen .message.rep,
+.detail-screen .message.note {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 11px;
+  align-self: stretch;
+  justify-self: stretch;
+  width: 100%;
+  max-width: 880px;
+  margin: 0;
+  padding: 5px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.detail-screen .message-body {
+  padding: 9px 13px;
+  background: #ffffff;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  border-top-left-radius: 4px;
+}
+
+.detail-screen .message.rep .message-body {
+  background: #f5f2fd;
+  border-color: #e4dcf7;
+}
+
+.detail-screen .message.note .message-body {
+  background: #fff8eb;
+  border-color: #f0e2bd;
+}
+
+.detail-screen .message.note .message-head strong {
+  color: var(--ink);
+}
+
+/* ===========================================================================
+   Gray action buttons (Save Draft, Attach, modal/composer secondary & ghost):
+   inset neumorphic pill. Placed last so it wins over the earlier shadow layers
+   (e.g. the var(--shadow-button) rule). App sizing kept; only the look changes.
+   =========================================================================== */
+.secondary-button,
+.ghost-button {
+  color: #4d4d4d;
+  background-color: #e0e0e0;
+  border: 2px solid rgb(206, 206, 206);
+  border-radius: 50px;
+  font-weight: 600;
+  box-shadow:
+    inset 4px 4px 10px #bcbcbc,
+    inset -4px -4px 10px #ffffff;
+  transition: all 0.2s ease-in-out;
+}
+
+.secondary-button:hover,
+.ghost-button:hover,
+.secondary-button:focus-visible,
+.ghost-button:focus-visible {
+  color: #4d4d4d;
+  background-color: #e0e0e0;
+  transform: none;
+  box-shadow:
+    inset 2px 2px 5px #bcbcbc,
+    inset -2px -2px 5px #ffffff,
+    2px 2px 5px #bcbcbc,
+    -2px -2px 5px #ffffff;
+}
+
+.secondary-button:active,
+.ghost-button:active {
+  transform: none;
+  box-shadow:
+    inset 5px 5px 9px #b4b4b4,
+    inset -5px -5px 9px #ffffff;
+}
+
+.secondary-button:disabled,
+.ghost-button:disabled,
+.secondary-button:disabled:hover,
+.ghost-button:disabled:hover {
+  transform: none;
+  opacity: 0.5;
+  box-shadow:
+    inset 4px 4px 10px #bcbcbc,
+    inset -4px -4px 10px #ffffff;
+}
+
+/* Custom I-beam (text cursor) over text-entry surfaces. */
+textarea,
+[contenteditable="true"] {
+  cursor: url("./assets/text-cursor.svg") 12 12, text !important;
 }

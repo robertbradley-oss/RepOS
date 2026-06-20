@@ -9931,17 +9931,31 @@ function renderMessage(message, ticket) {
     `;
   }
 
+  const author = message.author || (message.type === "customer" ? (ticket.customer?.name || "Customer") : "Agent");
+  const roleLabel = message.type === "note" ? "Internal note" : message.type === "customer" ? "Customer" : "Agent";
   return `
     <article class="message ${message.type} chat-message-bubble">
-      <div class="message-head">
-        <strong>${escapeHtml(label)}</strong>
-        <span>${escapeHtml(message.author)} / ${dateTimeLabel(message.timestamp)}</span>
+      <span class="message-avatar" aria-hidden="true">${escapeHtml(avatarInitialsFor(author))}</span>
+      <div class="message-body">
+        <div class="message-head">
+          <strong>${escapeHtml(author)}</strong>
+          <span class="message-role">${escapeHtml(roleLabel)}</span>
+          <time>${dateTimeLabel(message.timestamp)}</time>
+        </div>
+        ${emailSubject}
+        <p>${escapeHtml(message.type === "note" ? statusDisplayText(message.body) : message.body)}</p>
+        ${renderThreadAttachments(message.attachments, ticket)}
       </div>
-      ${emailSubject}
-      <p>${escapeHtml(message.type === "note" ? statusDisplayText(message.body) : message.body)}</p>
-      ${renderThreadAttachments(message.attachments, ticket)}
     </article>
   `;
+}
+
+function avatarInitialsFor(name) {
+  const raw = String(name || "").trim();
+  if (!raw) return "?";
+  const words = raw.split(/\s+/).filter((word) => /[a-z]/i.test(word) && !/\d/.test(word));
+  const picked = words.length ? words : raw.split(/\s+/);
+  return picked.slice(0, 2).map((word) => word.charAt(0)).join("").toUpperCase() || "?";
 }
 
 function renderThreadAttachments(attachments = [], ticket) {
