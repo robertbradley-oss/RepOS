@@ -3354,7 +3354,11 @@ body:not(.is-admin) .admin-only {
 .queue-table .check-col,
 .queue-table-header-cell.check-col,
 .queue-row-cell.check-col {
+  display: grid;
+  align-content: center;
+  justify-content: center;
   width: 36px;
+  padding-inline: 0;
   text-align: center;
 }
 
