@@ -43,6 +43,56 @@ try {
     throw new Error("Profile readback did not match written value.");
   }
 
+  const settingsRead = await fetch(`http://127.0.0.1:${port}/api/settings`);
+  const settingsPayload = await settingsRead.json();
+  if (!settingsRead.ok || settingsPayload.settings?.workspaceName !== "iSpring Water Systems" || settingsPayload.settings?.currentUserName !== "CS14 Robert") {
+    throw new Error("Settings read did not return the expected iSpring workspace defaults.");
+  }
+
+  const settingsPatch = await fetch(`http://127.0.0.1:${port}/api/settings`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      supportEmail: "smoke-support@ispringfilters.com",
+      timezone: "America/New_York",
+      demoMode: true
+    })
+  });
+  const settingsPatchPayload = await settingsPatch.json();
+  if (!settingsPatch.ok || settingsPatchPayload.settings?.supportEmail !== "smoke-support@ispringfilters.com") {
+    throw new Error(`Settings patch failed: ${settingsPatch.status}`);
+  }
+
+  const invalidSettingsField = await fetch(`http://127.0.0.1:${port}/api/settings`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ unsupportedSetting: true })
+  });
+  const invalidSettingsFieldPayload = await invalidSettingsField.json();
+  if (invalidSettingsField.status !== 400 || invalidSettingsFieldPayload.error !== "unsupported_settings_fields") {
+    throw new Error("Invalid settings field did not return the expected JSON error.");
+  }
+
+  const invalidSettingsEmail = await fetch(`http://127.0.0.1:${port}/api/settings`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ supportEmail: "not-an-email" })
+  });
+  const invalidSettingsEmailPayload = await invalidSettingsEmail.json();
+  if (invalidSettingsEmail.status !== 400 || invalidSettingsEmailPayload.error !== "invalid_settings_value") {
+    throw new Error("Invalid settings email did not return the expected JSON error.");
+  }
+
+  const invalidSettingsStatus = await fetch(`http://127.0.0.1:${port}/api/settings`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ allowedStatuses: ["Open", "Escalated"] })
+  });
+  const invalidSettingsStatusPayload = await invalidSettingsStatus.json();
+  if (invalidSettingsStatus.status !== 400 || invalidSettingsStatusPayload.error !== "invalid_settings_value") {
+    throw new Error("Invalid allowedStatuses did not return the expected JSON error.");
+  }
+
   const ticketInput = {
     id: "SMOKE-1",
     subject: "Smoke test ticket",
@@ -282,6 +332,15 @@ async function runStrictAuthSmoke() {
       throw new Error(`Strict mode should require auth, got ${unauthenticated.status}.`);
     }
 
+    const unauthenticatedSettingsPatch = await fetch(`http://127.0.0.1:${strictPort}/api/settings`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ supportEmail: "strict-smoke@ispringfilters.com" })
+    });
+    if (unauthenticatedSettingsPatch.status !== 401) {
+      throw new Error(`Strict mode should protect settings updates, got ${unauthenticatedSettingsPatch.status}.`);
+    }
+
     const login = await fetch(`http://127.0.0.1:${strictPort}/api/auth/dev-login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -320,6 +379,11 @@ async function runPersistenceReloadSmoke(existingDataFile, existingUploadDir) {
     const ticketPayload = await ticketRead.json();
     if (ticketPayload.ticket?.status !== "Closed" || ticketPayload.ticket?.attachments?.[0]?.fileName !== "smoke-photo.png") {
       throw new Error("Reloaded server did not read persisted ticket workflow state.");
+    }
+    const settingsRead = await fetch(`http://127.0.0.1:${reloadPort}/api/settings`);
+    const settingsPayload = await settingsRead.json();
+    if (!settingsRead.ok || settingsPayload.settings?.supportEmail !== "smoke-support@ispringfilters.com") {
+      throw new Error("Reloaded server did not read persisted workspace settings.");
     }
   } finally {
     reloadServer.kill();

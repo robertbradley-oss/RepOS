@@ -3,6 +3,7 @@ const STORAGE_KEY = "tessario.support.workspace.v18";
 const TICKET_COUNTER_STORAGE_KEY = "tessario.support.lastTicketNumber.v1";
 const USERS_STORAGE_KEY = "tessario.support.assignmentUsers.v1";
 const PROFILE_STORAGE_KEY = "tessario.support.profile.v1";
+const SETTINGS_STORAGE_KEY = "tessario.support.workspaceSettings.v1";
 const KNOWLEDGE_STORAGE_KEY = "tessario.support.knowledgeVaultFiles.v1";
 const PRODUCT_LINK_STORAGE_KEY = "tessario.support.productLinkLibrary.v1";
 const CUSTOMER_ACCOUNTS_STORAGE_KEY = "tessario.support.customerAccounts.v1";
@@ -13,6 +14,7 @@ const LEGACY_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.workspace.v11`;
 const LEGACY_TICKET_COUNTER_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.lastTicketNumber.v1`;
 const LEGACY_USERS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.assignmentUsers.v1`;
 const LEGACY_PROFILE_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.profile.v1`;
+const LEGACY_SETTINGS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.workspaceSettings.v1`;
 const LEGACY_KNOWLEDGE_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.knowledgeVaultFiles.v1`;
 const LEGACY_PRODUCT_LINK_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.productLinkLibrary.v1`;
 const LEGACY_CUSTOMER_ACCOUNTS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.customerAccounts.v1`;
@@ -48,6 +50,17 @@ const workspaceConfig = {
   defaultQueue: "Support",
   supportMailbox: "support@ispringfilters.com",
   supportMailboxLabel: "iSpring Support",
+  defaultSettings: {
+    workspaceName: "iSpring Water Systems",
+    workspaceLabel: "Workspace: iSpring Water Systems",
+    supportEmail: "support@ispringfilters.com",
+    currentUserName: "CS14 Robert",
+    currentUserRole: "admin",
+    defaultAssignee: "CS14 Robert",
+    timezone: "America/New_York",
+    demoMode: true,
+    allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
+  },
   sourceChannels: ["Email", "Phone", "Web Form", "Amazon", "Home Depot"],
   orderPlaceholder: "Amazon or iSpring order",
   modelPlaceholder: "RCC7P-AK, RO500AK, WGB32B",
@@ -1147,6 +1160,9 @@ seedTickets.push(...generateReceiptTestTickets());
 seedTickets.push(...generateAdditionalMockTickets(240));
 workspaceConfig.tickets = alignRepeatCustomerAssignments(seedTickets);
 
+const seedWorkspaceSettings = workspaceConfig.defaultSettings;
+let workspaceSettings = normalizeWorkspaceSettings(loadWorkspaceSettings());
+applyWorkspaceSettings();
 let tickets = normalizeTickets(loadTickets());
 if (ensureReceiptTestTickets(tickets)) localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
 let backendSyncReady = false;
@@ -4032,9 +4048,60 @@ function loadProfile() {
   }
 }
 
+function loadWorkspaceSettings() {
+  const stored = storedValue(SETTINGS_STORAGE_KEY, LEGACY_SETTINGS_STORAGE_KEY);
+  if (!stored) {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(seedWorkspaceSettings));
+    return { ...seedWorkspaceSettings };
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    return normalizeWorkspaceSettings(parsed);
+  } catch {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(seedWorkspaceSettings));
+    return { ...seedWorkspaceSettings };
+  }
+}
+
+function normalizeWorkspaceSettings(source = {}) {
+  const defaults = seedWorkspaceSettings;
+  const value = source && typeof source === "object" && !Array.isArray(source) ? source : {};
+  const role = String(value.currentUserRole || "").trim().toLowerCase();
+  const supportedStatuses = new Set(defaults.allowedStatuses);
+  const statuses = Array.isArray(value.allowedStatuses)
+    ? [...new Set(value.allowedStatuses.map((status) => String(status || "").trim()).filter((status) => supportedStatuses.has(status)))]
+    : defaults.allowedStatuses;
+  return {
+    workspaceName: cleanWorkspaceSetting(value.workspaceName, defaults.workspaceName),
+    workspaceLabel: cleanWorkspaceSetting(value.workspaceLabel, defaults.workspaceLabel),
+    supportEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value.supportEmail || "").trim())
+      ? String(value.supportEmail).trim().toLowerCase()
+      : defaults.supportEmail,
+    currentUserName: normalizeRepName(value.currentUserName) || defaults.currentUserName,
+    currentUserRole: ["admin", "manager", "rep", "owner"].includes(role) ? role : defaults.currentUserRole,
+    defaultAssignee: normalizeRepName(value.defaultAssignee) || normalizeRepName(value.currentUserName) || defaults.defaultAssignee,
+    timezone: cleanWorkspaceSetting(value.timezone, defaults.timezone),
+    demoMode: typeof value.demoMode === "boolean" ? value.demoMode : defaults.demoMode,
+    allowedStatuses: statuses.length ? statuses.slice(0, 12) : defaults.allowedStatuses
+  };
+}
+
+function cleanWorkspaceSetting(value, fallback) {
+  const text = String(value || "").replace(/[\u0000-\u001f]/g, "").trim();
+  return text || fallback;
+}
+
+function applyWorkspaceSettings() {
+  workspaceConfig.workspaceName = workspaceSettings.workspaceName;
+  workspaceConfig.workspaceLabel = workspaceSettings.workspaceLabel;
+  workspaceConfig.supportMailbox = workspaceSettings.supportEmail;
+  if (workspaceSettings.allowedStatuses?.length) workspaceConfig.statuses = workspaceSettings.allowedStatuses;
+}
+
 function normalizeProfile(sourceProfile) {
   const normalized = { ...sourceProfile };
-  normalized.displayName = normalizeRepName(normalized.displayName) || CURRENT_USER;
+  normalized.displayName = normalizeRepName(normalized.displayName) || currentDemoUserName();
   normalized.firstName = normalized.firstName || "Robert";
   normalized.lastName = "";
   normalized.mySignature = normalized.mySignature || "Thanks,\nRobert";
@@ -4515,6 +4582,13 @@ async function hydrateBackendState() {
     if (isBackendPlainObject(state.profile)) {
       profile = state.profile;
       localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      hydrated = true;
+    }
+    if (isBackendPlainObject(state.settings)) {
+      workspaceSettings = normalizeWorkspaceSettings(state.settings);
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(workspaceSettings));
+      applyWorkspaceSettings();
+      applyWorkspaceBranding();
       hydrated = true;
     }
     if (Array.isArray(state.notifications)) {
@@ -5008,7 +5082,15 @@ function replaceLegacyRepNamesInText(value) {
 }
 
 function profileDisplayName() {
-  return normalizeRepName(profile?.displayName || CURRENT_USER);
+  return normalizeRepName(profile?.displayName || currentDemoUserName());
+}
+
+function currentDemoUserName() {
+  return normalizeRepName(workspaceSettings?.currentUserName) || CURRENT_USER;
+}
+
+function currentDemoUserRole() {
+  return String(workspaceSettings?.currentUserRole || "").trim().toLowerCase() || "rep";
 }
 
 function receiptUploaderForTicket(ticket) {
@@ -5025,7 +5107,7 @@ function sourceTicketForReceipt(receipt, candidates = tickets) {
 
 function reconcileReceiptUploadersForAccount(account, history = tickets) {
   if (!account || !Array.isArray(account.receipts)) return false;
-  const defaultUploaderNames = new Set([CURRENT_USER, profileDisplayName(), "Robert"].map(normalizeRepName).filter(Boolean));
+  const defaultUploaderNames = new Set([CURRENT_USER, currentDemoUserName(), profileDisplayName(), "Robert"].map(normalizeRepName).filter(Boolean));
   let changed = false;
   account.receipts.forEach((receipt) => {
     const sourceTicket = sourceTicketForReceipt(receipt, history);
@@ -5891,7 +5973,7 @@ function closeProfileModal() {
 }
 
 function renderProfileModal() {
-  const workload = activeTicketCountFor(CURRENT_USER);
+  const workload = activeTicketCountFor(currentDemoUserName());
   const adminBadge = currentUserIsAdmin() ? `<span class="admin-badge">Admin</span>` : "";
   el.profileModal.innerHTML = `
     <form id="profileForm" class="profile-settings-form">
@@ -6084,13 +6166,20 @@ function renderWorkspaceTab(workload) {
         ${workspaceFact("State mode", demoStateModeLabel())}
         ${workspaceFact("Department", workspaceConfig.defaultDepartment)}
         ${workspaceFact("Queue", workspaceConfig.defaultQueue)}
-        ${workspaceFact("Role", profile.role)}
+        ${workspaceFact("Role", currentDemoUserRoleLabel())}
+        ${workspaceFact("Support email", workspaceConfig.supportMailbox)}
+        ${workspaceFact("Timezone", workspaceSettings.timezone)}
         ${workspaceFact("Assignment eligible", currentAssignmentUser()?.assignmentEligible ? "Yes" : "No")}
         ${workspaceFact("Assignment workload count", workload)}
       </div>
-      ${currentUserIsAdmin() ? `<div class="profile-admin-callout"><span class="admin-badge">Admin</span><p>CS14 Robert can manage reps and restore the local iSpring demo workspace back to seeded data. Restoring overwrites persisted local demo changes.</p><div class="profile-admin-actions">${adminControls}<button class="secondary-button danger-soft" id="resetWorkspaceDataButton" type="button">Restore seed demo data</button></div></div>` : ""}
+      ${currentUserIsAdmin() ? `<div class="profile-admin-callout"><span class="admin-badge">Admin</span><p>${escapeHtml(currentDemoUserName())} can manage reps and restore the local iSpring demo workspace back to seeded data. Restoring overwrites persisted local demo changes.</p><div class="profile-admin-actions">${adminControls}<button class="secondary-button danger-soft" id="resetWorkspaceDataButton" type="button">Restore seed demo data</button></div></div>` : ""}
     </section>
   `;
+}
+
+function currentDemoUserRoleLabel() {
+  const role = currentDemoUserRole();
+  return role ? `${role.charAt(0).toUpperCase()}${role.slice(1)}` : "Rep";
 }
 
 function demoStateModeLabel() {
@@ -6332,11 +6421,12 @@ function profileInitials() {
 }
 
 function currentAssignmentUser() {
-  return users.find((user) => user.name === CURRENT_USER);
+  const currentName = currentDemoUserName();
+  return users.find((user) => normalizeRepName(user.name) === currentName);
 }
 
 function assignedToCurrentDemoUser(ticket) {
-  return normalizeRepName(ticket?.assignee) === normalizeRepName(CURRENT_USER);
+  return normalizeRepName(ticket?.assignee) === currentDemoUserName();
 }
 
 function landingLabel(value) {
@@ -6814,7 +6904,7 @@ function renderMetrics() {
   const customerReplies = tickets.filter(customerRepliedWithoutRep).length;
 
   const metrics = [
-    { label: "My open", value: open.filter(assignedToCurrentDemoUser).length, meta: "CS14 Robert", tone: "cyan" },
+    { label: "My open", value: open.filter(assignedToCurrentDemoUser).length, meta: currentDemoUserName(), tone: "cyan" },
     { label: "All open", value: open.length, meta: "Team queue", tone: "neutral" },
     { label: "Overdue SLA", value: overdue, meta: "SLA risk", tone: overdue ? "red" : "green" },
     { label: "Avg first response", value: "3.8h", meta: "Support KPI", tone: "blue" }
@@ -9405,7 +9495,8 @@ function repeatCustomerAssignmentFor(ticket) {
 }
 
 function currentUserIsAdmin() {
-  return users.find((user) => user.name === CURRENT_USER)?.role === "admin";
+  const assignmentRole = currentAssignmentUser()?.role;
+  return ["admin", "owner"].includes(String(assignmentRole || currentDemoUserRole()).toLowerCase());
 }
 
 function showAdminScreen() {

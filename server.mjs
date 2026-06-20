@@ -5,7 +5,7 @@ import { basename, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes, randomUUID } from "node:crypto";
 import { createJsonStore, normalizeEmail } from "./lib/json-store.mjs";
-import { ValidationError } from "./lib/ticket-workflow.mjs";
+import { ValidationError, normalizeTicketStatus } from "./lib/ticket-workflow.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 4173);
@@ -45,16 +45,17 @@ const resourceValidators = {
   tickets: Array.isArray,
   users: Array.isArray,
   profile: isPlainObject,
+  settings: isPlainObject,
   notifications: Array.isArray,
   knowledgeDocs: Array.isArray,
   productLinks: Array.isArray,
   customerAccounts: isPlainObject,
   lastTicketNumber: (value) => Number.isInteger(value) && value >= 0
 };
-const adminStateResources = new Set(["users", "profile", "knowledgeDocs", "productLinks", "customerAccounts"]);
+const adminStateResources = new Set(["users", "profile", "settings", "knowledgeDocs", "productLinks", "customerAccounts"]);
 
 const store = await createStore();
-await store.ensureAuthUser(defaultAuthUser());
+await ensureConfiguredAuthUser();
 
 const server = createServer(async (request, response) => {
   try {
@@ -146,6 +147,29 @@ async function handleApi(request, response, url) {
         authMode
       }
     });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/settings") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    sendJson(response, 200, { settings: await workspaceSettings() });
+    return;
+  }
+
+  if (request.method === "PATCH" && url.pathname === "/api/settings") {
+    const user = await requireRole(request, response, ["admin", "owner"]);
+    if (!user) return;
+    const patch = await readJsonBody(request);
+    const current = await workspaceSettings();
+    const validation = validateWorkspaceSettingsPatch(patch, current);
+    if (!validation.ok) {
+      sendJson(response, 400, validation.error);
+      return;
+    }
+    const updatedAt = await store.setResource("settings", validation.value);
+    await ensureConfiguredAuthUser(validation.value);
+    sendJson(response, 200, { settings: validation.value, updatedAt });
     return;
   }
 
@@ -474,6 +498,7 @@ function defaultState() {
     tickets: null,
     users: null,
     profile: null,
+    settings: defaultWorkspaceSettings(),
     notifications: null,
     knowledgeDocs: null,
     productLinks: null,
@@ -694,6 +719,140 @@ function isValidCustomerLookupEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ""));
 }
 
+function defaultWorkspaceSettings() {
+  return {
+    workspaceName: "iSpring Water Systems",
+    workspaceLabel: "Workspace: iSpring Water Systems",
+    supportEmail: "support@ispringfilters.com",
+    currentUserName: "CS14 Robert",
+    currentUserRole: "admin",
+    defaultAssignee: "CS14 Robert",
+    timezone: "America/New_York",
+    demoMode: true,
+    allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
+  };
+}
+
+async function workspaceSettings() {
+  return normalizeWorkspaceSettings(await store.getResource("settings"));
+}
+
+async function ensureConfiguredAuthUser(settings = null) {
+  return store.ensureAuthUser(defaultAuthUser(settings || await workspaceSettings()));
+}
+
+function normalizeWorkspaceSettings(value = {}) {
+  const defaults = defaultWorkspaceSettings();
+  const source = isPlainObject(value) ? value : {};
+  const allowedStatuses = normalizeAllowedStatuses(source.allowedStatuses, defaults.allowedStatuses);
+  return {
+    workspaceName: cleanSettingText(source.workspaceName, defaults.workspaceName, 80),
+    workspaceLabel: cleanSettingText(source.workspaceLabel, defaults.workspaceLabel, 120),
+    supportEmail: normalizeSettingsEmail(source.supportEmail, defaults.supportEmail),
+    currentUserName: cleanSettingText(source.currentUserName, defaults.currentUserName, 80),
+    currentUserRole: normalizeSettingsRole(source.currentUserRole, defaults.currentUserRole),
+    defaultAssignee: cleanSettingText(source.defaultAssignee, defaults.defaultAssignee, 80),
+    timezone: cleanSettingText(source.timezone, defaults.timezone, 80),
+    demoMode: typeof source.demoMode === "boolean" ? source.demoMode : defaults.demoMode,
+    allowedStatuses: allowedStatuses.length ? allowedStatuses : defaults.allowedStatuses
+  };
+}
+
+function validateWorkspaceSettingsPatch(patch, current) {
+  if (!isPlainObject(patch)) {
+    return { ok: false, error: { error: "invalid_settings_patch", message: "Settings patch must be an object." } };
+  }
+  const allowed = new Set(Object.keys(defaultWorkspaceSettings()));
+  const unknown = Object.keys(patch).filter((key) => !allowed.has(key));
+  if (unknown.length) {
+    return {
+      ok: false,
+      error: {
+        error: "unsupported_settings_fields",
+        message: "Settings patch contains unsupported fields.",
+        details: { fields: unknown }
+      }
+    };
+  }
+
+  const next = { ...current };
+  for (const [key, raw] of Object.entries(patch)) {
+    if (["workspaceName", "workspaceLabel", "currentUserName", "defaultAssignee", "timezone"].includes(key)) {
+      const text = String(raw ?? "").replace(/[\u0000-\u001f]/g, "").trim();
+      if (!text) return invalidSetting(key, `${key} is required.`);
+      if (text.length > (key === "workspaceLabel" ? 120 : 80)) return invalidSetting(key, `${key} is too long.`);
+      next[key] = text;
+    } else if (key === "supportEmail") {
+      const email = String(raw || "").trim().toLowerCase();
+      if (!isValidCustomerLookupEmail(email)) return invalidSetting(key, "supportEmail must be a valid email address.");
+      next.supportEmail = email;
+    } else if (key === "currentUserRole") {
+      const role = normalizeSettingsRole(raw, "");
+      if (!role) return invalidSetting(key, "currentUserRole must be admin, manager, rep, or owner.");
+      next.currentUserRole = role;
+    } else if (key === "demoMode") {
+      if (typeof raw !== "boolean") return invalidSetting(key, "demoMode must be a boolean.");
+      next.demoMode = raw;
+    } else if (key === "allowedStatuses") {
+      if (!Array.isArray(raw)) return invalidSetting(key, "allowedStatuses must be an array of status names.");
+      const statuses = normalizeAllowedStatuses(raw, []);
+      if (hasUnsupportedAllowedStatus(raw)) {
+        return invalidSetting(key, "allowedStatuses can only include supported ticket workflow statuses.");
+      }
+      if (!statuses.length) return invalidSetting(key, "allowedStatuses must include at least one status.");
+      next.allowedStatuses = statuses;
+    }
+  }
+  return { ok: true, value: normalizeWorkspaceSettings(next) };
+}
+
+function invalidSetting(field, message) {
+  return { ok: false, error: { error: "invalid_settings_value", message, details: { field } } };
+}
+
+function cleanSettingText(value, fallback, maxLength) {
+  const text = String(value || "").replace(/[\u0000-\u001f]/g, "").trim();
+  return text ? text.slice(0, maxLength) : fallback;
+}
+
+function normalizeSettingsEmail(value, fallback) {
+  const email = String(value || "").trim().toLowerCase();
+  return isValidCustomerLookupEmail(email) ? email : fallback;
+}
+
+function normalizeSettingsRole(value, fallback) {
+  const role = String(value || "").trim().toLowerCase();
+  return ["admin", "manager", "rep", "owner"].includes(role) ? role : fallback;
+}
+
+function normalizeAllowedStatuses(value, fallback) {
+  const statuses = Array.isArray(value) ? value : fallback;
+  const normalized = [];
+  for (const status of statuses) {
+    const text = String(status || "").replace(/[\u0000-\u001f]/g, "").trim();
+    if (!text) continue;
+    try {
+      normalized.push(normalizeTicketStatus(text, { required: true }));
+    } catch {
+      // Ignore unsupported persisted legacy values; PATCH validation rejects them.
+    }
+  }
+  return [...new Set(normalized)].slice(0, 12);
+}
+
+function hasUnsupportedAllowedStatus(value) {
+  return value.some((status) => {
+    const text = String(status || "").replace(/[\u0000-\u001f]/g, "").trim();
+    if (!text) return false;
+    try {
+      normalizeTicketStatus(text, { required: true });
+      return false;
+    } catch {
+      return true;
+    }
+  });
+}
+
 function validateCustomerPatch(patch) {
   if (!isPlainObject(patch)) {
     return { ok: false, error: { error: "invalid_customer_patch", message: "Customer patch must be an object." } };
@@ -798,13 +957,14 @@ async function createSessionForUser(response, user) {
   return session;
 }
 
-function defaultAuthUser() {
+function defaultAuthUser(settings = defaultWorkspaceSettings()) {
+  const currentSettings = normalizeWorkspaceSettings(settings);
   return {
     id: "cs14-robert",
     email: "robbybradley@gmail.com",
-    displayName: "CS14 Robert",
-    repName: "CS14 Robert",
-    role: "admin",
+    displayName: currentSettings.currentUserName,
+    repName: currentSettings.currentUserName,
+    role: currentSettings.currentUserRole,
     active: true
   };
 }
