@@ -74,6 +74,7 @@ That command is browserless and does not use Playwright. It exercises the fronte
 - `POST /api/tickets/:id/attachments`
 - `GET /api/customers?search=avery&limit=50&offset=0`
 - `POST /api/customers`
+- `GET /api/customers/by-email/:email`
 - `GET /api/customers/:id`
 - `PATCH /api/customers/:id`
 - `GET /api/customers/:id/tickets`

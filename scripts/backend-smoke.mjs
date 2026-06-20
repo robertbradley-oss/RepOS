@@ -134,6 +134,44 @@ try {
   });
   if (customerCreated.status !== 201) throw new Error(`Customer create failed: ${customerCreated.status}`);
 
+  const customerByEmail = await fetch(`http://127.0.0.1:${port}/api/customers/by-email/Smoke%40Example.com`);
+  const customerByEmailPayload = await customerByEmail.json();
+  if (!customerByEmail.ok || customerByEmailPayload.customer?.email !== "smoke@example.com") {
+    throw new Error("Customer by-email lookup did not return the normalized smoke customer.");
+  }
+
+  const invalidCustomerByEmail = await fetch(`http://127.0.0.1:${port}/api/customers/by-email/not-an-email`);
+  if (invalidCustomerByEmail.status !== 400) {
+    throw new Error(`Invalid customer by-email lookup should return 400, got ${invalidCustomerByEmail.status}.`);
+  }
+
+  const customerSearch = await fetch(`http://127.0.0.1:${port}/api/customers?search=SMOKE`);
+  const customerSearchPayload = await customerSearch.json();
+  if (!customerSearch.ok || !customerSearchPayload.customers?.some((customer) => customer.email === "smoke@example.com")) {
+    throw new Error("Customer list search did not find the smoke customer.");
+  }
+
+  const fallbackTicketSync = await fetch(`http://127.0.0.1:${port}/api/state/tickets`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify([
+      ticketPayload.ticket,
+      {
+        id: "SMOKE-CUSTOMEREMAIL",
+        subject: "Smoke customerEmail linking",
+        status: "Open",
+        customerEmail: "Smoke@Example.com"
+      },
+      {
+        id: "SMOKE-TOPLEVEL-EMAIL",
+        subject: "Smoke top-level email linking",
+        status: "Open",
+        email: "smoke@example.com"
+      }
+    ])
+  });
+  if (!fallbackTicketSync.ok) throw new Error(`Fallback ticket sync failed: ${fallbackTicketSync.status}`);
+
   const customerNote = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/notes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -174,9 +212,14 @@ try {
   });
   if (customerWarranty.status !== 201) throw new Error(`Customer warranty failed: ${customerWarranty.status}`);
 
-  const customerTickets = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/tickets`);
+  const customerTickets = await fetch(`http://127.0.0.1:${port}/api/customers/Smoke%40Example.com/tickets`);
   const customerTicketsPayload = await customerTickets.json();
-  if (customerTicketsPayload.tickets?.length !== 1) {
+  const linkedTicketIds = new Set((customerTicketsPayload.tickets || []).map((ticket) => ticket.id));
+  if (
+    !customerTickets.ok ||
+    customerTicketsPayload.tickets?.length !== 3 ||
+    !["SMOKE-1", "SMOKE-CUSTOMEREMAIL", "SMOKE-TOPLEVEL-EMAIL"].every((id) => linkedTicketIds.has(id))
+  ) {
     throw new Error("Customer ticket history route did not find the smoke ticket.");
   }
 

@@ -61,6 +61,7 @@ The frontend ticket API smoke does not use Playwright or browser automation.
 - `POST /api/tickets/:id/notes`
 - `GET /api/customers`
 - `POST /api/customers`
+- `GET /api/customers/by-email/:email`
 - `GET /api/customers/:id`
 - `PATCH /api/customers/:id`
 - `GET /api/customers/:id/tickets`

@@ -4,7 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes, randomUUID } from "node:crypto";
-import { createJsonStore } from "./lib/json-store.mjs";
+import { createJsonStore, normalizeEmail } from "./lib/json-store.mjs";
 import { ValidationError } from "./lib/ticket-workflow.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -230,6 +230,23 @@ async function handleApi(request, response, url) {
     }
     const customer = await store.createCustomer(input);
     sendJson(response, customer ? 201 : 400, customer ? { customer } : { error: "invalid_customer_payload" });
+    return;
+  }
+
+  const customerByEmailRoute = url.pathname.match(/^\/api\/customers\/by-email\/([^/]+)$/);
+  if (request.method === "GET" && customerByEmailRoute) {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    const email = normalizeEmail(decodeURIComponent(customerByEmailRoute[1]));
+    if (!isValidCustomerLookupEmail(email)) {
+      sendJson(response, 400, {
+        error: "invalid_customer_email",
+        message: "Customer email lookup must use a valid email address."
+      });
+      return;
+    }
+    const customer = await store.getCustomerByEmail(email);
+    sendJson(response, customer ? 200 : 404, customer ? { customer } : { error: "customer_not_found" });
     return;
   }
 
@@ -671,6 +688,10 @@ function ticketFiltersFromSearch(searchParams, user) {
     filters.assignee = user.repName || user.displayName || user.email || "";
   }
   return filters;
+}
+
+function isValidCustomerLookupEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ""));
 }
 
 function validateCustomerPatch(patch) {
