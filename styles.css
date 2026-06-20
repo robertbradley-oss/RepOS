@@ -753,11 +753,11 @@ h6 {
 
 .nav-icon {
   display: grid;
-  flex: 0 0 22px;
+  flex: 0 0 20px;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  color: var(--ink-tertiary);
+  width: 20px;
+  height: 20px;
+  color: var(--accent-strong);
   transition:
     color var(--motion-fast) var(--ease-out),
     transform var(--motion-fast) var(--ease-standard);
@@ -765,13 +765,17 @@ h6 {
 
 .nav-icon svg {
   display: block;
-  width: 19px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.85;
+}
+
+.nav-icon svg * {
+  stroke: currentColor;
 }
 
 .nav-badge {
@@ -10550,10 +10554,10 @@ grammarly-extension,
 }
 
 .nav-icon {
-  flex-basis: 24px;
-  width: 24px;
-  height: 24px;
-  color: #a9c2df;
+  flex-basis: 20px;
+  width: 20px;
+  height: 20px;
+  color: var(--accent-strong);
 }
 
 .nav-item.active .nav-icon {
