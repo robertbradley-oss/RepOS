@@ -12,6 +12,7 @@ import {
   parseQueueTicketQuery,
   queueViewsForState
 } from "./lib/queue-views.mjs";
+import { withTicketSla, withTicketsSla } from "./lib/ticket-sla.mjs";
 import { ValidationError, normalizeTicketStatus } from "./lib/ticket-workflow.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -235,11 +236,12 @@ async function handleApi(request, response, url) {
       ? state.tickets
       : await store.listTickets({ limit: 500 });
     const result = filterTicketsForQueueView(tickets, queueView, {
-      currentUserName: settings.currentUserName || settings.defaultAssignee || user.repName || user.displayName
+      currentUserName: settings.currentUserName || settings.defaultAssignee || user.repName || user.displayName,
+      settings
     }, query.value);
     sendJson(response, 200, {
       queueView,
-      tickets: result.tickets,
+      tickets: withTicketsSla(result.tickets, settings),
       total: result.total,
       limit: result.limit,
       offset: result.offset
@@ -251,8 +253,9 @@ async function handleApi(request, response, url) {
     const user = await requireAuth(request, response);
     if (!user) return;
     const filters = ticketFiltersFromSearch(url.searchParams, user);
+    const settings = await workspaceSettings();
     sendJson(response, 200, {
-      tickets: await store.listTickets(filters)
+      tickets: withTicketsSla(await store.listTickets(filters), settings)
     });
     return;
   }
@@ -261,7 +264,8 @@ async function handleApi(request, response, url) {
     const user = await requireAuth(request, response);
     if (!user) return;
     const input = await readJsonBody(request);
-    sendJson(response, 201, { ticket: await store.createTicket(input, { actor: user }) });
+    const settings = await workspaceSettings();
+    sendJson(response, 201, { ticket: withTicketSla(await store.createTicket(input, { actor: user }), settings) });
     return;
   }
 
@@ -274,7 +278,8 @@ async function handleApi(request, response, url) {
       const user = await requireAuth(request, response);
       if (!user) return;
       const ticket = await store.getTicket(ticketId);
-      sendJson(response, ticket ? 200 : 404, ticket ? { ticket } : { error: "ticket_not_found" });
+      const settings = await workspaceSettings();
+      sendJson(response, ticket ? 200 : 404, ticket ? { ticket: withTicketSla(ticket, settings) } : { error: "ticket_not_found" });
       return;
     }
 
@@ -283,7 +288,8 @@ async function handleApi(request, response, url) {
       if (!user) return;
       const patch = await readJsonBody(request);
       const ticket = await store.patchTicket(ticketId, patch, { actor: user });
-      sendJson(response, ticket ? 200 : 404, ticket ? { ticket } : { error: "ticket_not_found" });
+      const settings = await workspaceSettings();
+      sendJson(response, ticket ? 200 : 404, ticket ? { ticket: withTicketSla(ticket, settings) } : { error: "ticket_not_found" });
       return;
     }
 
@@ -295,7 +301,8 @@ async function handleApi(request, response, url) {
         ...input,
         type: childRoute === "notes" ? "note" : input?.type || "rep"
       }, { actor: user, type: childRoute === "notes" ? "note" : "rep" });
-      sendJson(response, result ? 201 : 404, result || { error: "ticket_not_found" });
+      const settings = await workspaceSettings();
+      sendJson(response, result ? 201 : 404, result ? ticketResultWithSla(result, settings) : { error: "ticket_not_found" });
       return;
     }
 
@@ -304,7 +311,8 @@ async function handleApi(request, response, url) {
       if (!user) return;
       const input = await readJsonBody(request);
       const result = await store.appendTicketAttachment(ticketId, input, { actor: user });
-      sendJson(response, result ? 201 : 404, result || { error: "ticket_not_found" });
+      const settings = await workspaceSettings();
+      sendJson(response, result ? 201 : 404, result ? ticketResultWithSla(result, settings) : { error: "ticket_not_found" });
       return;
     }
   }
@@ -422,7 +430,8 @@ async function handleApi(request, response, url) {
 
     if (request.method === "GET" && childRoute === "tickets") {
       const tickets = await store.listCustomerTickets(customerId);
-      sendJson(response, tickets ? 200 : 404, tickets ? { tickets } : { error: "customer_not_found" });
+      const settings = await workspaceSettings();
+      sendJson(response, tickets ? 200 : 404, tickets ? { tickets: withTicketsSla(tickets, settings) } : { error: "customer_not_found" });
       return;
     }
 
@@ -832,6 +841,8 @@ function defaultWorkspaceSettings() {
     defaultAssignee: "CS14 Robert",
     timezone: "America/New_York",
     demoMode: true,
+    defaultSlaHours: 48,
+    overdueGraceHours: 0,
     allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
   };
 }
@@ -842,6 +853,12 @@ async function workspaceSettings() {
 
 async function ensureConfiguredAuthUser(settings = null) {
   return store.ensureAuthUser(defaultAuthUser(settings || await workspaceSettings()));
+}
+
+function ticketResultWithSla(result, settings) {
+  return result?.ticket
+    ? { ...result, ticket: withTicketSla(result.ticket, settings) }
+    : result;
 }
 
 function normalizeWorkspaceSettings(value = {}) {
@@ -857,6 +874,8 @@ function normalizeWorkspaceSettings(value = {}) {
     defaultAssignee: cleanSettingText(source.defaultAssignee, defaults.defaultAssignee, 80),
     timezone: cleanSettingText(source.timezone, defaults.timezone, 80),
     demoMode: typeof source.demoMode === "boolean" ? source.demoMode : defaults.demoMode,
+    defaultSlaHours: normalizeSettingsInteger(source.defaultSlaHours, defaults.defaultSlaHours, 1, 720),
+    overdueGraceHours: normalizeSettingsInteger(source.overdueGraceHours, defaults.overdueGraceHours, 0, 168),
     allowedStatuses: allowedStatuses.length ? allowedStatuses : defaults.allowedStatuses
   };
 }
@@ -896,6 +915,14 @@ function validateWorkspaceSettingsPatch(patch, current) {
     } else if (key === "demoMode") {
       if (typeof raw !== "boolean") return invalidSetting(key, "demoMode must be a boolean.");
       next.demoMode = raw;
+    } else if (key === "defaultSlaHours") {
+      const value = strictSettingsInteger(raw, 1, 720);
+      if (value === null) return invalidSetting(key, "defaultSlaHours must be an integer from 1 to 720.");
+      next.defaultSlaHours = value;
+    } else if (key === "overdueGraceHours") {
+      const value = strictSettingsInteger(raw, 0, 168);
+      if (value === null) return invalidSetting(key, "overdueGraceHours must be an integer from 0 to 168.");
+      next.overdueGraceHours = value;
     } else if (key === "allowedStatuses") {
       if (!Array.isArray(raw)) return invalidSetting(key, "allowedStatuses must be an array of status names.");
       const statuses = normalizeAllowedStatuses(raw, []);
@@ -926,6 +953,20 @@ function normalizeSettingsEmail(value, fallback) {
 function normalizeSettingsRole(value, fallback) {
   const role = String(value || "").trim().toLowerCase();
   return ["admin", "manager", "rep", "owner"].includes(role) ? role : fallback;
+}
+
+function normalizeSettingsInteger(value, fallback, min, max) {
+  if (typeof value !== "number" && typeof value !== "string") return fallback;
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < min || number > max) return fallback;
+  return number;
+}
+
+function strictSettingsInteger(value, min, max) {
+  if (typeof value !== "number" && typeof value !== "string") return null;
+  if (typeof value === "string" && !/^-?\d+$/.test(value.trim())) return null;
+  const number = Number(value);
+  return Number.isInteger(number) && number >= min && number <= max ? number : null;
 }
 
 function normalizeAllowedStatuses(value, fallback) {

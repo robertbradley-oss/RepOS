@@ -55,11 +55,18 @@ try {
     body: JSON.stringify({
       supportEmail: "smoke-support@ispringfilters.com",
       timezone: "America/New_York",
-      demoMode: true
+      demoMode: true,
+      defaultSlaHours: 48,
+      overdueGraceHours: 0
     })
   });
   const settingsPatchPayload = await settingsPatch.json();
-  if (!settingsPatch.ok || settingsPatchPayload.settings?.supportEmail !== "smoke-support@ispringfilters.com") {
+  if (
+    !settingsPatch.ok ||
+    settingsPatchPayload.settings?.supportEmail !== "smoke-support@ispringfilters.com" ||
+    settingsPatchPayload.settings?.defaultSlaHours !== 48 ||
+    settingsPatchPayload.settings?.overdueGraceHours !== 0
+  ) {
     throw new Error(`Settings patch failed: ${settingsPatch.status}`);
   }
 
@@ -81,6 +88,16 @@ try {
   const invalidSettingsEmailPayload = await invalidSettingsEmail.json();
   if (invalidSettingsEmail.status !== 400 || invalidSettingsEmailPayload.error !== "invalid_settings_value") {
     throw new Error("Invalid settings email did not return the expected JSON error.");
+  }
+
+  const invalidSettingsSla = await fetch(`http://127.0.0.1:${port}/api/settings`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ defaultSlaHours: 0 })
+  });
+  const invalidSettingsSlaPayload = await invalidSettingsSla.json();
+  if (invalidSettingsSla.status !== 400 || invalidSettingsSlaPayload.error !== "invalid_settings_value") {
+    throw new Error("Invalid SLA settings did not return the expected JSON error.");
   }
 
   const invalidSettingsStatus = await fetch(`http://127.0.0.1:${port}/api/settings`, {
@@ -170,6 +187,9 @@ try {
   if (ticketPayload.ticket?.status !== "Closed" || ticketPayload.ticket?.conversation?.length < 5 || ticketPayload.ticket?.attachments?.length !== 1) {
     throw new Error("Ticket normalized API readback did not match expected state.");
   }
+  if (ticketPayload.ticket?.slaStatus !== "closed" || ticketPayload.ticket?.isOverdue !== false || !ticketPayload.ticket?.dueAt) {
+    throw new Error("Ticket API readback did not include expected derived SLA fields.");
+  }
 
   const customerInput = {
     email: "smoke@example.com",
@@ -201,30 +221,37 @@ try {
     throw new Error("Customer list search did not find the smoke customer.");
   }
 
+  const now = Date.now();
+  const dueSoonAt = new Date(now + 2 * 60 * 60 * 1000).toISOString();
+  const overdueAt = new Date(now - 3 * 60 * 60 * 1000).toISOString();
+  const normalDueAt = new Date(now + 36 * 60 * 60 * 1000).toISOString();
   const fallbackTicketSync = await fetch(`http://127.0.0.1:${port}/api/state/tickets`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify([
-      ticketPayload.ticket,
+      stripDerivedSlaFields(ticketPayload.ticket, { stripDerivedDueAt: true }),
       {
         id: "SMOKE-CUSTOMEREMAIL",
         subject: "Smoke customerEmail linking",
         status: "Open",
         assignee: "CS14 Robert",
-        customerEmail: "Smoke@Example.com"
+        customerEmail: "Smoke@Example.com",
+        dueAt: dueSoonAt
       },
       {
         id: "SMOKE-TOPLEVEL-EMAIL",
         subject: "Smoke top-level email linking",
         status: "Open",
-        email: "smoke@example.com"
+        email: "smoke@example.com",
+        dueAt: overdueAt
       },
       {
         id: "SMOKE-PENDING",
         subject: "Smoke pending queue",
         status: "Closed, Waiting On Response",
         assignee: "CS14 Robert",
-        customerEmail: "pending@example.com"
+        customerEmail: "pending@example.com",
+        dueAt: normalDueAt
       }
     ])
   });
@@ -254,6 +281,9 @@ try {
   if (!openQueue.ok || openQueuePayload.total !== 2 || openQueuePayload.tickets?.some((ticket) => ticket.status !== "Open")) {
     throw new Error("Open queue view did not return the expected open tickets.");
   }
+  if (!openQueuePayload.tickets?.every((ticket) => ticket.dueAt && ["due-soon", "overdue"].includes(ticket.slaStatus))) {
+    throw new Error("Open queue view tickets did not include expected derived SLA fields.");
+  }
 
   const assignedQueue = await fetch(`http://127.0.0.1:${port}/api/queue-views/assigned/tickets`);
   const assignedQueuePayload = await assignedQueue.json();
@@ -280,6 +310,18 @@ try {
     throw new Error("Queue view customerEmail filter did not find expected open customer tickets.");
   }
 
+  const dueSoonQueue = await fetch(`http://127.0.0.1:${port}/api/queue-views/open/tickets?sla=due-soon`);
+  const dueSoonQueuePayload = await dueSoonQueue.json();
+  if (!dueSoonQueue.ok || dueSoonQueuePayload.total !== 1 || dueSoonQueuePayload.tickets?.[0]?.id !== "SMOKE-CUSTOMEREMAIL") {
+    throw new Error("Queue view SLA due-soon filter did not find the expected ticket.");
+  }
+
+  const overdueQueue = await fetch(`http://127.0.0.1:${port}/api/queue-views/open/tickets?sla=overdue`);
+  const overdueQueuePayload = await overdueQueue.json();
+  if (!overdueQueue.ok || overdueQueuePayload.total !== 1 || overdueQueuePayload.tickets?.[0]?.id !== "SMOKE-TOPLEVEL-EMAIL") {
+    throw new Error("Queue view SLA overdue filter did not find the expected ticket.");
+  }
+
   const invalidQueueView = await fetch(`http://127.0.0.1:${port}/api/queue-views/not-real/tickets`);
   const invalidQueueViewPayload = await invalidQueueView.json();
   if (invalidQueueView.status !== 404 || invalidQueueViewPayload.error !== "queue_view_not_found") {
@@ -292,6 +334,12 @@ try {
     throw new Error("Unsupported queue view filter did not return the expected JSON error.");
   }
 
+  const invalidQueueSlaFilter = await fetch(`http://127.0.0.1:${port}/api/queue-views/open/tickets?sla=lateish`);
+  const invalidQueueSlaFilterPayload = await invalidQueueSlaFilter.json();
+  if (invalidQueueSlaFilter.status !== 400 || invalidQueueSlaFilterPayload.error !== "invalid_queue_filter") {
+    throw new Error("Invalid queue SLA filter did not return the expected JSON error.");
+  }
+
   const analytics = await fetch(`http://127.0.0.1:${port}/api/analytics/summary?windowHours=24&limit=10`);
   const analyticsPayload = await analytics.json();
   if (!analytics.ok) throw new Error(`Analytics summary failed: ${analytics.status}`);
@@ -301,6 +349,8 @@ try {
     metrics.openTicketCount !== 2 ||
     metrics.closedTicketCount !== 1 ||
     metrics.pendingTicketCount !== 1 ||
+    metrics.overdueTicketCount !== 1 ||
+    metrics.dueSoonTicketCount !== 1 ||
     metrics.assignedToCurrentUserCount !== 1 ||
     metrics.allAssignedToCurrentUserCount !== 3 ||
     metrics.recentReplyCount !== 1 ||
@@ -396,6 +446,24 @@ try {
   console.log("Backend smoke test passed.");
 } finally {
   server.kill();
+}
+
+function stripDerivedSlaFields(ticket, options = {}) {
+  const {
+    dueAt,
+    isOverdue,
+    isDueSoon,
+    overdueByHours,
+    dueLabel,
+    slaStatus,
+    ...rest
+  } = ticket || {};
+  void isOverdue;
+  void isDueSoon;
+  void overdueByHours;
+  void dueLabel;
+  void slaStatus;
+  return options.stripDerivedDueAt ? rest : { ...rest, dueAt };
 }
 
 async function waitForHealth(targetPort) {
