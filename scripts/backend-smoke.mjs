@@ -210,6 +210,7 @@ try {
         id: "SMOKE-CUSTOMEREMAIL",
         subject: "Smoke customerEmail linking",
         status: "Open",
+        assignee: "CS14 Robert",
         customerEmail: "Smoke@Example.com"
       },
       {
@@ -217,22 +218,91 @@ try {
         subject: "Smoke top-level email linking",
         status: "Open",
         email: "smoke@example.com"
+      },
+      {
+        id: "SMOKE-PENDING",
+        subject: "Smoke pending queue",
+        status: "Closed, Waiting On Response",
+        assignee: "CS14 Robert",
+        customerEmail: "pending@example.com"
       }
     ])
   });
   if (!fallbackTicketSync.ok) throw new Error(`Fallback ticket sync failed: ${fallbackTicketSync.status}`);
+
+  const queueViewSync = await fetch(`http://127.0.0.1:${port}/api/state/queueViews`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify([
+      { id: "open", label: "Open", title: "Open Tickets", filters: { statusGroup: "open" } },
+      { id: "assigned", label: "Assigned To Me", title: "Assigned To Me", filters: { statusGroup: "open", assignee: "current" } },
+      { id: "closed", label: "Closed", title: "Closed Tickets", filters: { statusGroup: "closed-display" } },
+      { id: "pending", label: "Pending", title: "Pending Tickets", filters: { statusGroup: "pending" } }
+    ])
+  });
+  if (!queueViewSync.ok) throw new Error(`Queue view state sync failed: ${queueViewSync.status}`);
+
+  const queueViews = await fetch(`http://127.0.0.1:${port}/api/queue-views`);
+  const queueViewsPayload = await queueViews.json();
+  const queueViewIds = new Set((queueViewsPayload.queueViews || []).map((view) => view.id));
+  if (!queueViews.ok || !["open", "assigned", "closed", "pending"].every((id) => queueViewIds.has(id))) {
+    throw new Error("Queue view list did not include expected default views.");
+  }
+
+  const openQueue = await fetch(`http://127.0.0.1:${port}/api/queue-views/open/tickets`);
+  const openQueuePayload = await openQueue.json();
+  if (!openQueue.ok || openQueuePayload.total !== 2 || openQueuePayload.tickets?.some((ticket) => ticket.status !== "Open")) {
+    throw new Error("Open queue view did not return the expected open tickets.");
+  }
+
+  const assignedQueue = await fetch(`http://127.0.0.1:${port}/api/queue-views/assigned/tickets`);
+  const assignedQueuePayload = await assignedQueue.json();
+  if (!assignedQueue.ok || assignedQueuePayload.total !== 1 || assignedQueuePayload.tickets?.[0]?.id !== "SMOKE-CUSTOMEREMAIL") {
+    throw new Error("Assigned To Me queue view did not use the configured current user.");
+  }
+
+  const closedQueue = await fetch(`http://127.0.0.1:${port}/api/queue-views/closed/tickets`);
+  const closedQueuePayload = await closedQueue.json();
+  const closedIds = new Set((closedQueuePayload.tickets || []).map((ticket) => ticket.id));
+  if (!closedQueue.ok || closedQueuePayload.total !== 2 || !["SMOKE-1", "SMOKE-PENDING"].every((id) => closedIds.has(id))) {
+    throw new Error("Closed queue view did not preserve current closed-tab status behavior.");
+  }
+
+  const pendingQueue = await fetch(`http://127.0.0.1:${port}/api/queue-views/pending/tickets`);
+  const pendingQueuePayload = await pendingQueue.json();
+  if (!pendingQueue.ok || pendingQueuePayload.total !== 1 || pendingQueuePayload.tickets?.[0]?.id !== "SMOKE-PENDING") {
+    throw new Error("Pending queue view did not return the expected pending ticket.");
+  }
+
+  const customerEmailQueue = await fetch(`http://127.0.0.1:${port}/api/queue-views/open/tickets?customerEmail=Smoke%40Example.com`);
+  const customerEmailQueuePayload = await customerEmailQueue.json();
+  if (!customerEmailQueue.ok || customerEmailQueuePayload.total !== 2) {
+    throw new Error("Queue view customerEmail filter did not find expected open customer tickets.");
+  }
+
+  const invalidQueueView = await fetch(`http://127.0.0.1:${port}/api/queue-views/not-real/tickets`);
+  const invalidQueueViewPayload = await invalidQueueView.json();
+  if (invalidQueueView.status !== 404 || invalidQueueViewPayload.error !== "queue_view_not_found") {
+    throw new Error("Invalid queue view did not return the expected JSON error.");
+  }
+
+  const invalidQueueFilter = await fetch(`http://127.0.0.1:${port}/api/queue-views/open/tickets?unsupported=true`);
+  const invalidQueueFilterPayload = await invalidQueueFilter.json();
+  if (invalidQueueFilter.status !== 400 || invalidQueueFilterPayload.error !== "unsupported_queue_filter") {
+    throw new Error("Unsupported queue view filter did not return the expected JSON error.");
+  }
 
   const analytics = await fetch(`http://127.0.0.1:${port}/api/analytics/summary?windowHours=24&limit=10`);
   const analyticsPayload = await analytics.json();
   if (!analytics.ok) throw new Error(`Analytics summary failed: ${analytics.status}`);
   const metrics = analyticsPayload.summary?.metrics || {};
   if (
-    metrics.totalTicketCount !== 3 ||
+    metrics.totalTicketCount !== 4 ||
     metrics.openTicketCount !== 2 ||
     metrics.closedTicketCount !== 1 ||
-    metrics.pendingTicketCount !== 0 ||
-    metrics.assignedToCurrentUserCount !== 0 ||
-    metrics.allAssignedToCurrentUserCount !== 1 ||
+    metrics.pendingTicketCount !== 1 ||
+    metrics.assignedToCurrentUserCount !== 1 ||
+    metrics.allAssignedToCurrentUserCount !== 3 ||
     metrics.recentReplyCount !== 1 ||
     metrics.recentNoteCount !== 1 ||
     metrics.recentActivityCount !== 6 ||
@@ -366,6 +436,11 @@ async function runStrictAuthSmoke() {
       throw new Error(`Strict mode should protect analytics summary, got ${unauthenticatedAnalytics.status}.`);
     }
 
+    const unauthenticatedQueueViews = await fetch(`http://127.0.0.1:${strictPort}/api/queue-views`);
+    if (unauthenticatedQueueViews.status !== 401) {
+      throw new Error(`Strict mode should protect queue views, got ${unauthenticatedQueueViews.status}.`);
+    }
+
     const unauthenticatedSettingsPatch = await fetch(`http://127.0.0.1:${strictPort}/api/settings`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -396,6 +471,13 @@ async function runStrictAuthSmoke() {
     });
     if (!authenticatedAnalytics.ok) {
       throw new Error(`Strict authenticated analytics summary failed: ${authenticatedAnalytics.status}`);
+    }
+
+    const authenticatedQueueViews = await fetch(`http://127.0.0.1:${strictPort}/api/queue-views`, {
+      headers: { Cookie: cookie }
+    });
+    if (!authenticatedQueueViews.ok) {
+      throw new Error(`Strict authenticated queue views failed: ${authenticatedQueueViews.status}`);
     }
   } finally {
     strictServer.kill();
@@ -430,6 +512,11 @@ async function runPersistenceReloadSmoke(existingDataFile, existingUploadDir) {
     const analyticsPayload = await analytics.json();
     if (!analytics.ok || analyticsPayload.summary?.metrics?.closedTicketCount !== 1) {
       throw new Error("Reloaded server did not summarize persisted analytics state.");
+    }
+    const queueView = await fetch(`http://127.0.0.1:${reloadPort}/api/queue-views/pending/tickets`);
+    const queueViewPayload = await queueView.json();
+    if (!queueView.ok || queueViewPayload.total !== 1) {
+      throw new Error("Reloaded server did not summarize persisted queue view state.");
     }
   } finally {
     reloadServer.kill();

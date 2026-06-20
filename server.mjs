@@ -6,6 +6,12 @@ import { fileURLToPath } from "node:url";
 import { randomBytes, randomUUID } from "node:crypto";
 import { buildAnalyticsSummary } from "./lib/activity-analytics.mjs";
 import { createJsonStore, normalizeEmail } from "./lib/json-store.mjs";
+import {
+  filterTicketsForQueueView,
+  findQueueView,
+  parseQueueTicketQuery,
+  queueViewsForState
+} from "./lib/queue-views.mjs";
 import { ValidationError, normalizeTicketStatus } from "./lib/ticket-workflow.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -47,13 +53,14 @@ const resourceValidators = {
   users: Array.isArray,
   profile: isPlainObject,
   settings: isPlainObject,
+  queueViews: Array.isArray,
   notifications: Array.isArray,
   knowledgeDocs: Array.isArray,
   productLinks: Array.isArray,
   customerAccounts: isPlainObject,
   lastTicketNumber: (value) => Number.isInteger(value) && value >= 0
 };
-const adminStateResources = new Set(["users", "profile", "settings", "knowledgeDocs", "productLinks", "customerAccounts"]);
+const adminStateResources = new Set(["users", "profile", "settings", "queueViews", "knowledgeDocs", "productLinks", "customerAccounts"]);
 
 const store = await createStore();
 await ensureConfiguredAuthUser();
@@ -194,6 +201,48 @@ async function handleApi(request, response, url) {
         windowHours: options.value.windowHours,
         recentActivityLimit: options.value.limit
       })
+    });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/queue-views") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    const settings = await workspaceSettings();
+    const queueViews = queueViewsForState(await store.getResource("queueViews"), settings);
+    sendJson(response, 200, { queueViews });
+    return;
+  }
+
+  const queueViewTicketsRoute = url.pathname.match(/^\/api\/queue-views\/([^/]+)\/tickets$/);
+  if (request.method === "GET" && queueViewTicketsRoute) {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    const settings = await workspaceSettings();
+    const queueViews = queueViewsForState(await store.getResource("queueViews"), settings);
+    const queueView = findQueueView(queueViews, decodeURIComponent(queueViewTicketsRoute[1]));
+    if (!queueView) {
+      sendJson(response, 404, { error: "queue_view_not_found" });
+      return;
+    }
+    const query = parseQueueTicketQuery(url.searchParams);
+    if (!query.ok) {
+      sendJson(response, 400, query.error);
+      return;
+    }
+    const state = await store.loadState();
+    const tickets = Array.isArray(state.tickets)
+      ? state.tickets
+      : await store.listTickets({ limit: 500 });
+    const result = filterTicketsForQueueView(tickets, queueView, {
+      currentUserName: settings.currentUserName || settings.defaultAssignee || user.repName || user.displayName
+    }, query.value);
+    sendJson(response, 200, {
+      queueView,
+      tickets: result.tickets,
+      total: result.total,
+      limit: result.limit,
+      offset: result.offset
     });
     return;
   }
@@ -524,6 +573,7 @@ function defaultState() {
     users: null,
     profile: null,
     settings: defaultWorkspaceSettings(),
+    queueViews: null,
     notifications: null,
     knowledgeDocs: null,
     productLinks: null,

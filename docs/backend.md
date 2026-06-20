@@ -14,6 +14,7 @@ This backend pass keeps RepOS simple to run while moving the app away from brows
 - Normalized customer endpoints for customers, ticket history, account notes, receipts, and warranties.
 - Protected upload/download endpoints for customer receipts and Knowledge Vault files.
 - Analytics summary endpoint for simple ticket counts and recent ticket activity.
+- Queue view endpoints for reusable backend ticket filters.
 - MVP auth users, sessions, HTTP-only session cookies, and role checks.
 
 ## Run Locally
@@ -65,6 +66,8 @@ That command is browserless and does not use Playwright. It exercises the fronte
 - `GET /api/auth/users`
 - `GET /api/bootstrap`
 - `GET /api/analytics/summary?windowHours=24&limit=20`
+- `GET /api/queue-views`
+- `GET /api/queue-views/:id/tickets?customerEmail=avery%40example.com&limit=50`
 - `GET /api/state/:resource`
 - `PUT /api/state/:resource`
 - `GET /api/tickets?status=Open&assignee=CS14%20Robert&search=RCC7&limit=50&offset=0`
@@ -142,6 +145,7 @@ Admin-guarded routes currently include:
 Supported resources:
 
 - `tickets`
+- `queueViews`
 - `users`
 - `profile`
 - `notifications`

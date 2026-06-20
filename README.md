@@ -52,6 +52,8 @@ The frontend ticket API smoke does not use Playwright or browser automation.
 - `GET /api/auth/users`
 - `GET /api/bootstrap`
 - `GET /api/analytics/summary`
+- `GET /api/queue-views`
+- `GET /api/queue-views/:id/tickets`
 - `GET /api/state/:resource`
 - `PUT /api/state/:resource`
 - `GET /api/tickets`
