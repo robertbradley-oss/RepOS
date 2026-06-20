@@ -4006,7 +4006,88 @@ body:not(.is-admin) .admin-only {
 }
 
 .back-button {
-  margin-bottom: 9px;
+  display: block;
+  position: relative;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  margin: 0 0 9px;
+  padding: 0;
+  overflow: hidden;
+  color: var(--accent-strong);
+  background-color: transparent;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.back-button::before,
+.back-button::after {
+  position: absolute;
+  inset: 7px;
+  content: "";
+  border-radius: 50%;
+}
+
+.back-button::before {
+  border: 4px solid #f0ecf9;
+  transition:
+    opacity 0.4s cubic-bezier(0.77, 0, 0.175, 1) 80ms,
+    transform 0.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) 80ms;
+}
+
+.back-button::after {
+  border: 4px solid var(--accent-strong);
+  opacity: 0;
+  transform: scale(1.3);
+  transition:
+    opacity 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
+    transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.back-button:hover,
+.back-button:focus,
+.back-button:focus-visible {
+  color: var(--accent-strong);
+  background-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.back-button:hover::before,
+.back-button:focus::before,
+.back-button:focus-visible::before {
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    opacity 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
+    transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.back-button:hover::after,
+.back-button:focus::after,
+.back-button:focus-visible::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.back-button:active {
+  box-shadow: none;
+  transform: scale(0.96);
+}
+
+.back-button svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  transform: translate(-50%, -50%);
 }
 
 .back-button svg path {
@@ -9642,45 +9723,16 @@ body:not(.is-admin) .admin-only {
 }
 
 .ticket-header.compact .ticket-header-top .ticket-back-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   margin: 0;
   margin-right: 6px;
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  min-height: 38px;
-  padding: 0;
-  color: var(--tessario-deep-blue);
-  background: linear-gradient(180deg, #ffffff 0%, #f4f1fb 100%);
-  border: 1px solid rgba(124, 92, 255, 0.24);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(26, 26, 46, 0.06), 0 8px 18px rgba(124, 92, 255, 0.08);
-  font-size: 13px;
 }
 
 .ticket-header.compact .ticket-header-top .ticket-back-button svg {
-  width: 19px;
-  height: 19px;
-  transform: translateX(-0.5px);
+  transform: translate(calc(-50% - 0.5px), -50%);
 }
 
 .ticket-header.compact .ticket-header-top .ticket-back-button svg path {
   stroke-width: 2.35;
-}
-
-.ticket-header.compact .ticket-header-top .ticket-back-button:hover,
-.ticket-header.compact .ticket-header-top .ticket-back-button:focus-visible {
-  color: var(--tessario-blue);
-  background: linear-gradient(180deg, #ffffff 0%, #f0ecf9 100%);
-  border-color: rgba(124, 92, 255, 0.42);
-  box-shadow: 0 4px 12px rgba(124, 92, 255, 0.13);
-}
-
-.ticket-header.compact .ticket-header-top .ticket-back-button:active {
-  transform: translateY(1px) scale(0.985);
-  box-shadow: 0 1px 4px rgba(26, 26, 46, 0.08);
 }
 
 .ticket-header.compact #copyLinkInlineButton {
@@ -10297,6 +10349,344 @@ body:not(.is-admin) .admin-only {
   filter: grayscale(0.15);
   opacity: 0.52;
   transform: none;
+}
+
+/* Focused Ticket Detail compact CRM pass. */
+.detail-screen .conversation-panel {
+  background: #f8f8fc;
+}
+
+.detail-screen .conversation-scroll-area {
+  background: #f8f8fc;
+  scroll-padding-bottom: 16px;
+}
+
+.detail-screen .ticket-header {
+  padding: 8px 12px 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(229, 225, 239, 0.72);
+}
+
+.ticket-header.compact .ticket-header-top {
+  gap: 8px;
+  min-height: 0;
+  margin-bottom: 7px;
+}
+
+.ticket-header.compact .ticket-header-top .header-row {
+  gap: 6px;
+}
+
+.ticket-header.compact .ticket-header-top .ticket-back-button {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  margin-right: 3px;
+}
+
+.ticket-header.compact .ticket-header-top .ticket-back-button::before,
+.ticket-header.compact .ticket-header-top .ticket-back-button::after {
+  inset: 5px;
+  border-width: 2px;
+}
+
+.ticket-header.compact .ticket-header-top .ticket-back-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ticket-header.compact .ticket-header-main {
+  gap: 12px;
+}
+
+.detail-screen .ticket-title-stack {
+  gap: 7px;
+}
+
+.detail-screen .ticket-header h2 {
+  max-width: 980px;
+  font-size: 16px;
+  line-height: 1.24;
+}
+
+.detail-screen .ticket-header-controls {
+  gap: 7px;
+}
+
+.detail-screen .ticket-header-controls label {
+  gap: 4px;
+}
+
+.detail-screen .ticket-header-controls .tessario-select-trigger {
+  min-height: 32px;
+}
+
+.detail-screen .ticket-header-controls .tessario-select[data-select-id="ticketStatusSelect"] {
+  min-width: 174px;
+}
+
+.detail-screen .ticket-header-controls .tessario-select[data-select-id="ticketAssigneeSelect"] {
+  min-width: 154px;
+}
+
+.detail-screen .ticket-summary-grid {
+  grid-template-columns: minmax(180px, 1.2fr) minmax(96px, 0.58fr) minmax(108px, 0.66fr) minmax(124px, 0.78fr);
+  gap: 6px;
+}
+
+.detail-screen .ticket-summary-item {
+  min-height: 42px;
+  padding: 6px 8px;
+  border-radius: 7px;
+}
+
+.detail-screen .ticket-summary-item strong {
+  font-size: 11.8px;
+}
+
+.detail-screen .ticket-summary-item small {
+  font-size: 10px;
+}
+
+.detail-screen .ticket-details-panel {
+  margin-top: 6px;
+  background: #ffffff;
+  border-color: rgba(229, 225, 239, 0.9);
+  border-radius: 7px;
+}
+
+.detail-screen .ticket-details-panel summary {
+  min-height: 26px;
+  padding: 0 9px;
+}
+
+.detail-screen .ticket-details-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 10px;
+  padding: 7px 9px 8px;
+}
+
+.detail-screen .ticket-details-grid dd {
+  font-size: 11px;
+}
+
+.detail-screen .thread {
+  display: flex;
+  flex-direction: column;
+  align-content: normal;
+  gap: 8px;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 12px 84px 14px 22px;
+  background: transparent;
+}
+
+.detail-screen .message {
+  align-self: center;
+  width: min(100%, 820px);
+  max-width: 820px;
+  margin: 0;
+  padding: 10px 12px;
+  background: #ffffff;
+  border-color: rgba(229, 225, 239, 0.96);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(26, 26, 46, 0.035);
+}
+
+.detail-screen .message.customer,
+.detail-screen .message.rep,
+.detail-screen .message.note {
+  justify-self: auto;
+  align-self: center;
+  margin-inline: 0;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.detail-screen .message.customer {
+  border-left: 3px solid rgba(55, 100, 255, 0.42);
+}
+
+.detail-screen .message.rep {
+  color: var(--tessario-text);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfafe 100%);
+  border-color: rgba(124, 92, 255, 0.24);
+  border-left: 3px solid rgba(83, 188, 216, 0.72);
+}
+
+.detail-screen .message.note {
+  width: min(100%, 800px);
+  max-width: 800px;
+  padding: 9px 12px;
+  background: #f8f6ff;
+  border-color: rgba(124, 92, 255, 0.22);
+  border-left: 3px solid rgba(124, 92, 255, 0.68);
+}
+
+.detail-screen .message.note .message-head strong {
+  color: var(--tessario-deep-blue);
+}
+
+.detail-screen .message-head {
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.detail-screen .message-head strong {
+  font-size: 12.3px;
+}
+
+.detail-screen .message-head span {
+  font-size: 10.3px;
+}
+
+.detail-screen .message-subject {
+  gap: 5px;
+  margin-bottom: 6px;
+  padding: 5px 7px;
+}
+
+.detail-screen .message p {
+  font-size: 12.6px;
+  line-height: 1.45;
+}
+
+.detail-screen .timeline-row {
+  align-self: center;
+  width: fit-content;
+  max-width: min(100%, 820px);
+  margin: 0 auto;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(229, 225, 239, 0.82);
+  box-shadow: none;
+}
+
+.detail-screen .timeline-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.detail-screen .timeline-icon svg {
+  width: 10px;
+  height: 10px;
+}
+
+.detail-screen .timeline-row p {
+  min-width: 0;
+}
+
+.detail-screen .timeline-body {
+  max-width: min(620px, 56vw);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-screen .timeline-receipt .timeline-icon,
+.detail-screen .timeline-attachment .timeline-icon {
+  color: #6d7f96;
+}
+
+.detail-screen .thread-attachments {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 260px));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.detail-screen .thread-attachment {
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 260px;
+  min-height: 50px;
+  padding: 6px;
+  background: #f6f4fb;
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+.detail-screen .attachment-image-thumb,
+.detail-screen .attachment-file-icon {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border-radius: 6px;
+}
+
+.detail-screen .attachment-image-thumb {
+  padding: 5px;
+  font-size: 9px;
+}
+
+.detail-screen .attachment-file-icon {
+  font-size: 10px;
+}
+
+.detail-screen .thread-attachment-meta {
+  gap: 2px;
+}
+
+.detail-screen .thread-attachment-meta strong {
+  font-size: 11.5px;
+}
+
+.detail-screen .thread-attachment-meta span,
+.detail-screen .thread-attachment-meta small {
+  font-size: 10.3px;
+}
+
+.detail-screen .reply-dock {
+  width: calc(100% - 44px);
+  max-width: 1040px;
+  margin: 0 auto 14px;
+  padding: 12px;
+  gap: 8px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(26, 26, 46, 0.05);
+}
+
+.detail-screen .composer-head {
+  padding-bottom: 2px;
+}
+
+.detail-screen .composer-tool-row {
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.detail-screen .composer-editor-card .format-toolbar {
+  min-height: 28px;
+  padding: 3px 6px;
+}
+
+.detail-screen .reply-dock textarea {
+  min-height: 132px;
+  max-height: 260px;
+  padding: 10px 12px;
+  line-height: 1.45;
+}
+
+.detail-screen .composer-bar {
+  gap: 10px;
+}
+
+.detail-screen .reply-float-btn {
+  right: 28px;
+  bottom: 18px;
+  min-height: 30px;
+  padding: 5px 10px;
+  font-size: 11px;
+  box-shadow: 0 8px 18px rgba(54, 69, 255, 0.2);
+}
+
+.detail-screen .detail-footer {
+  max-width: 1040px;
+  margin-inline: auto;
+  padding-top: 2px;
 }
 
 .context-card,
