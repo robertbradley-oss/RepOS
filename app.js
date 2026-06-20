@@ -1,5 +1,5 @@
 // RepOS front-end logic: mock ticket data, queue filtering, conversation rendering, macros, and context panels.
-const STORAGE_KEY = "tessario.support.workspace.v18";
+const STORAGE_KEY = "tessario.support.workspace.v20";
 const TICKET_COUNTER_STORAGE_KEY = "tessario.support.lastTicketNumber.v1";
 const USERS_STORAGE_KEY = "tessario.support.assignmentUsers.v1";
 const PROFILE_STORAGE_KEY = "tessario.support.profile.v1";
@@ -433,7 +433,6 @@ const tableColumns = [
   { key: "select", label: "", className: "check-col" },
   { key: "id", label: "Ticket #" },
   { key: "updated", label: "Last Activity" },
-  { key: "emails", label: "Messages", className: "emails-col" },
   { key: "subject", label: "Subject" },
   { key: "customer", label: "Customer" },
   { key: "assignee", label: "Assigned To" },
@@ -1164,6 +1163,7 @@ const seedWorkspaceSettings = workspaceConfig.defaultSettings;
 let workspaceSettings = normalizeWorkspaceSettings(loadWorkspaceSettings());
 applyWorkspaceSettings();
 let tickets = normalizeTickets(loadTickets());
+rebaselineOpenTicketSla(tickets);
 if (ensureReceiptTestTickets(tickets)) localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
 let backendSyncReady = false;
 let backendSyncTimer = 0;
@@ -1266,7 +1266,6 @@ const el = {
   workspace: document.querySelector(".workspace"),
   ticketWorkspace: document.querySelector(".ticket-workspace"),
   viewNav: document.querySelector("#viewNav"),
-  globalSearch: document.querySelector("#globalSearch"),
   queueSearch: document.querySelector("#queueSearch"),
   brandTagline: document.querySelector("#brandTagline"),
   sidebarWorkspaceLabel: document.querySelector("#sidebarWorkspaceLabel"),
@@ -1357,7 +1356,6 @@ function init() {
   el.ticketsNavButton?.addEventListener("click", showQueueScreen);
   el.viewNav.addEventListener("click", handleViewClick);
   el.queueViewTabs.addEventListener("click", handleQueueTabClick);
-  el.globalSearch.addEventListener("input", (event) => updateFilter("global", event.target.value));
   el.queueSearch.addEventListener("focus", () => setActiveQuickControl("search"));
   el.queueSearch.addEventListener("input", (event) => {
     setActiveQuickControl("search");
@@ -1438,7 +1436,8 @@ function init() {
     if (event.key === "Escape" && notificationsOpen) closeNotificationsPanel();
     if (event.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
       event.preventDefault();
-      el.globalSearch.focus();
+      setActiveQuickControl("search");
+      el.queueSearch?.focus();
     }
   });
   document.addEventListener("click", (event) => {
@@ -3263,13 +3262,29 @@ function generateAdditionalMockTickets(count) {
     { name: "Garden Gate HOA", email: "water@gardengate.example.com", phone: "904-555-0217" },
     { name: "Priya Raman", email: "priya.raman@example.com", phone: "408-555-0218" },
     { name: "Marcus Reed", email: "marcus.reed@example.com", phone: "901-555-0219" },
-    { name: "Avery Coleman", email: "avery.coleman@example.com", phone: "614-555-0220" }
+    { name: "Avery Coleman", email: "avery.coleman@example.com", phone: "614-555-0220" },
+    { name: "Daniel Foster", email: "daniel.foster@example.com", phone: "646-555-0221" },
+    { name: "Harborview Apartments", email: "facilities@harborview.example.com", phone: "206-555-0222" },
+    { name: "Sofia Reyes", email: "sofia.reyes@example.com", phone: "915-555-0223" },
+    { name: "Cedar Creek Lodge", email: "stay@cedarcreek.example.com", phone: "406-555-0224" },
+    { name: "Marcus Whitfield", email: "marcus.whitfield@example.com", phone: "704-555-0225" },
+    { name: "Nina Castellano", email: "nina.castellano@example.com", phone: "702-555-0226" },
+    { name: "Brightwater Cafe", email: "hello@brightwatercafe.example.com", phone: "503-555-0227" },
+    { name: "Omar Haddad", email: "omar.haddad@example.com", phone: "313-555-0228" },
+    { name: "Eleanor Pruitt", email: "eleanor.pruitt@example.com", phone: "207-555-0229" },
+    { name: "Summit Veterinary", email: "office@summitvet.example.com", phone: "801-555-0230" },
+    { name: "Jamal Carter", email: "jamal.carter@example.com", phone: "404-555-0231" },
+    { name: "Lindsey Vaughn", email: "lindsey.vaughn@example.com", phone: "615-555-0232" },
+    { name: "Pinecrest HOA", email: "board@pinecrest.example.com", phone: "919-555-0233" },
+    { name: "Hector Salinas", email: "hector.salinas@example.com", phone: "956-555-0234" },
+    { name: "Yuki Tanaka", email: "yuki.tanaka@example.com", phone: "808-555-0235" },
+    { name: "Rosewood Bistro", email: "kitchen@rosewoodbistro.example.com", phone: "504-555-0236" }
   ];
   const cases = [
     {
       model: "RCC7P-AK",
       family: "Under Sink RO",
-      subjects: ["tank slow to refill", "faucet sputters after filter change", "booster pump humming", "alkaline stage cloudy water"],
+      subjects: ["tank slow to refill", "faucet sputters after filter change", "booster pump humming", "alkaline stage cloudy water", "low pressure at RO faucet", "drain runs constantly", "membrane replacement timing", "TDS creeping up after six months"],
       tags: ["tank-pressure", "under-sink-ro"],
       issue: "Tank pressure, feed valve, or post-filter restriction",
       firstTest: "Drain the tank and check empty tank pressure, then confirm feed valve position.",
@@ -3280,7 +3295,7 @@ function generateAdditionalMockTickets(count) {
     {
       model: "RCC7AK",
       family: "Under Sink RO",
-      subjects: ["taste changed after annual filters", "air gap faucet noise", "TDS reading is higher than expected", "leak at canister after filter change"],
+      subjects: ["taste changed after annual filters", "air gap faucet noise", "TDS reading is higher than expected", "leak at canister after filter change", "slow drip from air gap", "noisy fill right after install", "carbon taste returning", "where canister meets head is weeping"],
       tags: ["rcc7ak", "filter-change"],
       issue: "Filter seating, drain line routing, or membrane performance needs confirmation",
       firstTest: "Confirm filter order, flush time, and TDS from source and RO water.",
@@ -3291,7 +3306,7 @@ function generateAdditionalMockTickets(count) {
     {
       model: "RO500AK",
       family: "Tankless RO",
-      subjects: ["beeping after filter reset", "display stuck on rinse", "low flow from tankless system", "filter light will not clear"],
+      subjects: ["beeping after filter reset", "display stuck on rinse", "low flow from tankless system", "filter light will not clear", "error code E2 on display", "pump cycling on and off", "no water after power outage", "rinse cycle never finishes"],
       tags: ["ro500ak", "tankless", "reset"],
       issue: "Filter reset/rinse sequence or filter compatibility needs review",
       firstTest: "Confirm filter part numbers, display state, and complete reset/rinse sequence.",
@@ -3302,7 +3317,7 @@ function generateAdditionalMockTickets(count) {
     {
       model: "WGB32B",
       family: "Whole House",
-      subjects: ["whole house pressure dropped", "carbon filter changed and flow is low", "bypass test question", "chlorine taste after install"],
+      subjects: ["whole house pressure dropped", "carbon filter changed and flow is low", "bypass test question", "chlorine taste after install", "sediment in cold lines after install", "flow dropped upstairs only", "fitting weeping at outlet", "do I need a pre-filter"],
       tags: ["whole-house", "pressure-drop"],
       issue: "Sediment/carbon restriction, bypass setting, or install direction issue",
       firstTest: "Run a bypass test and compare inlet/outlet pressure readings.",
@@ -3313,7 +3328,7 @@ function generateAdditionalMockTickets(count) {
     {
       model: "WGB32BM",
       family: "Whole House",
-      subjects: ["manganese stain came back", "iron smell after media change", "treated water test still high", "well water staining fixtures"],
+      subjects: ["manganese stain came back", "iron smell after media change", "treated water test still high", "well water staining fixtures", "rotten egg smell in the mornings", "media replacement interval question", "staining in the toilet tank", "flow direction sticker is unclear"],
       tags: ["manganese", "water-test"],
       issue: "Water chemistry may exceed media limits or flow direction may be incorrect",
       firstTest: "Compare raw and treated water tests and confirm flow direction.",
@@ -3324,7 +3339,7 @@ function generateAdditionalMockTickets(count) {
     {
       model: "WCS45KG",
       family: "Water Softener",
-      subjects: ["no water in brine tank", "salt bridge suspected", "hard water after regeneration", "startup valve display question"],
+      subjects: ["no water in brine tank", "salt bridge suspected", "hard water after regeneration", "startup valve display question", "regeneration runs at the wrong time", "salt usage seems high", "error on the head unit", "water still feels hard"],
       tags: ["softener", "brine"],
       issue: "Startup cycle, brine draw, or salt bridge needs confirmation",
       firstTest: "Check brine line seating, salt bridge, and manual regeneration behavior.",
@@ -3335,7 +3350,7 @@ function generateAdditionalMockTickets(count) {
     {
       model: "UVF55FS",
       family: "UV",
-      subjects: ["ballast alarm after lamp replacement", "UV lamp will not turn on", "flow sensor light question", "quartz sleeve replacement help"],
+      subjects: ["ballast alarm after lamp replacement", "UV lamp will not turn on", "flow sensor light question", "quartz sleeve replacement help", "countdown timer reset question", "lamp flickers intermittently", "alarm beeps every few hours", "how often to clean the sleeve"],
       tags: ["uv", "lamp", "ballast"],
       issue: "Lamp seating, ballast label, or consumable part status needs review",
       firstTest: "Confirm lamp pins are seated and match ballast/model labels.",
@@ -3346,7 +3361,7 @@ function generateAdditionalMockTickets(count) {
     {
       model: "WSP50ARB",
       family: "Sediment",
-      subjects: ["spin-down screen packed with sediment", "auto flush not clearing screen", "low flow after storm", "screen replacement request"],
+      subjects: ["spin-down screen packed with sediment", "auto flush not clearing screen", "low flow after storm", "screen replacement request", "flush handle stiff to turn", "o-ring leak at the housing", "pressure gauge reads zero", "mesh size for fine sediment"],
       tags: ["sediment", "spin-down"],
       issue: "Sediment screen clogging, damaged mesh, or flush cycle issue",
       firstTest: "Flush the screen and compare pressure before and after the spin-down filter.",
@@ -3357,7 +3372,7 @@ function generateAdditionalMockTickets(count) {
     {
       model: "TBD",
       family: "Warranty",
-      subjects: ["warranty registration receipt missing", "need help registering product", "receipt upload status check", "order source verification"],
+      subjects: ["warranty registration receipt missing", "need help registering product", "receipt upload status check", "order source verification", "transfer warranty to new owner", "lost original order number", "replacement under warranty claim", "registration confirmation not received"],
       tags: ["warranty", "receipt"],
       issue: "Proof of purchase or model information is missing",
       firstTest: "Collect model, order source, purchase date, and receipt image.",
@@ -3368,7 +3383,7 @@ function generateAdditionalMockTickets(count) {
     {
       model: "RCC7P-AK",
       family: "Under Sink RO",
-      subjects: ["replacement part review follow-up", "damaged faucet replacement delivered", "check valve replacement request", "review update after resolved case"],
+      subjects: ["replacement part review follow-up", "damaged faucet replacement delivered", "check valve replacement request", "review update after resolved case", "wrong part shipped in replacement", "tracking shows delivered but not received", "install help for replacement valve", "follow-up after parts arrived"],
       tags: ["replacement-parts", "review-follow-up"],
       issue: "Replacement part follow-up and customer review timing",
       firstTest: "Confirm part arrived and the system is operating normally.",
@@ -3397,7 +3412,8 @@ function generateAdditionalMockTickets(count) {
     const priorAssignee = assigneeByEmail.get(customer.email);
     const assignee = priorAssignee || reps[index % reps.length];
     if (!priorAssignee) assigneeByEmail.set(customer.email, assignee);
-    const subject = `${scenario.model} ${scenario.subjects[index % scenario.subjects.length]}`;
+    const subjectPhrase = scenario.subjects[Math.floor(index / cases.length) % scenario.subjects.length];
+    const subject = `${scenario.model} ${subjectPhrase}`;
     const missing = [
       !receipt ? "Needs Receipt" : "",
       index % 6 === 0 ? "Needs Photos" : "",
@@ -3410,7 +3426,7 @@ function generateAdditionalMockTickets(count) {
       index % 10 === 0 ? attachment(`water-test-${ticketNumber}.pdf`, "water test", "May 7") : null
     ].filter(Boolean);
 
-    history.unshift(`ISP-${ticketNumber} ${scenario.subjects[index % scenario.subjects.length]}`);
+    history.unshift(`ISP-${ticketNumber} ${subjectPhrase}`);
     ticketsByEmail.set(customer.email, history.slice(0, 5));
 
     return buildTicket({
@@ -4571,6 +4587,7 @@ async function hydrateBackendState() {
 
     if (hasValidTicketData(state.tickets)) {
       tickets = normalizeTickets(state.tickets);
+      rebaselineOpenTicketSla(tickets);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
       hydrated = true;
     }
@@ -5753,6 +5770,7 @@ function render({ preserveQueueList = uiState.activeScreen !== "queue", suppress
   queueDebugState.localStorageTicketsFound = ticketStorage.found;
   renderNav();
   renderQueueTabs();
+  document.body.classList.toggle("queue-view-open", uiState.activeScreen === "queue" && activeView === "open");
   renderMetrics();
   updateProfileButton();
   renderNotifications();
@@ -5922,7 +5940,7 @@ function renderQueuePreview(ticket) {
       <div class="preview-copy">
         <div class="header-row">
           <span class="ticket-id">${escapeHtml(ticketDisplayId(ticket))}</span>
-          <span class="badge status"><span>Status</span> ${escapeHtml(displayStatusFor(ticket))}</span>
+          <span class="badge status ${statusBadgeModifier(displayStatusFor(ticket))}"><span>Status</span> ${escapeHtml(displayStatusFor(ticket))}</span>
         </div>
         <strong>${escapeHtml(ticket.subject)}</strong>
       </div>
@@ -6261,7 +6279,7 @@ function normalizeSortPreference(value) {
 function updateProfileButton() {
   el.profileButtonName.textContent = profileDisplayName();
   el.profileButtonRole.textContent = profile.role || seedProfile.role;
-  el.profileInitials.textContent = profileInitials();
+  // Profile button shows a person icon (set in markup) — no initials to sync here.
 }
 
 function renderNotifications() {
@@ -6417,7 +6435,18 @@ function shouldCreateNotification(category) {
 }
 
 function profileInitials() {
-  return String(profile.extension || "CS").replace(/[^A-Z0-9]/gi, "").slice(0, 4).toUpperCase() || "CS";
+  const first = String(profile.firstName || "").trim();
+  const last = String(profile.lastName || "").trim();
+  let initials = `${first.charAt(0)}${last.charAt(0)}`;
+  if (!initials) {
+    // Fall back to the display name, skipping rep-code tokens like "CS14".
+    const words = profileDisplayName().split(/\s+/).filter((word) => /[a-z]/i.test(word) && !/\d/.test(word));
+    initials = words.slice(0, 2).map((word) => word.charAt(0)).join("");
+  }
+  if (!initials) {
+    initials = String(profile.extension || "CS").replace(/[^A-Z0-9]/gi, "").slice(0, 2);
+  }
+  return initials.toUpperCase() || "U";
 }
 
 function currentAssignmentUser() {
@@ -7068,23 +7097,29 @@ function renderTicketRow(ticket) {
   const attachmentCount = Array.isArray(ticket.attachments) ? ticket.attachments.length : 0;
   const attachmentLabel = `${attachmentCount} ${attachmentCount === 1 ? "file" : "files"}`;
   const emailCount = emailMessageCount(ticket);
+  const overdue = isOverdue(ticket);
+  const overdueIcon = overdue
+    ? `<span class="subject-overdue-icon" title="Overdue" aria-label="Overdue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.3201 3H10.6801L1.5 18.5L2.5 21H21.5L22.5 18.5L13.3201 3Z" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M12 17H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path><path d="M12 13V9" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path></svg></span>`
+    : "";
 
   return `
     <div class="queue-row-shell motion-row-hover motion-row-enter ${previewed ? "previewed" : ""} ${checked ? "checked" : ""} ${locked ? "row-action-disabled" : ""}" role="row" data-ticket-id="${escapeHtml(ticket.id)}" data-ticket-number="${escapeHtml(displayId)}" tabindex="0" ${previewed ? `aria-current="true"` : ""} ${locked ? `aria-disabled="true"` : ""}>
       <div class="queue-row-content">
       <div class="queue-row-cell check-col" role="cell"><input data-select-ticket="${escapeHtml(ticket.id)}" type="checkbox" aria-label="Select ${escapeHtml(displayId)}" ${checked ? "checked" : ""}${disabledAttrs}></div>
       <div class="queue-row-cell" role="cell"><button class="table-link table-ticket-id" data-open-ticket="${escapeHtml(ticket.id)}" data-open-ticket-number="${escapeHtml(displayId)}" type="button"${disabledAttrs}>${escapeHtml(displayId)}</button></div>
-      <div class="queue-row-cell activity-cell" role="cell"><span class="table-date">${dateTimeLabel(lastUpdatedAt(ticket))}</span><small class="queue-sla-line ${isOverdue(ticket) ? "overdue" : ""}">${escapeHtml(dueLabel(ticket.dueAt))}</small></div>
-      <div class="queue-row-cell emails-cell" role="cell"><span class="email-count-pill" title="${escapeHtml(emailCountLabel(ticket))}"><strong>${emailCount}</strong><span>${emailCount === 1 ? "email" : "emails"}</span></span></div>
+      <div class="queue-row-cell activity-cell" role="cell"><span class="table-date">${dateTimeLabel(lastUpdatedAt(ticket))}</span>${overdue ? "" : `<small class="queue-sla-line ${slaLineClass(ticket)}">${escapeHtml(dueLabel(ticket.dueAt))}</small>`}</div>
       <div class="queue-row-cell subject-cell" role="cell">
         <span class="subject-row-inner">
           <span class="subject-copy">
-            <button class="table-link subject-link" data-open-ticket="${escapeHtml(ticket.id)}" data-open-ticket-number="${escapeHtml(displayId)}" type="button"${disabledAttrs}>${escapeHtml(ticket.subject)}</button>
-            <small class="subject-meta-line"><span>${escapeHtml(ticket.model || "No model")}</span><span>${escapeHtml(ticket.order || "No order")}</span><span>${escapeHtml(attachmentLabel)}</span></small>
+            <span class="subject-line">
+              <span class="subject-msg-count" title="${escapeHtml(emailCountLabel(ticket))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 16.5C11 19.5376 13.4624 22 16.5 22C17.5018 22 18.441 21.7322 19.25 21.2642L21.725 22L22 21.725L21.2642 19.25C21.7322 18.441 22 17.5018 22 16.5C22 13.4624 19.5376 11 16.5 11C13.4624 11 11 13.4624 11 16.5Z" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M10 1C14.3996 1 18.0586 4.15692 18.8428 8.3291C18.1627 8.13447 17.4482 8.02279 16.71 8.00488C15.8511 5.11143 13.1724 3 10 3C6.13401 3 3 6.13401 3 10C3 11.2765 3.34066 12.4705 3.93555 13.499L4.15137 13.8721L4.02832 14.2852L3.31543 16.6836L5.71484 15.9717L6.12793 15.8486L6.50098 16.0645C6.97036 16.3359 7.47484 16.5517 8.00488 16.709C8.02271 17.4476 8.13439 18.1624 8.3291 18.8428C7.46539 18.6803 6.64438 18.3968 5.88672 18.0068L2.68457 18.959L2.11426 19.1279L0.87207 17.8857L1.04102 17.3154L1.99414 14.1113C1.3596 12.8779 1 11.4799 1 10C1 5.02944 5.02944 1 10 1Z" fill="currentColor"></path></svg><span>${emailCount}</span></span>
+              <button class="table-link subject-link" data-open-ticket="${escapeHtml(ticket.id)}" data-open-ticket-number="${escapeHtml(displayId)}" type="button"${disabledAttrs}>${escapeHtml(ticket.subject)}</button>
+              ${overdueIcon}
+            </span>
           </span>
         </span>
       </div>
-      <div class="queue-row-cell" role="cell"><button class="table-link customer-link" data-open-history="${escapeHtml(ticket.id)}" type="button"${disabledAttrs}><strong>${escapeHtml(ticket.customer.name)}</strong><small>${escapeHtml(ticket.customer.email)}</small></button></div>
+      <div class="queue-row-cell" role="cell"><button class="table-link customer-link" data-open-history="${escapeHtml(ticket.id)}" type="button"${disabledAttrs}><strong>${escapeHtml(ticket.customer.name)}</strong></button></div>
       <div class="queue-row-cell" role="cell">${escapeHtml(ticket.assignee)}</div>
       <div class="queue-row-cell" role="cell">${renderBadge(displayStatusFor(ticket), "status")}</div>
       </div>
@@ -7291,7 +7326,24 @@ function syncToolbarControlState() {
 }
 
 function renderBadge(label, className) {
-  return `<span class="badge ${className}">${escapeHtml(label)}</span>`;
+  const extra = className === "status" ? ` ${statusBadgeModifier(label)}` : "";
+  return `<span class="badge ${className}${extra}">${escapeHtml(label)}</span>`;
+}
+
+function statusBadgeModifier(label) {
+  const value = String(label ?? "").toLowerCase();
+  if (value.includes("waiting")) return "is-waiting";
+  if (value.includes("closed")) return "is-closed";
+  return "is-open";
+}
+
+function slaLineClass(ticket) {
+  if (!isOpen(ticket)) return "";
+  const hours = Math.round((new Date(ticket.dueAt) - new Date()) / 36e5);
+  if (hours < -48) return "sla-breach";
+  if (hours < 0) return "sla-overdue";
+  if (hours < 24) return "sla-soon";
+  return "";
 }
 
 function assignmentSelectOptions(currentAssignee) {
@@ -9593,7 +9645,7 @@ function renderTicketCard(ticket) {
         <span>${ageLabel(ticket.createdAt)}</span>
       </div>
       <div class="badge-row">
-        <span class="badge status">${escapeHtml(displayStatusFor(ticket))}</span>
+        <span class="badge status ${statusBadgeModifier(displayStatusFor(ticket))}">${escapeHtml(displayStatusFor(ticket))}</span>
       </div>
       ${ticket.missing.length ? `<div class="chip-row">${ticket.missing.slice(0, 2).map((chip) => `<span class="chip missing">${escapeHtml(chip)}</span>`).join("")}</div>` : ""}
     </button>
@@ -9627,7 +9679,7 @@ function renderConversation(ticket) {
             <span class="sr-only">Back to queue</span>
           </button>
           <span class="ticket-id">${escapeHtml(ticketDisplayId(ticket))}</span>
-          <span class="badge status">${escapeHtml(displayStatusFor(ticket))}</span>
+          <span class="badge status ${statusBadgeModifier(displayStatusFor(ticket))}">${escapeHtml(displayStatusFor(ticket))}</span>
           <span class="sla ${isOverdue(ticket) ? "overdue" : ""}">${dueLabel(ticket.dueAt)}</span>
           <span class="email-count-badge" title="${escapeHtml(debugLabel)}" data-email-count="${emailMessageCount(ticket)}" data-visible-email-messages="${visibleEmailMessages(ticket).length}" data-total-thread-items="${threadMessages.length}">${escapeHtml(countLabel)}</span>
         </div>
@@ -10893,7 +10945,6 @@ function openDashboardFilteredQueue(query) {
   filters.sort = "sla";
   filters.table = {};
   resetQueuePagination();
-  if (el.globalSearch) el.globalSearch.value = "";
   if (el.queueSearch) el.queueSearch.value = filters.queue;
   render();
   showToast(filters.queue ? `Filtered tickets: ${filters.queue}.` : "Showing matching tickets.");
@@ -10932,7 +10983,6 @@ function clearFilters(shouldRender = true) {
   filters.tableSort = { key: "updated", direction: "desc" };
   resetQueuePagination();
   uiState.activeQuickControl = activeView;
-  el.globalSearch.value = "";
   el.queueSearch.value = "";
   el.statusFilter.value = "";
   if (el.assignSelect) el.assignSelect.value = "";
@@ -13489,7 +13539,10 @@ function ageLabel(value) {
 
 function dueLabel(value) {
   const hours = Math.round((new Date(value) - new Date()) / 36e5);
-  if (hours < 0) return `${Math.abs(hours)}h overdue`;
+  if (hours < 0) {
+    const over = Math.abs(hours);
+    return over >= 48 ? `${Math.round(over / 24)}d overdue` : `${over}h overdue`;
+  }
   if (hours < 24) return `SLA ${hours}h`;
   return `Due ${new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
@@ -13513,6 +13566,37 @@ function hoursFromNow(hours) {
   const date = new Date();
   date.setTime(date.getTime() + hours * 60 * 60 * 1000);
   return date.toISOString();
+}
+
+// Ticket data is cached in localStorage from the first seed, so absolute due
+// dates drift into the deep past and every ticket reads as overdue. Re-baseline
+// each open ticket's SLA relative to "now" on load, using a stable per-ticket
+// offset so the queue always shows a realistic spread (~1/3 overdue, some due
+// soon, most comfortably ahead) instead of a wall of red.
+function slaOffsetHoursForTicket(ticket) {
+  const r = hashStringToUnit(ticket.id || ticket.number || ticket.subject || "");
+  if (r < 0.22) return -Math.round(2 + (r / 0.22) * 70);          // -2h .. -72h (~22% overdue)
+  if (r < 0.36) return Math.round(((r - 0.22) / 0.14) * 8);       // 0h .. 8h (due soon)
+  return Math.round(9 + ((r - 0.36) / 0.64) * 87);                // 9h .. 96h (comfortably ahead)
+}
+
+function hashStringToUnit(value) {
+  let h = 2166136261;
+  const text = String(value);
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return ((h >>> 0) % 100000) / 100000;
+}
+
+function rebaselineOpenTicketSla(list) {
+  if (!Array.isArray(list)) return;
+  for (const ticket of list) {
+    if (ticket && isOpen(ticket)) {
+      ticket.dueAt = hoursFromNow(slaOffsetHoursForTicket(ticket));
+    }
+  }
 }
 
 function toDateInput(value) {

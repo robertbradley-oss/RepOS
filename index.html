@@ -75,24 +75,19 @@
               </div>
               <h1 id="queueTitle" class="sr-only">Open Tickets</h1>
               <div class="queue-header-actions">
-                <label class="global-search">
-                  <span aria-hidden="true">Search</span>
-                  <input id="globalSearch" type="search" placeholder="Search tickets, customers, models, orders, notes" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
-                  <kbd>/</kbd>
-                </label>
                 <button class="primary-button topbar-action-button new-ticket-button" id="newTicketButton" type="button" title="New Ticket" aria-label="New Ticket">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
                   <span>New</span>
                 </button>
                 <div class="notification-center">
                   <button class="notification-bell" id="notificationBellButton" type="button" title="Notifications" aria-label="Open notifications" aria-expanded="false">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V19C9 20.6569 10.3431 22 12 22C13.6569 22 15 20.6569 15 19V18" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path><path d="M6 12V8C6 4.68629 8.68629 2 12 2C15.3137 2 18 4.68629 18 8V12C19.6569 12 21 13.3431 21 15V18H3V15C3 13.3431 4.34315 12 6 12Z" stroke="currentColor" stroke-width="2" fill="none"></path></svg>
                     <span class="notification-count" id="notificationUnreadCount" hidden>0</span>
                   </button>
                   <section class="notification-panel" id="notificationPanel" aria-label="Notifications" hidden></section>
                 </div>
                 <button class="user-profile" id="profileButton" type="button" title="Profile and settings" aria-label="Open profile settings">
-                  <span id="profileInitials">RB</span>
+                  <span id="profileInitials" class="profile-avatar-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6C16 8.20914 14.2091 10 12 10C9.79086 10 8 8.20914 8 6C8 3.79086 9.79086 2 12 2C14.2091 2 16 3.79086 16 6Z" stroke="currentColor" stroke-width="2" fill="none"></path><path d="M21 21.0001V16.3096C15.4029 13.2001 8.59712 13.2001 3 16.3096V21.0001H21Z" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path></svg></span>
                   <div>
                     <strong id="profileButtonName">CS14 Robert</strong>
                     <small id="profileButtonRole">Admin</small>
@@ -103,8 +98,12 @@
 
             <div class="queue-controls">
               <label class="queue-search">
-                <span>Queue search</span>
-                <input id="queueSearch" type="search" placeholder="Ticket, customer, email, model, order, rep, issue" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+                <span>Search</span>
+                <span class="queue-search-field">
+                  <svg class="queue-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-4-4"></path></svg>
+                  <input id="queueSearch" type="search" placeholder="Search tickets, customers, models, orders, notes" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+                  <kbd class="queue-search-kbd">/</kbd>
+                </span>
               </label>
               <div class="ticket-action-toolbar" id="ticketActionToolbar" aria-label="Ticket actions">
                 <div class="bulk-actions" id="bulkActions" aria-live="polite"></div>
@@ -117,14 +116,12 @@
                     <span>Assign</span>
                     <select id="assignSelect" aria-label="Assignment action"></select>
                   </label>
+                  <div class="toolbar-icon-cluster" role="group" aria-label="Queue actions">
                   <button class="toolbar-icon-button merge-toolbar-button" id="mergeTicketsButton" type="button" title="Merge tickets" aria-label="Merge tickets" disabled>
                     <svg class="toolbar-button-icon merge-button-icon" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M6 7.25h3.1c1.6 0 2.72.62 3.7 2.05l1.7 2.48c.92 1.34 1.98 1.97 3.52 1.97H19"></path>
-                      <path d="M6 16.75h3.1c1.6 0 2.72-.62 3.7-2.05l1.7-2.48c.92-1.34 1.98-1.97 3.52-1.97H19"></path>
-                      <path d="m16.6 7.85 2.4 2.4-2.4 2.4"></path>
-                      <path d="m16.6 11.35 2.4 2.4-2.4 2.4"></path>
-                      <circle cx="6" cy="7.25" r="1.05"></circle>
-                      <circle cx="6" cy="16.75" r="1.05"></circle>
+                      <path d="M4 12h12"></path>
+                      <path d="m12 7.5 4.5 4.5-4.5 4.5"></path>
+                      <path d="M19.5 6v12"></path>
                     </svg>
                     <span>Merge</span>
                   </button>
@@ -145,6 +142,7 @@
                     </svg>
                     <span>Refresh</span>
                   </button>
+                  </div>
                   <label class="toolbar-select toolbar-sort-select">
                     <span>Sort</span>
                     <select id="sortSelect" aria-label="Sort tickets">
