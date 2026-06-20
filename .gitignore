@@ -1,6 +1,7 @@
 .vercel
 .data
 .uploads
+.claude/
 node_modules
 .env
 .env.*
