@@ -222,6 +222,35 @@ try {
   });
   if (!fallbackTicketSync.ok) throw new Error(`Fallback ticket sync failed: ${fallbackTicketSync.status}`);
 
+  const analytics = await fetch(`http://127.0.0.1:${port}/api/analytics/summary?windowHours=24&limit=10`);
+  const analyticsPayload = await analytics.json();
+  if (!analytics.ok) throw new Error(`Analytics summary failed: ${analytics.status}`);
+  const metrics = analyticsPayload.summary?.metrics || {};
+  if (
+    metrics.totalTicketCount !== 3 ||
+    metrics.openTicketCount !== 2 ||
+    metrics.closedTicketCount !== 1 ||
+    metrics.pendingTicketCount !== 0 ||
+    metrics.assignedToCurrentUserCount !== 0 ||
+    metrics.allAssignedToCurrentUserCount !== 1 ||
+    metrics.recentReplyCount !== 1 ||
+    metrics.recentNoteCount !== 1 ||
+    metrics.recentActivityCount !== 6 ||
+    metrics.ticketsUpdatedRecentlyCount !== 1
+  ) {
+    throw new Error(`Analytics summary metrics did not match expected smoke state: ${JSON.stringify(metrics)}`);
+  }
+  const activityCounts = analyticsPayload.summary?.activity?.countsByCategory || {};
+  if (activityCounts.status !== 1 || activityCounts.note !== 1 || activityCounts.reply !== 1 || activityCounts.attachment !== 1) {
+    throw new Error(`Analytics activity category counts did not match expected smoke state: ${JSON.stringify(activityCounts)}`);
+  }
+
+  const invalidAnalytics = await fetch(`http://127.0.0.1:${port}/api/analytics/summary?windowHours=0`);
+  const invalidAnalyticsPayload = await invalidAnalytics.json();
+  if (invalidAnalytics.status !== 400 || invalidAnalyticsPayload.error !== "invalid_analytics_query") {
+    throw new Error("Invalid analytics query did not return the expected JSON error.");
+  }
+
   const customerNote = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/notes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -332,6 +361,11 @@ async function runStrictAuthSmoke() {
       throw new Error(`Strict mode should require auth, got ${unauthenticated.status}.`);
     }
 
+    const unauthenticatedAnalytics = await fetch(`http://127.0.0.1:${strictPort}/api/analytics/summary`);
+    if (unauthenticatedAnalytics.status !== 401) {
+      throw new Error(`Strict mode should protect analytics summary, got ${unauthenticatedAnalytics.status}.`);
+    }
+
     const unauthenticatedSettingsPatch = await fetch(`http://127.0.0.1:${strictPort}/api/settings`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -355,6 +389,13 @@ async function runStrictAuthSmoke() {
     });
     if (!authenticated.ok) {
       throw new Error(`Strict authenticated ticket list failed: ${authenticated.status}`);
+    }
+
+    const authenticatedAnalytics = await fetch(`http://127.0.0.1:${strictPort}/api/analytics/summary`, {
+      headers: { Cookie: cookie }
+    });
+    if (!authenticatedAnalytics.ok) {
+      throw new Error(`Strict authenticated analytics summary failed: ${authenticatedAnalytics.status}`);
     }
   } finally {
     strictServer.kill();
@@ -384,6 +425,11 @@ async function runPersistenceReloadSmoke(existingDataFile, existingUploadDir) {
     const settingsPayload = await settingsRead.json();
     if (!settingsRead.ok || settingsPayload.settings?.supportEmail !== "smoke-support@ispringfilters.com") {
       throw new Error("Reloaded server did not read persisted workspace settings.");
+    }
+    const analytics = await fetch(`http://127.0.0.1:${reloadPort}/api/analytics/summary`);
+    const analyticsPayload = await analytics.json();
+    if (!analytics.ok || analyticsPayload.summary?.metrics?.closedTicketCount !== 1) {
+      throw new Error("Reloaded server did not summarize persisted analytics state.");
     }
   } finally {
     reloadServer.kill();

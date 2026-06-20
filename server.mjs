@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes, randomUUID } from "node:crypto";
+import { buildAnalyticsSummary } from "./lib/activity-analytics.mjs";
 import { createJsonStore, normalizeEmail } from "./lib/json-store.mjs";
 import { ValidationError, normalizeTicketStatus } from "./lib/ticket-workflow.mjs";
 
@@ -170,6 +171,30 @@ async function handleApi(request, response, url) {
     const updatedAt = await store.setResource("settings", validation.value);
     await ensureConfiguredAuthUser(validation.value);
     sendJson(response, 200, { settings: validation.value, updatedAt });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/analytics/summary") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    const options = analyticsOptionsFromSearch(url.searchParams);
+    if (!options.ok) {
+      sendJson(response, 400, options.error);
+      return;
+    }
+    const state = await store.loadState();
+    const tickets = Array.isArray(state.tickets)
+      ? state.tickets
+      : await store.listTickets({ limit: 500 });
+    sendJson(response, 200, {
+      summary: buildAnalyticsSummary({
+        tickets,
+        settings: await workspaceSettings(),
+        user,
+        windowHours: options.value.windowHours,
+        recentActivityLimit: options.value.limit
+      })
+    });
     return;
   }
 
@@ -713,6 +738,34 @@ function ticketFiltersFromSearch(searchParams, user) {
     filters.assignee = user.repName || user.displayName || user.email || "";
   }
   return filters;
+}
+
+function analyticsOptionsFromSearch(searchParams) {
+  const rawWindowHours = searchParams.get("windowHours");
+  const rawLimit = searchParams.get("limit");
+  const windowHours = rawWindowHours === null ? 24 : Number(rawWindowHours);
+  const limit = rawLimit === null ? 20 : Number(rawLimit);
+  if (!Number.isInteger(windowHours) || windowHours < 1 || windowHours > 720) {
+    return {
+      ok: false,
+      error: {
+        error: "invalid_analytics_query",
+        message: "windowHours must be an integer from 1 to 720.",
+        details: { field: "windowHours" }
+      }
+    };
+  }
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return {
+      ok: false,
+      error: {
+        error: "invalid_analytics_query",
+        message: "limit must be an integer from 1 to 100.",
+        details: { field: "limit" }
+      }
+    };
+  }
+  return { ok: true, value: { windowHours, limit } };
 }
 
 function isValidCustomerLookupEmail(email) {

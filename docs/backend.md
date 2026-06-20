@@ -13,6 +13,7 @@ This backend pass keeps RepOS simple to run while moving the app away from brows
 - Normalized ticket endpoints for ticket creation, updates, reads, messages, notes, and attachment metadata.
 - Normalized customer endpoints for customers, ticket history, account notes, receipts, and warranties.
 - Protected upload/download endpoints for customer receipts and Knowledge Vault files.
+- Analytics summary endpoint for simple ticket counts and recent ticket activity.
 - MVP auth users, sessions, HTTP-only session cookies, and role checks.
 
 ## Run Locally
@@ -63,6 +64,7 @@ That command is browserless and does not use Playwright. It exercises the fronte
 - `POST /api/auth/logout`
 - `GET /api/auth/users`
 - `GET /api/bootstrap`
+- `GET /api/analytics/summary?windowHours=24&limit=20`
 - `GET /api/state/:resource`
 - `PUT /api/state/:resource`
 - `GET /api/tickets?status=Open&assignee=CS14%20Robert&search=RCC7&limit=50&offset=0`
