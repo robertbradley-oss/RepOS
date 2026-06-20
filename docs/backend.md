@@ -10,7 +10,7 @@ This backend pass keeps RepOS simple to run while moving the app away from brows
 - Optional Postgres persistence when `DATABASE_URL` is set.
 - Bootstrap loading so the frontend can hydrate from backend state.
 - Sync endpoints for tickets, users, profile settings, notifications, Knowledge Vault metadata, product links, customer accounts, and the last ticket number.
-- Normalized ticket endpoints for ticket creation, updates, reads, messages, and notes.
+- Normalized ticket endpoints for ticket creation, updates, reads, messages, notes, and attachment metadata.
 - Normalized customer endpoints for customers, ticket history, account notes, receipts, and warranties.
 - Protected upload/download endpoints for customer receipts and Knowledge Vault files.
 - MVP auth users, sessions, HTTP-only session cookies, and role checks.
@@ -37,6 +37,24 @@ $env:HOST='0.0.0.0'
 npm.cmd run start
 ```
 
+## Smoke Checks
+
+Run the backend smoke after changes to `server.mjs`, store implementations, normalized ticket endpoints, auth/session behavior, upload/download routes, customer routes, or persistence handling:
+
+```powershell
+npm.cmd run smoke
+```
+
+That command starts temporary local RepOS servers and checks health, auth, state resources, normalized ticket create/update/message/note/attachment flows, customer and file routes, strict auth, and JSON persistence reload behavior.
+
+Run the frontend ticket API smoke after changes to `app.js` ticket mutation helpers, normalized ticket endpoints, fallback behavior, or ticket persistence logic:
+
+```powershell
+npm.cmd run smoke:frontend-ticket-api
+```
+
+That command is browserless and does not use Playwright. It exercises the frontend helper paths for status, close/reopen, reassignment, internal notes, customer-facing replies, attachment metadata, backend response replacement, fallback-to-full-sync behavior, and protection against replacing the full local ticket array with a single-ticket response.
+
 ## API Endpoints
 
 - `GET /api/health`
@@ -53,6 +71,7 @@ npm.cmd run start
 - `PATCH /api/tickets/:id`
 - `POST /api/tickets/:id/messages`
 - `POST /api/tickets/:id/notes`
+- `POST /api/tickets/:id/attachments`
 - `GET /api/customers?search=avery&limit=50&offset=0`
 - `POST /api/customers`
 - `GET /api/customers/:id`
@@ -84,6 +103,8 @@ Customer receipt uploads create both a protected file record and customer receip
 RepOS uses iSpring Water Systems as the demo workspace context. The default Node backend persists that local demo state to `.data/tessario-state.json`, so dashboard counts and queue totals reflect the current saved state rather than a fresh seed snapshot after local sessions have changed tickets, reps, customer accounts, Knowledge Vault metadata, product links, or profile preferences.
 
 The existing Admin Hub and Profile > Workspace recovery controls restore seeded iSpring demo data only after confirmation. That restore overwrites synced local demo state for app data resources, but it does not delete files from `.uploads/`.
+
+Ticket mutations through the normalized ticket API validate supported fields and add timeline entries for status changes, close/reopen actions, assignee changes, internal notes, customer-facing replies, and attachment metadata. The default JSON-file store writes through a temporary file and keeps a `.bak` copy of the prior saved state before replacing `.data/tessario-state.json`.
 
 ## Auth Mode
 
@@ -154,7 +175,7 @@ Postgres mode creates:
 
 - Replace dev login with production passwordless, OAuth, or password-based authentication.
 - Move frontend customer-history actions to the normalized customer endpoints.
-- Add normalized tables for assignments, macros, Knowledge Vault documents, and activity history.
+- Add normalized tables for assignments, macros, Knowledge Vault documents, and richer reporting over activity history.
 - Move local uploads to durable object storage for deployed environments.
 - Add PDF/DOCX text extraction and searchable Knowledge Vault content.
 - Add email ingestion and outbound email integration.

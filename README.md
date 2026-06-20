@@ -25,6 +25,22 @@ http://127.0.0.1:4173
 
 The app has no build step. It is plain HTML, CSS, JavaScript, and a lightweight Node server. `pg` is installed only for optional Postgres persistence; the default local mode uses JSON-file persistence.
 
+## Smoke Checks
+
+Run the backend smoke after backend, store, normalized ticket endpoint, upload/download, auth, customer-route, or persistence changes:
+
+```powershell
+npm.cmd run smoke
+```
+
+Run the browserless frontend ticket API smoke after `app.js` ticket mutation helper changes, normalized ticket endpoint changes, fallback behavior changes, or ticket persistence logic changes:
+
+```powershell
+npm.cmd run smoke:frontend-ticket-api
+```
+
+The frontend ticket API smoke does not use Playwright or browser automation.
+
 ## Backend MVP
 
 `server.mjs` now serves the frontend and exposes API endpoints under `/api`. It uses local JSON-file persistence by default and switches to Postgres when `DATABASE_URL` is set.

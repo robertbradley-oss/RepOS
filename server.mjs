@@ -5,6 +5,7 @@ import { basename, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes, randomUUID } from "node:crypto";
 import { createJsonStore } from "./lib/json-store.mjs";
+import { ValidationError } from "./lib/ticket-workflow.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 4173);
@@ -64,6 +65,14 @@ const server = createServer(async (request, response) => {
     }
     await serveStatic(response, url.pathname);
   } catch (error) {
+    if (error instanceof ValidationError) {
+      sendJson(response, error.status || 400, {
+        error: error.error || "invalid_request",
+        message: error.message,
+        details: error.details || {}
+      });
+      return;
+    }
     sendJson(response, 500, {
       error: "internal_error",
       message: error instanceof Error ? error.message : "Unknown server error"
@@ -143,8 +152,9 @@ async function handleApi(request, response, url) {
   if (request.method === "GET" && url.pathname === "/api/tickets") {
     const user = await requireAuth(request, response);
     if (!user) return;
+    const filters = ticketFiltersFromSearch(url.searchParams, user);
     sendJson(response, 200, {
-      tickets: await store.listTickets(Object.fromEntries(url.searchParams.entries()))
+      tickets: await store.listTickets(filters)
     });
     return;
   }
@@ -153,15 +163,11 @@ async function handleApi(request, response, url) {
     const user = await requireAuth(request, response);
     if (!user) return;
     const input = await readJsonBody(request);
-    if (!isPlainObject(input) || !String(input.subject || "").trim()) {
-      sendJson(response, 400, { error: "invalid_ticket_payload" });
-      return;
-    }
-    sendJson(response, 201, { ticket: await store.createTicket(input) });
+    sendJson(response, 201, { ticket: await store.createTicket(input, { actor: user }) });
     return;
   }
 
-  const ticketRoute = url.pathname.match(/^\/api\/tickets\/([^/]+)(?:\/(messages|notes))?$/);
+  const ticketRoute = url.pathname.match(/^\/api\/tickets\/([^/]+)(?:\/(messages|notes|attachments))?$/);
   if (ticketRoute) {
     const ticketId = decodeURIComponent(ticketRoute[1]);
     const childRoute = ticketRoute[2] || "";
@@ -178,11 +184,7 @@ async function handleApi(request, response, url) {
       const user = await requireAuth(request, response);
       if (!user) return;
       const patch = await readJsonBody(request);
-      if (!isPlainObject(patch)) {
-        sendJson(response, 400, { error: "invalid_ticket_patch" });
-        return;
-      }
-      const ticket = await store.patchTicket(ticketId, patch);
+      const ticket = await store.patchTicket(ticketId, patch, { actor: user });
       sendJson(response, ticket ? 200 : 404, ticket ? { ticket } : { error: "ticket_not_found" });
       return;
     }
@@ -191,14 +193,19 @@ async function handleApi(request, response, url) {
       const user = await requireAuth(request, response);
       if (!user) return;
       const input = await readJsonBody(request);
-      if (!isPlainObject(input) || !String(input.body || "").trim()) {
-        sendJson(response, 400, { error: "invalid_message_payload" });
-        return;
-      }
       const result = await store.appendTicketMessage(ticketId, {
         ...input,
-        type: childRoute === "notes" ? "note" : input.type || "rep"
-      });
+        type: childRoute === "notes" ? "note" : input?.type || "rep"
+      }, { actor: user, type: childRoute === "notes" ? "note" : "rep" });
+      sendJson(response, result ? 201 : 404, result || { error: "ticket_not_found" });
+      return;
+    }
+
+    if (request.method === "POST" && childRoute === "attachments") {
+      const user = await requireAuth(request, response);
+      if (!user) return;
+      const input = await readJsonBody(request);
+      const result = await store.appendTicketAttachment(ticketId, input, { actor: user });
       sendJson(response, result ? 201 : 404, result || { error: "ticket_not_found" });
       return;
     }
@@ -288,11 +295,12 @@ async function handleApi(request, response, url) {
 
     if (request.method === "PATCH" && !childRoute) {
       const patch = await readJsonBody(request);
-      if (!isPlainObject(patch)) {
-        sendJson(response, 400, { error: "invalid_customer_patch" });
+      const validation = validateCustomerPatch(patch);
+      if (!validation.ok) {
+        sendJson(response, 400, validation.error);
         return;
       }
-      const customer = await store.patchCustomer(customerId, patch);
+      const customer = await store.patchCustomer(customerId, validation.value);
       sendJson(response, customer ? 200 : 404, customer ? { customer } : { error: "customer_not_found" });
       return;
     }
@@ -478,13 +486,17 @@ async function readJsonBody(request) {
   for await (const chunk of request) {
     size += chunk.length;
     if (size > maxJsonBytes) {
-      throw new Error("JSON body is too large");
+      throw new ValidationError("json_body_too_large", "JSON body is too large.", { maxBytes: maxJsonBytes }, 413);
     }
     chunks.push(chunk);
   }
   const raw = Buffer.concat(chunks).toString("utf8").trim();
   if (!raw) return null;
-  return JSON.parse(raw);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new ValidationError("invalid_json", "Request body must be valid JSON.");
+  }
 }
 
 async function parseUploadRequest(request) {
@@ -650,6 +662,61 @@ function normalizeMimeType(mimeType, extension) {
 function parseBoolean(value, fallback) {
   if (value === undefined || value === null || value === "") return fallback;
   return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
+}
+
+function ticketFiltersFromSearch(searchParams, user) {
+  const filters = Object.fromEntries(searchParams.entries());
+  const assignee = String(filters.assignee || "").trim().toLowerCase();
+  if (["me", "current", "current-user"].includes(assignee)) {
+    filters.assignee = user.repName || user.displayName || user.email || "";
+  }
+  return filters;
+}
+
+function validateCustomerPatch(patch) {
+  if (!isPlainObject(patch)) {
+    return { ok: false, error: { error: "invalid_customer_patch", message: "Customer patch must be an object." } };
+  }
+  const allowed = new Set(["id", "email", "name", "phone", "mobile", "address", "purchaseSource", "orderNumber", "notes", "warrantyRegistered", "warrantyRegisteredAt"]);
+  const unknown = Object.keys(patch).filter((key) => !allowed.has(key));
+  if (unknown.length) {
+    return {
+      ok: false,
+      error: {
+        error: "unsupported_customer_patch_fields",
+        message: "Customer patch contains unsupported fields.",
+        details: { fields: unknown }
+      }
+    };
+  }
+  const value = {};
+  for (const [key, raw] of Object.entries(patch)) {
+    if (key === "warrantyRegistered") {
+      value[key] = Boolean(raw);
+    } else if (key === "warrantyRegisteredAt") {
+      if (!raw) value[key] = "";
+      else {
+        const date = new Date(raw);
+        if (Number.isNaN(date.getTime())) {
+          return { ok: false, error: { error: "invalid_customer_date", message: "warrantyRegisteredAt must be a valid date.", details: { field: key } } };
+        }
+        value[key] = date.toISOString();
+      }
+    } else if (key === "email") {
+      const email = String(raw || "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return { ok: false, error: { error: "invalid_customer_email", message: "Customer email is invalid.", details: { field: key } } };
+      }
+      value[key] = email;
+    } else {
+      const text = String(raw ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "").trim();
+      if (text.length > 20000) {
+        return { ok: false, error: { error: "customer_field_too_long", message: `${key} is too long.`, details: { field: key } } };
+      }
+      value[key] = text;
+    }
+  }
+  return { ok: true, value };
 }
 
 function isPathInside(filePath, directory) {

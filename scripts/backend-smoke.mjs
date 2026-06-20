@@ -60,12 +60,31 @@ try {
   });
   if (created.status !== 201) throw new Error(`Ticket create failed: ${created.status}`);
 
+  const listed = await fetch(`http://127.0.0.1:${port}/api/tickets?assignee=me`);
+  const listedPayload = await listed.json();
+  if (!listed.ok || !listedPayload.tickets?.some((ticket) => ticket.id === "SMOKE-1")) {
+    throw new Error("Ticket list with assignee=me did not include the smoke ticket.");
+  }
+
   const patched = await fetch(`http://127.0.0.1:${port}/api/tickets/SMOKE-1`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status: "Closed" })
   });
   if (!patched.ok) throw new Error(`Ticket patch failed: ${patched.status}`);
+  const patchedPayload = await patched.json();
+  if (!patchedPayload.ticket?.conversation?.some((message) => /closed this ticket/i.test(message.body || ""))) {
+    throw new Error("Ticket status patch did not create a close activity entry.");
+  }
+
+  const invalidPatch = await fetch(`http://127.0.0.1:${port}/api/tickets/SMOKE-1`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ conversation: [] })
+  });
+  if (invalidPatch.status !== 400) {
+    throw new Error(`Invalid ticket patch should return 400, got ${invalidPatch.status}.`);
+  }
 
   const note = await fetch(`http://127.0.0.1:${port}/api/tickets/SMOKE-1/notes`, {
     method: "POST",
@@ -73,10 +92,32 @@ try {
     body: JSON.stringify({ author: "Smoke Test", body: "Backend note route works." })
   });
   if (note.status !== 201) throw new Error(`Ticket note failed: ${note.status}`);
+  const notePayload = await note.json();
+  if (!notePayload.message?.internal || notePayload.message?.type !== "note") {
+    throw new Error("Ticket note did not persist as an internal note.");
+  }
+
+  const reply = await fetch(`http://127.0.0.1:${port}/api/tickets/SMOKE-1/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ body: "Backend customer-facing reply route works." })
+  });
+  if (reply.status !== 201) throw new Error(`Ticket reply failed: ${reply.status}`);
+  const replyPayload = await reply.json();
+  if (replyPayload.message?.type !== "rep" || replyPayload.message?.internal) {
+    throw new Error("Ticket reply did not persist as a customer-facing rep message.");
+  }
+
+  const attachment = await fetch(`http://127.0.0.1:${port}/api/tickets/SMOKE-1/attachments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileName: "smoke-photo.png", mimeType: "image/png", sizeBytes: 42 })
+  });
+  if (attachment.status !== 201) throw new Error(`Ticket attachment metadata failed: ${attachment.status}`);
 
   const ticketRead = await fetch(`http://127.0.0.1:${port}/api/tickets/SMOKE-1`);
   const ticketPayload = await ticketRead.json();
-  if (ticketPayload.ticket?.status !== "Closed" || ticketPayload.ticket?.conversation?.length !== 1) {
+  if (ticketPayload.ticket?.status !== "Closed" || ticketPayload.ticket?.conversation?.length < 5 || ticketPayload.ticket?.attachments?.length !== 1) {
     throw new Error("Ticket normalized API readback did not match expected state.");
   }
 
@@ -158,6 +199,7 @@ try {
     throw new Error("Protected knowledge download did not return the uploaded content.");
   }
 
+  await runPersistenceReloadSmoke(dataFile, uploadDir);
   await runStrictAuthSmoke();
   console.log("Backend smoke test passed.");
 } finally {
@@ -214,5 +256,29 @@ async function runStrictAuthSmoke() {
     }
   } finally {
     strictServer.kill();
+  }
+}
+
+async function runPersistenceReloadSmoke(existingDataFile, existingUploadDir) {
+  const reloadPort = 4201;
+  const reloadServer = spawn(process.execPath, ["server.mjs"], {
+    env: {
+      ...process.env,
+      PORT: String(reloadPort),
+      TESSARIO_DATA_FILE: existingDataFile,
+      TESSARIO_UPLOAD_DIR: existingUploadDir
+    },
+    stdio: "pipe"
+  });
+
+  try {
+    await waitForHealth(reloadPort);
+    const ticketRead = await fetch(`http://127.0.0.1:${reloadPort}/api/tickets/SMOKE-1`);
+    const ticketPayload = await ticketRead.json();
+    if (ticketPayload.ticket?.status !== "Closed" || ticketPayload.ticket?.attachments?.[0]?.fileName !== "smoke-photo.png") {
+      throw new Error("Reloaded server did not read persisted ticket workflow state.");
+    }
+  } finally {
+    reloadServer.kill();
   }
 }

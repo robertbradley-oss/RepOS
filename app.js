@@ -435,7 +435,7 @@ const viewConfig = [
 
 const queueTabConfig = [
   { id: "open", label: "Open", title: "Open Tickets", match: (ticket) => isActiveTicket(ticket) },
-  { id: "assigned", label: "Assigned To Me", title: "Assigned To Me", match: (ticket) => ticket.assignee === CURRENT_USER && isActiveTicket(ticket) },
+  { id: "assigned", label: "Assigned To Me", title: "Assigned To Me", match: (ticket) => assignedToCurrentDemoUser(ticket) && isActiveTicket(ticket) },
   { id: "closed", label: "Closed", title: "Closed Tickets", match: (ticket) => isClosedDisplayStatus(ticket) }
 ];
 
@@ -3703,7 +3703,7 @@ function normalizeTicketStatusTimelineOwnership(ticket) {
   return changed;
 }
 
-function normalizeTickets(sourceTickets) {
+function normalizeTickets(sourceTickets, options = {}) {
   let changed = false;
   const normalized = sourceTickets.map((ticket) => {
     changed = normalizeTicketRepNames(ticket) || changed;
@@ -3712,7 +3712,7 @@ function normalizeTickets(sourceTickets) {
     changed = normalizeTicketStatusTimelineOwnership(ticket) || changed;
     return ticket;
   });
-  if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+  if (changed && options.persist !== false) localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
   return normalized;
 }
 
@@ -4080,7 +4080,7 @@ function normalizeNotifications(value) {
 }
 
 function seedNotifications(sourceTickets) {
-  const ticketById = (id) => sourceTickets.find((ticket) => ticket.id === id || ticketDisplayId(ticket) === id) || sourceTickets.find((ticket) => ticket.assignee === CURRENT_USER) || sourceTickets[0];
+  const ticketById = (id) => sourceTickets.find((ticket) => ticket.id === id || ticketDisplayId(ticket) === id) || sourceTickets.find(assignedToCurrentDemoUser) || sourceTickets[0];
   const examples = [
     { category: "assigned", ticket: ticketById("ISP-28501"), title: "Ticket assigned to you", description: "RCC7P-AK tank not filling was routed to your queue.", hours: 0.4, read: false },
     { category: "customer", ticket: ticketById("ISP-28497"), title: "Customer replied", description: "Harper sent the requested install photo and asked for next steps.", hours: 1.1, read: false },
@@ -4447,9 +4447,14 @@ function productLinkPlatformFromSource(source) {
   return "";
 }
 
-function persistTickets() {
+function persistTickets(options = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  if (options.skipBackendSync) return;
   scheduleBackendSync("tickets", tickets);
+}
+
+function persistTicketsLocalOnly() {
+  persistTickets({ skipBackendSync: true });
 }
 
 function persistUsers() {
@@ -4592,6 +4597,119 @@ async function flushBackendSync() {
 
 function isBackendPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function backendTicketUrl(ticketId, childPath = "") {
+  return `/api/tickets/${encodeURIComponent(ticketId)}${childPath}`;
+}
+
+function backendTicketEndpointsAvailable() {
+  return Boolean(backendSyncReady && backendSyncAvailable && window.fetch);
+}
+
+async function sendTicketBackendOperations(ticketId, operations, options = {}) {
+  const fallbackToFullSync = options.fallbackToFullSync !== false;
+  const applyResponse = options.applyResponse !== false;
+  const preserveFields = Array.isArray(options.preserveFields) ? options.preserveFields : [];
+  if (!operations.length) return null;
+  if (!backendTicketEndpointsAvailable()) {
+    if (fallbackToFullSync) persistTickets();
+    return null;
+  }
+
+  try {
+    let lastPayload = null;
+    const optimisticTicket = preserveFields.length ? ticketById(ticketId) : null;
+    for (const operation of operations) {
+      const response = await fetch(backendTicketUrl(ticketId, operation.path || ""), {
+        method: operation.method || "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(operation.body || {})
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = payload?.message || payload?.error || `Ticket endpoint failed: ${response.status}`;
+        throw new Error(message);
+      }
+      lastPayload = payload;
+    }
+    if (applyResponse && lastPayload?.ticket) {
+      replaceLocalTicketFromBackend(lastPayload.ticket, { optimisticTicket, preserveFields });
+    }
+    return lastPayload;
+  } catch (error) {
+    console.warn("RepOS normalized ticket update failed; falling back to full ticket sync.", error);
+    if (fallbackToFullSync) persistTickets();
+    showToast("Saved locally. Backend ticket sync will retry.");
+    return null;
+  }
+}
+
+function replaceLocalTicketFromBackend(serverTicket, options = {}) {
+  if (!serverTicket?.id) return null;
+  const preserved = {};
+  if (options.optimisticTicket && Array.isArray(options.preserveFields)) {
+    options.preserveFields.forEach((field) => {
+      if (Object.hasOwn(options.optimisticTicket, field)) preserved[field] = options.optimisticTicket[field];
+    });
+  }
+  const normalized = normalizeTickets([{ ...serverTicket, ...preserved }], { persist: false })[0];
+  const index = tickets.findIndex((ticket) => String(ticket.id) === String(normalized.id));
+  if (index === -1) {
+    tickets.unshift(normalized);
+  } else {
+    tickets[index] = normalized;
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  return normalized;
+}
+
+function syncTicketStatusToBackend(ticketId, nextStatus, internalNote = "") {
+  const operations = [
+    { method: "PATCH", body: { status: nextStatus } },
+    ...(String(internalNote || "").trim()
+      ? [{ method: "POST", path: "/notes", body: { author: repLabel(), body: internalNote } }]
+      : [])
+  ];
+  return sendTicketBackendOperations(ticketId, operations);
+}
+
+function syncTicketAssigneeToBackend(ticketId, nextAssignee, internalNote = "") {
+  const operations = [
+    { method: "PATCH", body: { assignee: nextAssignee } },
+    ...(String(internalNote || "").trim()
+      ? [{ method: "POST", path: "/notes", body: { author: repLabel(), body: internalNote } }]
+      : [])
+  ];
+  return sendTicketBackendOperations(ticketId, operations, { preserveFields: ["aiAssignment"] });
+}
+
+function syncTicketMessageToBackend(ticketId, message, patch = {}) {
+  const childPath = message.type === "note" ? "/notes" : "/messages";
+  const operations = [
+    { method: "POST", path: childPath, body: message }
+  ];
+  if (Object.keys(patch).length) {
+    operations.push({ method: "PATCH", body: patch });
+  }
+  return sendTicketBackendOperations(ticketId, operations);
+}
+
+function syncTicketAttachmentsToBackend(ticketId, attachments) {
+  const operations = attachments.map((attachment) => ({
+    method: "POST",
+    path: "/attachments",
+    body: {
+      fileName: attachment.file || attachment.fileName,
+      type: attachment.type || "attachment",
+      mimeType: attachment.mimeType || "",
+      sizeBytes: attachment.sizeBytes || attachment.size || 0,
+      uploadedBy: attachment.uploadedBy || repLabel(),
+      uploadedAt: attachment.uploadedAt || new Date().toISOString(),
+      status: attachment.status || "Attached"
+    }
+  }));
+  return sendTicketBackendOperations(ticketId, operations, { applyResponse: false });
 }
 
 function accountForTicket(ticket) {
@@ -6217,6 +6335,10 @@ function currentAssignmentUser() {
   return users.find((user) => user.name === CURRENT_USER);
 }
 
+function assignedToCurrentDemoUser(ticket) {
+  return normalizeRepName(ticket?.assignee) === normalizeRepName(CURRENT_USER);
+}
+
 function landingLabel(value) {
   const labels = {
     open: "Open Tickets",
@@ -6460,7 +6582,10 @@ function finishTicketStatusChanges({ changes, removalIds = [], removalToastMessa
       pendingStatusChanges.delete(ticket.id);
     });
     if (typeof onCommitted === "function") onCommitted();
-    persistTickets();
+    persistTicketsLocalOnly();
+    changes.forEach(({ ticket, nextStatus, internalNote }) => {
+      syncTicketStatusToBackend(ticket.id, nextStatus, internalNote);
+    });
     refreshQueueAfterStatusCommit(removalIds);
     if (removalIds.length && removalToastMessage) {
       showToast(removalToastMessage);
@@ -6689,7 +6814,7 @@ function renderMetrics() {
   const customerReplies = tickets.filter(customerRepliedWithoutRep).length;
 
   const metrics = [
-    { label: "My open", value: open.filter((ticket) => ticket.assignee === CURRENT_USER).length, meta: "CS14 Robert", tone: "cyan" },
+    { label: "My open", value: open.filter(assignedToCurrentDemoUser).length, meta: "CS14 Robert", tone: "cyan" },
     { label: "All open", value: open.length, meta: "Team queue", tone: "neutral" },
     { label: "Overdue SLA", value: overdue, meta: "SLA risk", tone: overdue ? "red" : "green" },
     { label: "Avg first response", value: "3.8h", meta: "Support KPI", tone: "blue" }
@@ -7151,7 +7276,7 @@ function dashboardIsTeamMode() {
 
 function dashboardPrimaryTickets(scopedTickets) {
   if (dashboardIsTeamMode()) return scopedTickets;
-  return scopedTickets.filter((ticket) => ticket.assignee === CURRENT_USER);
+  return scopedTickets.filter(assignedToCurrentDemoUser);
 }
 
 function renderDashboardViewToggle(currentDashboardView) {
@@ -7573,7 +7698,7 @@ function renderWorkloadSection(scopedTickets) {
 }
 
 function renderMyWorkload(scopedTickets) {
-  const myTickets = scopedTickets.filter((ticket) => ticket.assignee === CURRENT_USER);
+  const myTickets = scopedTickets.filter(assignedToCurrentDemoUser);
   const items = [
     ["Open assigned tickets", myTickets.filter(isActiveTicket).length, "Total active work in your queue"],
     ["Customer replies waiting", myTickets.filter(customerRepliedWithoutRep).length, "Customers need your next response"],
@@ -11130,12 +11255,17 @@ function handleComposerAttachmentSelection(event) {
     return;
   }
   const ticket = selectedTicket();
+  if (!ticket) return;
   const fileNames = files.map((file) => file.name).join(", ");
   const uploadedAt = new Date().toISOString();
   const newAttachments = files.map((file) => ({
     type: composerAttachmentType(file),
     file: file.name,
+    fileName: file.name,
+    mimeType: file.type || "",
+    sizeBytes: file.size || 0,
     uploaded: dateTimeLabel(uploadedAt),
+    uploadedAt,
     uploadedBy: profileDisplayName(),
     status: "Attached by rep"
   }));
@@ -11163,7 +11293,8 @@ function handleComposerAttachmentSelection(event) {
       recordAiPurchaseSourceDetection(ticket, "Unknown", "System", { timestamp: uploadedAt, fromAttachment: true });
     }
   }
-  persistTickets();
+  persistTicketsLocalOnly();
+  syncTicketAttachmentsToBackend(ticket.id, newAttachments);
   event.target.value = "";
   shouldScrollThreadToBottom = true;
   render();
@@ -11233,7 +11364,10 @@ function submitComposer() {
   if (replyMode === "reply") {
     ticket.lastRepAt = message.timestamp;
   }
-  persistTickets();
+  persistTicketsLocalOnly();
+  syncTicketMessageToBackend(ticket.id, message, replyMode === "reply"
+    ? { draft: "", lastRepAt: message.timestamp }
+    : { draft: "" });
   shouldScrollThreadToBottom = true;
   render();
   showToast(replyMode === "reply" ? "Reply sent." : "Internal note added.");
@@ -11755,7 +11889,8 @@ function reassignTicket(ticketId, nextAssignee, timelineBody, shouldRender = tru
     });
   }
 
-  persistTickets();
+  persistTicketsLocalOnly();
+  syncTicketAssigneeToBackend(ticket.id, nextAssignee, internalNote);
   if (shouldRender) render();
 }
 
@@ -11792,7 +11927,10 @@ function bulkReassignTickets(ticketIds, nextAssignee, internalNote = "") {
   });
 
   selectedTicketIds.clear();
-  persistTickets();
+  persistTicketsLocalOnly();
+  targetTickets.forEach((ticket) => {
+    syncTicketAssigneeToBackend(ticket.id, nextAssignee, internalNote);
+  });
   render();
   showToast(`${targetTickets.length} ticket${targetTickets.length === 1 ? "" : "s"} reassigned.`);
 }
@@ -13203,7 +13341,7 @@ function handleCreateTicket(event) {
   applyCustomerAccountToTicket(ticket);
 
   tickets.unshift(ticket);
-  if (ticket.assignee === CURRENT_USER) {
+  if (assignedToCurrentDemoUser(ticket)) {
     addNotification({
       category: "assigned",
       title: "Ticket assigned to you",
