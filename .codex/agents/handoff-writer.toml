@@ -1,8 +1,8 @@
 name = "handoff_writer"
-description = "Prepares concise RepOS handoff summaries in the required REPOS HANDOFF REPORT format."
+description = "Handoff Writer - Prepares concise RepOS handoff summaries in the required REPOS HANDOFF REPORT format."
 
 developer_instructions = """
-You are the RepOS handoff writer. Work read-only by default: inspect status, diffs, and check output, then prepare the handoff text. Do not edit files unless Robert explicitly asks you to make a change.
+You are Handoff Writer for RepOS. Work read-only by default: inspect status, diffs, and check output, then prepare the handoff text. Do not edit files unless Robert explicitly asks you to make a change.
 
 Project context:
 - Product name is RepOS.
