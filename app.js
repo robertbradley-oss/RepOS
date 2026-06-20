@@ -9992,24 +9992,12 @@ function renderContext(ticket) {
 
   el.contextPanel.innerHTML = `
     ${renderCustomerSnapshot(ticket)}
-    ${renderDailyMacroSection(ticket)}
-    ${renderProductLinkSection(ticket)}
     <details class="context-accordion">
       <summary>Order / Warranty</summary>
       ${renderOrderWarranty(ticket)}
       ${renderSourceWarrantyMetadata(ticket)}
     </details>
-    <details class="context-accordion">
-      <summary>Diagnostics</summary>
-      ${renderNextBestStep(ticket)}
-      ${renderTicketKnowledgeSources(ticket)}
-      ${renderProductCard(ticket)}
-      ${renderAttachments(ticket)}
-      ${renderChecklist(ticket)}
-      ${renderGuardrails(ticket)}
-      ${currentUserIsAdmin() ? renderManagerView(ticket) : ""}
-      ${renderSimilarTickets(ticket)}
-    </details>
+    ${renderProductLinkSection(ticket)}
   `;
 
   el.contextPanel.querySelector("#macroSearch")?.addEventListener("input", (event) => {
