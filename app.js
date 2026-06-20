@@ -11111,6 +11111,7 @@ function toggleSidebar(force) {
       uiState.sidebarCollapsed = true;
       applyUiState();
     }
+    syncSidebarActiveIndicator();
     startWorkspaceSidebarGlide();
   };
 
@@ -11141,14 +11142,16 @@ function prepareWorkspaceSidebarGlide(offset) {
   if (!el.workspace) return;
   el.workspace.style.transition = "none";
   el.workspace.style.transform = `translate3d(${offset}px, 0, 0)`;
-  void el.workspace.offsetWidth;
 }
 
 function startWorkspaceSidebarGlide() {
   if (!el.workspace) return;
-  el.workspace.style.transition = "";
   requestAnimationFrame(() => {
-    el.workspace.style.transform = "translate3d(0, 0, 0)";
+    requestAnimationFrame(() => {
+      if (!sidebarMotioning || !el.workspace) return;
+      el.workspace.style.transition = "";
+      el.workspace.style.transform = "translate3d(0, 0, 0)";
+    });
   });
 }
 

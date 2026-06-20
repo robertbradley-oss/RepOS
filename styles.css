@@ -491,6 +491,13 @@ h6 {
   will-change: transform;
 }
 
+.sidebar-motioning .sidebar,
+.sidebar-motioning .workspace {
+  backface-visibility: hidden;
+  contain: layout paint style;
+  transform: translateZ(0);
+}
+
 .sidebar-collapsed .nav-badge,
 .sidebar-collapsed .workspace-switcher div {
   display: none;
@@ -680,8 +687,10 @@ h6 {
   transform: translate3d(var(--sidebar-active-x, 0), var(--sidebar-active-y, 0), 0);
   transition:
     transform var(--sidebar-motion-duration) var(--ease-out),
+    width var(--sidebar-motion-duration) var(--ease-out),
+    height var(--sidebar-motion-duration) var(--ease-out),
     opacity var(--motion-fast) var(--ease-out);
-  will-change: transform, opacity;
+  will-change: transform, width, height, opacity;
 }
 
 .sidebar-nav-indicator.ready {
@@ -995,6 +1004,7 @@ h6 {
   min-height: 0;
   padding: 0;
   overflow: hidden;
+  transform: translateZ(0);
 }
 
 .metrics-collapsed .workspace {
@@ -1793,6 +1803,21 @@ kbd {
 .ticket-workspace {
   transition: grid-template-columns var(--sidebar-motion-duration) var(--ease-out);
   will-change: grid-template-columns;
+}
+
+.sidebar-motioning .ticket-workspace {
+  transition: none;
+  will-change: auto;
+}
+
+.sidebar-motioning .queue-panel,
+.sidebar-motioning .queue-preview,
+.sidebar-motioning .conversation-panel,
+.sidebar-motioning .context-panel,
+.sidebar-motioning .dashboard-panel,
+.sidebar-motioning .admin-panel,
+.sidebar-motioning .knowledge-panel {
+  contain: layout paint;
 }
 
 /* Isolate the side panels' internal layout/paint so resizing them during the
