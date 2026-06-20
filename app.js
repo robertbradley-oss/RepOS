@@ -9720,25 +9720,7 @@ function renderConversation(ticket) {
       <div class="ticket-header-main">
         <div class="ticket-title-stack">
           <h2>${escapeHtml(ticket.subject)}</h2>
-          <div class="ticket-summary-grid">
-            <button class="ticket-summary-item ticket-summary-customer" id="customerHistoryButton" type="button">
-              <span>Customer</span>
-              <strong>${escapeHtml(ticket.customer.name)} (${customerTicketCount})</strong>
-              <small>${escapeHtml(ticket.customer.email)}</small>
-            </button>
-            <span class="ticket-summary-item">
-              <span>Model</span>
-              <strong>${escapeHtml(ticket.model || "Not provided")}</strong>
-            </span>
-            <span class="ticket-summary-item">
-              <span>Order</span>
-              <strong>${escapeHtml(ticket.order || "No order")}</strong>
-            </span>
-            <span class="ticket-summary-item">
-              <span>Last activity</span>
-              <strong>${escapeHtml(lastActivity)}</strong>
-            </span>
-          </div>
+          <div class="ticket-number-headline">${escapeHtml(ticketDisplayId(ticket))}</div>
         </div>
         <div class="ticket-header-controls">
           <label>
@@ -9766,7 +9748,6 @@ function renderConversation(ticket) {
     <div class="reply-dock">
       <div class="composer-head">
         <div class="composer-title-block">
-          <span class="composer-kicker">Reply composer</span>
           <div class="reply-tabs" role="tablist" aria-label="Composer mode">
             <span class="reply-tab-pill motion-tab-indicator" aria-hidden="true"></span>
             <button class="${replyMode === "reply" ? "active" : ""}" data-reply-mode="reply" type="button">Reply</button>
@@ -9775,19 +9756,13 @@ function renderConversation(ticket) {
         </div>
         <span class="composer-mode-badge" id="composerModeBadge">${replyMode === "reply" ? "Customer visible" : "Team only"}</span>
       </div>
-      <div class="composer-fields">
-        <label>
-          <span>From</span>
-          <div class="from-address">${escapeHtml(workspaceConfig.supportMailbox)}</div>
-        </label>
-        <div class="recipient-field">
-          <span>Recipients</span>
-          <strong>${escapeHtml(ticket.customer.name)} &lt;${escapeHtml(ticket.customer.email)}&gt;</strong>
-        </div>
+      <div class="composer-meta-line">
+        <span class="composer-meta-item"><span class="composer-meta-label">From</span>${escapeHtml(workspaceConfig.supportMailbox)}</span>
+        <span class="composer-meta-arrow" aria-hidden="true">&rarr;</span>
+        <span class="composer-meta-item composer-meta-to"><span class="composer-meta-label">To</span><strong>${escapeHtml(ticket.customer.name)} &lt;${escapeHtml(ticket.customer.email)}&gt;</strong></span>
       </div>
       <div class="composer-tool-row">
         ${renderComposerMacroTool()}
-        <button class="attachment-dropzone composer-attachment-control" id="attachmentDropzone" type="button"><strong>Add files</strong><span>Photos, PDFs, order screenshots, receipts</span></button>
       </div>
       <div class="composer-editor-card">
         <div class="format-toolbar" aria-label="Formatting toolbar">
@@ -9797,6 +9772,8 @@ function renderConversation(ticket) {
           <button data-format-action="bullet" type="button" title="Bulleted list" aria-label="Bulleted list">List</button>
           <button data-format-action="number" type="button" title="Numbered list" aria-label="Numbered list">1.</button>
           <button data-format-action="link" type="button" title="Insert link" aria-label="Insert link">Link</button>
+          <span class="format-toolbar-divider" aria-hidden="true"></span>
+          <button class="format-attach-button" id="attachmentDropzone" type="button" title="Attach files" aria-label="Attach files"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.5 8.4 10 16.9a3.4 3.4 0 0 1-4.8-4.8l8.1-8.1a2.3 2.3 0 0 1 3.2 3.2l-7.8 7.8a1.2 1.2 0 0 1-1.7-1.7l7.1-7.1"></path></svg></button>
         </div>
         <textarea id="replyEditor" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" placeholder="${replyMode === "reply" ? "Write a customer-visible reply..." : "Write an internal note..."}">${escapeHtml(ticket.draft || "")}</textarea>
       </div>
@@ -9810,12 +9787,14 @@ function renderConversation(ticket) {
               ${statusSelectOptions(displayStatusFor(ticket), "Composer status")}
             </select>
           </label>
-          <div class="signature-options" aria-label="Signature options">
+          <label class="signature-field">
             <span>Signature</span>
-            <label><input type="radio" name="signatureOption" value="None" ${profile.defaultSignature === "None" ? "checked" : ""}> None</label>
-            <label><input type="radio" name="signatureOption" value="My Signature" ${profile.defaultSignature === "My Signature" ? "checked" : ""}> My Signature</label>
-            <label><input type="radio" name="signatureOption" value="Department Signature" ${profile.defaultSignature === "Department Signature" ? "checked" : ""}> Department Signature</label>
-          </div>
+            <select id="signatureSelect" aria-label="Signature option">
+              <option value="None" ${profile.defaultSignature === "None" ? "selected" : ""}>None</option>
+              <option value="My Signature" ${profile.defaultSignature === "My Signature" ? "selected" : ""}>My Signature</option>
+              <option value="Department Signature" ${profile.defaultSignature === "Department Signature" ? "selected" : ""}>Department Signature</option>
+            </select>
+          </label>
         </div>
         <div class="composer-actions">
           <button class="secondary-button" id="saveDraftButton" type="button">Save Draft</button>
@@ -9846,7 +9825,7 @@ function renderConversation(ticket) {
     event.target.value = displayStatusFor(ticket);
     openStatusConfirmModal(ticket.id, nextStatus);
   });
-  document.querySelector("#customerHistoryButton").addEventListener("click", () => openCustomerHistory(ticket.id));
+  document.querySelector("#customerHistoryButton")?.addEventListener("click", () => openCustomerHistory(ticket.id));
   document.querySelector("#composerMacroSelect")?.addEventListener("change", (event) => {
     event.preventDefault();
     if (event.target.value) insertMacro(event.target.value);
@@ -9868,11 +9847,9 @@ function renderConversation(ticket) {
   document.querySelectorAll("[data-preview-attachment]").forEach((button) => {
     button.addEventListener("click", () => openAttachmentPreview(ticket.id, button.dataset.previewAttachment));
   });
-  document.querySelectorAll("input[name='signatureOption']").forEach((input) => {
-    input.addEventListener("change", () => {
-      syncComposerState();
-      showToast(`Signature set to ${input.value}.`);
-    });
+  document.querySelector("#signatureSelect")?.addEventListener("change", (event) => {
+    syncComposerState();
+    showToast(`Signature set to ${event.target.value}.`);
   });
   document.querySelectorAll("[data-reply-mode]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -10338,6 +10315,9 @@ function renderCustomerSnapshot(ticket) {
       <dl class="info-list">
         <div><dt>Email</dt><dd>${escapeHtml(ticket.customer.email)}</dd></div>
         <div><dt>Phone</dt><dd>${escapeHtml(ticket.customer.phone || "Missing")}</dd></div>
+        <div><dt>Model</dt><dd>${escapeHtml(ticket.model || "Not provided")}</dd></div>
+        <div><dt>Order</dt><dd>${escapeHtml(ticket.order || "No order")}</dd></div>
+        <div><dt>Last activity</dt><dd>${escapeHtml(dateTimeLabel(lastUpdatedAt(ticket)))}</dd></div>
       </dl>
       <button class="ghost-button full-width-action compact-action-button" id="openSnapshotHistoryButton" type="button">View customer history</button>
     </section>
@@ -11568,7 +11548,7 @@ function submitComposer() {
 
 function bodyWithSignature(body) {
   if (!profile.insertSignature || replyMode !== "reply") return body;
-  const option = document.querySelector("input[name='signatureOption']:checked")?.value || profile.defaultSignature;
+  const option = document.querySelector("#signatureSelect")?.value || profile.defaultSignature;
   const signature = signatureText(option);
   if (!signature || body.includes(signature)) return body;
   return `${body}\n\n${signature}`;

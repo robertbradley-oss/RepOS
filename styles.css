@@ -1708,40 +1708,6 @@ kbd {
   border-radius: 12px;
 }
 
-/* ---- Action buttons (secondary / ghost): the requested soft-UI button ---- */
-.secondary-button,
-.ghost-button {
-  color: #333333;
-  background: #e0e0e0;
-  border: none;
-  border-radius: 14px;
-  font-weight: 600;
-  box-shadow:
-    6px 6px 16px #bebebe,
-    -6px -6px 16px #ffffff9a;
-  transition: all 250ms ease-in-out;
-}
-
-.secondary-button:hover,
-.ghost-button:hover,
-.secondary-button:focus-visible,
-.ghost-button:focus-visible {
-  color: #333333;
-  font-weight: 400;
-  transform: none;
-  box-shadow:
-    inset 5px 5px 4px #c0c0c0,
-    inset -5px -5px 4px #dddddd;
-}
-
-.secondary-button:active,
-.ghost-button:active {
-  transform: none;
-  box-shadow:
-    inset 6px 6px 6px #b8b8b8,
-    inset -6px -6px 6px #e4e4e4;
-}
-
 /* Primary CTA: same raised → press-in feel, kept in the brand violet */
 .primary-button {
   border: none;
@@ -11734,35 +11700,36 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 .secondary-button,
 .ghost-button {
   color: #4d4d4d;
-  background-color: #e0e0e0;
-  border: 2px solid rgb(206, 206, 206);
+  background-color: #f3f3f3;
+  border: 2px solid #e4e4e4;
   border-radius: 50px;
   font-weight: 600;
   box-shadow:
-    inset 4px 4px 10px #bcbcbc,
+    inset 4px 4px 10px #d8d8d8,
     inset -4px -4px 10px #ffffff;
-  transition: all 0.2s ease-in-out;
+  /* No hover/state animation. */
+  transition: none;
 }
 
+/* Hover and focus keep the resting look — no animation, no weight/size shift. */
 .secondary-button:hover,
 .ghost-button:hover,
 .secondary-button:focus-visible,
 .ghost-button:focus-visible {
   color: #4d4d4d;
-  background-color: #e0e0e0;
+  background-color: #f3f3f3;
+  font-weight: 600;
   transform: none;
   box-shadow:
-    inset 2px 2px 5px #bcbcbc,
-    inset -2px -2px 5px #ffffff,
-    2px 2px 5px #bcbcbc,
-    -2px -2px 5px #ffffff;
+    inset 4px 4px 10px #d8d8d8,
+    inset -4px -4px 10px #ffffff;
 }
 
 .secondary-button:active,
 .ghost-button:active {
   transform: none;
   box-shadow:
-    inset 5px 5px 9px #b4b4b4,
+    inset 5px 5px 9px #d0d0d0,
     inset -5px -5px 9px #ffffff;
 }
 
@@ -11773,7 +11740,7 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
   transform: none;
   opacity: 0.5;
   box-shadow:
-    inset 4px 4px 10px #bcbcbc,
+    inset 4px 4px 10px #d8d8d8,
     inset -4px -4px 10px #ffffff;
 }
 
@@ -11781,4 +11748,213 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 textarea,
 [contenteditable="true"] {
   cursor: url("./assets/text-cursor.svg") 12 12, text !important;
+}
+
+
+/* ===========================================================================
+   Conversation as a true chat: customer messages on the left, the team's
+   (agent + internal notes) on the right, bubbles sized to their content so the
+   thread alternates across the width like a chat app.
+   =========================================================================== */
+.detail-screen .message,
+.detail-screen .message.customer,
+.detail-screen .message.rep,
+.detail-screen .message.note {
+  width: auto;
+  max-width: min(760px, 74%);
+  justify-self: auto;
+}
+
+.detail-screen .message.customer {
+  align-self: flex-start;
+}
+
+/* Team + internal notes sit on the right, avatar flipped to the outer edge. */
+.detail-screen .message.rep,
+.detail-screen .message.note {
+  align-self: flex-end;
+  grid-template-columns: minmax(0, 1fr) 32px;
+}
+
+.detail-screen .message.rep .message-avatar,
+.detail-screen .message.note .message-avatar {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.detail-screen .message.rep .message-body,
+.detail-screen .message.note .message-body {
+  grid-column: 1;
+  grid-row: 1;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 4px;
+}
+
+/* System events stay centered between the two sides. */
+.detail-screen .timeline-row {
+  align-self: center;
+}
+
+/* ===========================================================================
+   Reply composer cleanup: compact From → To line, slim macro/attach controls,
+   tighter signature, and the editor as the focal point.
+   =========================================================================== */
+.composer-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 9px;
+  font-size: 12px;
+  color: var(--tessario-muted);
+}
+
+.composer-meta-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-meta-label {
+  margin-right: 6px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.composer-meta-arrow {
+  color: #bcb7cf;
+}
+
+.composer-meta-to strong {
+  color: var(--tessario-text);
+  font-weight: 600;
+}
+
+/* Slim the macro + attach row: flat, not a boxed gradient panel. */
+.detail-screen .composer-tool-row {
+  padding: 0;
+  gap: 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Tighter, quieter signature group. */
+.detail-screen .signature-options {
+  gap: 7px;
+  font-size: 11px;
+}
+
+.detail-screen .signature-options > span {
+  font-size: 9.5px;
+}
+
+/* Trim the composer head + dock so the editor dominates. */
+.detail-screen .composer-head {
+  padding-bottom: 2px;
+}
+
+.detail-screen .reply-dock {
+  gap: 9px;
+}
+
+.detail-screen .reply-dock textarea {
+  min-height: 184px;
+}
+
+/* ===========================================================================
+   Composer follow-ups: attach paperclip in the formatting toolbar, signature
+   as a compact dropdown. Plus a flatter ticket-header metadata strip.
+   =========================================================================== */
+.format-toolbar-divider {
+  align-self: center;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: var(--line-soft);
+}
+
+.format-attach-button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Macro now sits alone — give it a sensible width instead of a half grid cell. */
+.detail-screen .composer-tool-row {
+  grid-template-columns: minmax(260px, 480px);
+}
+
+/* Signature: compact select to match the ticket-status field. */
+.signature-field {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.signature-field > span {
+  color: var(--tessario-muted);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.signature-field select {
+  height: 32px;
+  padding: 0 9px;
+  color: var(--tessario-text);
+  background: #ffffff;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Ticket header: four boxy cards -> one clean hairline-divided strip. */
+.ticket-summary-grid {
+  gap: 0;
+  background: #ffffff;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ticket-summary-item {
+  min-height: 42px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--line-soft);
+  border-radius: 0;
+}
+
+.ticket-summary-grid > :last-child {
+  border-right: 0;
+}
+
+.ticket-summary-customer:hover,
+.ticket-summary-customer:focus-visible {
+  background: rgba(124, 92, 255, 0.06);
+  border-color: transparent;
+  border-right-color: var(--line-soft);
+}
+
+/* Ticket number as a prominent headline (replaces the old 4-card meta strip;
+   those details now live in the right-hand context card). */
+.ticket-number-headline {
+  margin-top: 3px;
+  color: var(--accent-strong);
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
 }
