@@ -62,6 +62,7 @@ const resourceValidators = {
   lastTicketNumber: (value) => Number.isInteger(value) && value >= 0
 };
 const adminStateResources = new Set(["users", "profile", "settings", "queueViews", "knowledgeDocs", "productLinks", "customerAccounts"]);
+const nonAdminBootstrapHiddenResources = new Set(["knowledgeDocs", "authUsers", "authSessions", "fileRecords", "macros"]);
 
 const store = await createStore();
 await ensureConfiguredAuthUser();
@@ -148,8 +149,9 @@ async function handleApi(request, response, url) {
   if (request.method === "GET" && url.pathname === "/api/bootstrap") {
     const user = await requireAuth(request, response);
     if (!user) return;
+    const state = await store.loadState();
     sendJson(response, 200, {
-      state: await store.loadState(),
+      state: stateForUser(state, user),
       session: {
         authenticated: Boolean(user),
         user: user ? publicUser(user) : null,
@@ -504,6 +506,10 @@ async function handleApi(request, response, url) {
       sendJson(response, 404, { error: "file_not_found" });
       return;
     }
+    if (fileRequiresAdminAccess(record) && !userHasRole(user, ["admin", "owner"])) {
+      sendJson(response, 403, { error: "insufficient_role", required: ["admin", "owner"] });
+      return;
+    }
     await sendStoredFile(response, record);
     return;
   }
@@ -517,7 +523,9 @@ async function handleApi(request, response, url) {
     }
 
     if (request.method === "GET") {
-      const user = await requireAuth(request, response);
+      const user = adminStateResources.has(resource)
+        ? await requireRole(request, response, ["admin", "owner"])
+        : await requireAuth(request, response);
       if (!user) return;
       sendJson(response, 200, { resource, value: await store.getResource(resource) });
       return;
@@ -592,6 +600,15 @@ function defaultState() {
     authSessions: null,
     fileRecords: null
   };
+}
+
+function stateForUser(state, user) {
+  if (userHasRole(user, ["admin", "owner"])) return state;
+  const filtered = { ...state };
+  for (const resource of nonAdminBootstrapHiddenResources) {
+    delete filtered[resource];
+  }
+  return filtered;
 }
 
 async function createStore() {
@@ -768,6 +785,10 @@ async function sendStoredFile(response, record) {
 function toPublicFileRecord(record) {
   const { storagePath, storedName, ...publicRecord } = record;
   return publicRecord;
+}
+
+function fileRequiresAdminAccess(record) {
+  return String(record?.category || "").toLowerCase() === "knowledge";
 }
 
 function sanitizeFileName(name) {
@@ -1074,11 +1095,15 @@ async function requireAuth(request, response) {
 async function requireRole(request, response, roles) {
   const user = await requireAuth(request, response);
   if (!user) return null;
-  if (!roles.includes(String(user.role || "").toLowerCase())) {
+  if (!userHasRole(user, roles)) {
     sendJson(response, 403, { error: "insufficient_role", required: roles });
     return null;
   }
   return user;
+}
+
+function userHasRole(user, roles) {
+  return roles.includes(String(user?.role || "").toLowerCase());
 }
 
 async function getCurrentUser(request, response) {

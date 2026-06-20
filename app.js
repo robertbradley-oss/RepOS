@@ -1169,6 +1169,7 @@ let backendSyncReady = false;
 let backendSyncTimer = 0;
 let backendSyncAvailable = false;
 const backendSyncQueue = new Map();
+let sessionUser = null;
 let lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 let profile = loadProfile();
 let customerAccounts = loadCustomerAccounts(tickets);
@@ -4001,6 +4002,8 @@ function loadUsers() {
 }
 
 function loadKnowledgeDocs() {
+  if (!currentUserIsAdmin()) return [];
+
   const stored = storedValue(KNOWLEDGE_STORAGE_KEY, LEGACY_KNOWLEDGE_STORAGE_KEY);
   if (!stored) {
     localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(workspaceConfig.knowledgeVault));
@@ -4582,6 +4585,7 @@ async function hydrateBackendState() {
     if (!response.ok) throw new Error(`Backend bootstrap failed: ${response.status}`);
     backendSyncAvailable = true;
     const payload = await response.json();
+    sessionUser = isBackendPlainObject(payload?.session?.user) ? payload.session.user : null;
     const state = payload?.state || {};
     let hydrated = false;
 
@@ -4631,6 +4635,9 @@ async function hydrateBackendState() {
     if (Number.isInteger(state.lastTicketNumber)) {
       lastUsedTicketNumber = Math.max(state.lastTicketNumber, highestExistingTicketNumber(tickets), MIN_TICKET_NUMBER);
       localStorage.setItem(TICKET_COUNTER_STORAGE_KEY, String(lastUsedTicketNumber));
+      hydrated = true;
+    }
+    if (applySessionUserToWorkspace()) {
       hydrated = true;
     }
 
@@ -4688,6 +4695,24 @@ async function flushBackendSync() {
 
 function isBackendPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function applySessionUserToWorkspace() {
+  if (!isBackendPlainObject(sessionUser)) return false;
+  const role = String(sessionUser.role || "").trim().toLowerCase();
+  const name = normalizeRepName(sessionUser.repName || sessionUser.displayName || "");
+  const patch = {};
+  if (["admin", "manager", "rep", "owner"].includes(role) && role !== workspaceSettings.currentUserRole) {
+    patch.currentUserRole = role;
+  }
+  if (name && name !== workspaceSettings.currentUserName) {
+    patch.currentUserName = name;
+    patch.defaultAssignee = name;
+  }
+  if (!Object.keys(patch).length) return false;
+  workspaceSettings = normalizeWorkspaceSettings({ ...workspaceSettings, ...patch });
+  applyWorkspaceSettings();
+  return true;
 }
 
 function backendTicketUrl(ticketId, childPath = "") {
@@ -9311,6 +9336,8 @@ function setKnowledgeSourceApproval(doc, approved) {
 }
 
 function openKnowledgeFileModal(docId) {
+  if (!currentUserIsAdmin()) return;
+
   const doc = knowledgeDocs.find((item) => item.id === docId);
   if (!doc) return;
   renderKnowledgeFileModal(doc);
@@ -9547,8 +9574,13 @@ function repeatCustomerAssignmentFor(ticket) {
 }
 
 function currentUserIsAdmin() {
+  const configuredRole = String(workspaceSettings?.currentUserRole || "").trim().toLowerCase();
   const assignmentRole = currentAssignmentUser()?.role;
-  return ["admin", "owner"].includes(String(assignmentRole || currentDemoUserRole()).toLowerCase());
+  return ["admin", "owner"].includes(String(configuredRole || assignmentRole || currentDemoUserRole()).toLowerCase());
+}
+
+function currentUserCanUseMacros() {
+  return currentUserIsAdmin();
 }
 
 function showAdminScreen() {
@@ -9754,14 +9786,7 @@ function renderConversation(ticket) {
         </div>
       </div>
       <div class="composer-tool-row">
-        <label class="composer-tool-field">
-          <span>Insert macro</span>
-          <select id="composerMacroSelect" aria-label="Insert Macro">
-            <option value="">Select a canned response</option>
-            ${renderMacroSelectOptions()}
-          </select>
-          <small class="composer-tool-hint">Appends to the current draft with ticket details filled in.</small>
-        </label>
+        ${renderComposerMacroTool()}
         <button class="attachment-dropzone composer-attachment-control" id="attachmentDropzone" type="button"><strong>Add files</strong><span>Photos, PDFs, order screenshots, receipts</span></button>
       </div>
       <div class="composer-editor-card">
@@ -9822,7 +9847,7 @@ function renderConversation(ticket) {
     openStatusConfirmModal(ticket.id, nextStatus);
   });
   document.querySelector("#customerHistoryButton").addEventListener("click", () => openCustomerHistory(ticket.id));
-  document.querySelector("#composerMacroSelect").addEventListener("change", (event) => {
+  document.querySelector("#composerMacroSelect")?.addEventListener("change", (event) => {
     event.preventDefault();
     if (event.target.value) insertMacro(event.target.value);
     event.target.value = "";
@@ -9912,6 +9937,20 @@ function renderTicketDetailsPanel(ticket) {
         <div><dt>Last updated</dt><dd>${escapeHtml(dateTimeLabel(lastUpdatedAt(ticket)))}</dd></div>
       </dl>
     </details>
+  `;
+}
+
+function renderComposerMacroTool() {
+  if (!currentUserCanUseMacros()) return "";
+  return `
+        <label class="composer-tool-field">
+          <span>Insert macro</span>
+          <select id="composerMacroSelect" aria-label="Insert Macro">
+            <option value="">Select a canned response</option>
+            ${renderMacroSelectOptions()}
+          </select>
+          <small class="composer-tool-hint">Appends to the current draft with ticket details filled in.</small>
+        </label>
   `;
 }
 
@@ -10144,6 +10183,8 @@ function renderNextBestStep(ticket) {
 }
 
 function renderTicketKnowledgeSources(ticket) {
+  if (!currentUserIsAdmin()) return "";
+
   const approvedCount = approvedKnowledgeSources().length;
   const sources = relevantKnowledgeSourcesFor(ticket);
   return `
@@ -10177,6 +10218,8 @@ function renderTicketKnowledgeSources(ticket) {
 }
 
 function renderMacroPanel(ticket) {
+  if (!currentUserCanUseMacros()) return "";
+
   const query = filters.macroSearch;
   const activeCategory = filters.macroCategory || "All";
   const macros = macroLibrary.filter((macro) => {
@@ -10317,6 +10360,8 @@ function dailyMacroLibrary() {
 }
 
 function renderDailyMacroSection(ticket) {
+  if (!currentUserCanUseMacros()) return "";
+
   const macros = dailyMacroLibrary();
   const selectedMacro = macros[0];
   const preview = selectedMacro ? applyVariables(selectedMacro.body, ticket) : "";
@@ -10346,6 +10391,8 @@ function renderDailyMacroSection(ticket) {
 }
 
 function updateDailyMacroPreview() {
+  if (!currentUserCanUseMacros()) return;
+
   const ticket = selectedTicket();
   const macroId = el.contextPanel.querySelector("#dailyMacroSelect")?.value || "";
   const macro = macroLibrary.find((item) => item.id === macroId);
@@ -11546,6 +11593,11 @@ function saveDraft(silent = false) {
 }
 
 function insertMacro(macroId) {
+  if (!currentUserCanUseMacros()) {
+    showToast("Macros are available to admins only.");
+    return;
+  }
+
   const ticket = selectedTicket();
   const macro = macroLibrary.find((item) => item.id === macroId);
   const editor = document.querySelector("#replyEditor");
@@ -11593,6 +11645,11 @@ function positionReplyTabPill(animate = true, retry = 0) {
 }
 
 function copyMacro(macroId) {
+  if (!currentUserCanUseMacros()) {
+    showToast("Macros are available to admins only.");
+    return;
+  }
+
   const ticket = selectedTicket();
   const macro = macroLibrary.find((item) => item.id === macroId);
   if (!macro) return;

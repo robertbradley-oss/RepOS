@@ -441,6 +441,46 @@ try {
     throw new Error("Protected knowledge download did not return the uploaded content.");
   }
 
+  const repRolePatch = await fetch(`http://127.0.0.1:${port}/api/settings`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ currentUserRole: "rep" })
+  });
+  if (!repRolePatch.ok) throw new Error(`Rep role settings patch failed: ${repRolePatch.status}`);
+
+  const repLogin = await fetch(`http://127.0.0.1:${port}/api/auth/dev-login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "robbybradley@gmail.com" })
+  });
+  if (!repLogin.ok) throw new Error(`Rep dev login failed: ${repLogin.status}`);
+  const repCookie = repLogin.headers.get("set-cookie")?.split(";")[0];
+  if (!repCookie) throw new Error("Rep dev login did not return a session cookie.");
+
+  const repBootstrap = await fetch(`http://127.0.0.1:${port}/api/bootstrap`, {
+    headers: { Cookie: repCookie }
+  });
+  const repBootstrapPayload = await repBootstrap.json();
+  if (!repBootstrap.ok || "knowledgeDocs" in (repBootstrapPayload.state || {}) || "fileRecords" in (repBootstrapPayload.state || {})) {
+    throw new Error("Non-admin bootstrap exposed admin-only Knowledge Vault state.");
+  }
+
+  const repKnowledgeState = await fetch(`http://127.0.0.1:${port}/api/state/knowledgeDocs`, {
+    headers: { Cookie: repCookie }
+  });
+  const repKnowledgeStatePayload = await repKnowledgeState.json();
+  if (repKnowledgeState.status !== 403 || repKnowledgeStatePayload.error !== "insufficient_role") {
+    throw new Error("Non-admin Knowledge Vault state read did not return the expected JSON error.");
+  }
+
+  const repKnowledgeDownload = await fetch(`http://127.0.0.1:${port}${knowledgePayload.file.downloadUrl}`, {
+    headers: { Cookie: repCookie }
+  });
+  const repKnowledgeDownloadPayload = await repKnowledgeDownload.json();
+  if (repKnowledgeDownload.status !== 403 || repKnowledgeDownloadPayload.error !== "insufficient_role") {
+    throw new Error("Non-admin Knowledge Vault file download did not return the expected JSON error.");
+  }
+
   await runPersistenceReloadSmoke(dataFile, uploadDir);
   await runStrictAuthSmoke();
   console.log("Backend smoke test passed.");
