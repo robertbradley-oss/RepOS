@@ -1,5 +1,5 @@
 // RepOS front-end logic: mock ticket data, queue filtering, conversation rendering, macros, and context panels.
-const STORAGE_KEY = "tessario.support.workspace.v20";
+const STORAGE_KEY = "tessario.support.workspace.v21";
 const TICKET_COUNTER_STORAGE_KEY = "tessario.support.lastTicketNumber.v1";
 const USERS_STORAGE_KEY = "tessario.support.assignmentUsers.v1";
 const PROFILE_STORAGE_KEY = "tessario.support.profile.v1";
@@ -1156,7 +1156,6 @@ const seedTickets = [
 seedTickets.push(...generateExtendedLongThreadMockTickets());
 seedTickets.push(...generateLongThreadMockTickets());
 seedTickets.push(...generateReceiptTestTickets());
-seedTickets.push(...generateAdditionalMockTickets(240));
 workspaceConfig.tickets = alignRepeatCustomerAssignments(seedTickets);
 
 const seedWorkspaceSettings = workspaceConfig.defaultSettings;
