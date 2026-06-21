@@ -4,6 +4,8 @@ import vm from "node:vm";
 
 const appSource = await readFile("app.js", "utf8");
 const roleGateSource = [
+  "isBackendPlainObject",
+  "sessionUserRole",
   "currentUserIsAdmin",
   "currentUserCanUseMacros",
   "showAdminScreen",
@@ -32,6 +34,7 @@ function createRoleHarness(role, options = {}) {
     role,
     assignmentRole: options.assignmentRole || "",
     selected: options.selected || null,
+    sessionUser: options.sessionUser || null,
     workspaceSettings: { currentUserRole: role },
     uiState: { activeScreen: "queue" },
     calls,

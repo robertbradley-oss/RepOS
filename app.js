@@ -4663,7 +4663,6 @@ async function hydrateBackendState() {
     console.warn("RepOS backend sync is unavailable; using browser localStorage.", error);
   } finally {
     backendSyncReady = true;
-    syncBackendSnapshot();
   }
 }
 
@@ -4707,12 +4706,23 @@ function isBackendPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function sessionUserAssignmentName(user = sessionUser) {
+  if (!isBackendPlainObject(user)) return "";
+  return normalizeRepName(user.assignmentName || user.repName || user.name || user.displayName || user.email || "");
+}
+
+function sessionUserRole(user = sessionUser) {
+  if (!isBackendPlainObject(user)) return "";
+  const role = String(user.role || "").trim().toLowerCase();
+  return ["admin", "manager", "rep", "owner"].includes(role) ? role : "";
+}
+
 function applySessionUserToWorkspace() {
   if (!isBackendPlainObject(sessionUser)) return false;
-  const role = String(sessionUser.role || "").trim().toLowerCase();
-  const name = normalizeRepName(sessionUser.repName || sessionUser.displayName || "");
+  const role = sessionUserRole(sessionUser);
+  const name = sessionUserAssignmentName(sessionUser);
   const patch = {};
-  if (["admin", "manager", "rep", "owner"].includes(role) && role !== workspaceSettings.currentUserRole) {
+  if (role && role !== workspaceSettings.currentUserRole) {
     patch.currentUserRole = role;
   }
   if (name && name !== workspaceSettings.currentUserName) {
@@ -5134,15 +5144,15 @@ function replaceLegacyRepNamesInText(value) {
 }
 
 function profileDisplayName() {
-  return normalizeRepName(profile?.displayName || currentDemoUserName());
+  return sessionUserAssignmentName() || normalizeRepName(profile?.displayName || currentDemoUserName());
 }
 
 function currentDemoUserName() {
-  return normalizeRepName(workspaceSettings?.currentUserName) || CURRENT_USER;
+  return sessionUserAssignmentName() || normalizeRepName(workspaceSettings?.currentUserName) || CURRENT_USER;
 }
 
 function currentDemoUserRole() {
-  return String(workspaceSettings?.currentUserRole || "").trim().toLowerCase() || "rep";
+  return sessionUserRole() || String(workspaceSettings?.currentUserRole || "").trim().toLowerCase() || "rep";
 }
 
 function receiptUploaderForTicket(ticket) {
@@ -6283,7 +6293,7 @@ function normalizeSortPreference(value) {
 
 function updateProfileButton() {
   el.profileButtonName.textContent = profileDisplayName();
-  el.profileButtonRole.textContent = profile.role || seedProfile.role;
+  el.profileButtonRole.textContent = currentDemoUserRoleLabel();
   // Profile button shows a person icon (set in markup) — no initials to sync here.
 }
 
@@ -6408,7 +6418,7 @@ function markNotificationRead(id, read = true) {
 
 function mentionsCurrentUser(text) {
   const value = String(text || "").toLowerCase();
-  const display = (profile.displayName || CURRENT_USER).toLowerCase();
+  const display = profileDisplayName().toLowerCase();
   const first = display.split(/\s+/)[0];
   return value.includes(`@${display}`) || value.includes(display) || value.includes(`@${first}`);
 }
@@ -6686,16 +6696,17 @@ function animateQueueRowsOut(ticketIds, onComplete) {
 
 function applyTicketStatusChange(ticket, nextStatus, internalNote, { bulk = false } = {}) {
   const previousStatus = displayStatusFor(ticket);
+  const actorName = currentDemoUserName();
   ticket.status = nextStatus;
   ticket.conversation.push({
     type: "timeline",
-    author: CURRENT_USER,
+    author: actorName,
     timestamp: new Date().toISOString(),
     body: bulk
       ? previousStatus === nextStatus
-        ? `${CURRENT_USER} bulk confirmed status as ${nextStatus}.`
-        : `${CURRENT_USER} bulk changed status from ${previousStatus} to ${nextStatus}.`
-      : `${CURRENT_USER} changed status from ${previousStatus} to ${nextStatus}.`
+        ? `${actorName} bulk confirmed status as ${nextStatus}.`
+        : `${actorName} bulk changed status from ${previousStatus} to ${nextStatus}.`
+      : `${actorName} changed status from ${previousStatus} to ${nextStatus}.`
   });
   addInternalNoteToTicket(ticket, internalNote);
 }
@@ -9504,6 +9515,8 @@ function repeatCustomerAssignmentFor(ticket) {
 }
 
 function currentUserIsAdmin() {
+  const sessionRole = sessionUserRole();
+  if (sessionRole) return ["admin", "owner"].includes(sessionRole);
   const configuredRole = String(workspaceSettings?.currentUserRole || "").trim().toLowerCase();
   const assignmentRole = currentAssignmentUser()?.role;
   return ["admin", "owner"].includes(String(configuredRole || assignmentRole || currentDemoUserRole()).toLowerCase());
@@ -9547,7 +9560,7 @@ function toggleAssignmentEligibility(userId) {
   const user = users.find((item) => item.id === userId);
   if (!user) return;
   user.assignmentEligible = !user.assignmentEligible;
-  if (user.name === CURRENT_USER) {
+  if (user.name === currentDemoUserName()) {
     addNotification({
       category: "assignment",
       title: "Assignment eligibility changed",
@@ -9561,7 +9574,7 @@ function toggleAssignmentEligibility(userId) {
 
 function removeAssignmentUser(userId) {
   const user = users.find((item) => item.id === userId);
-  if (!user || user.name === CURRENT_USER) return;
+  if (!user || user.name === currentDemoUserName()) return;
   if (activeTicketCountFor(user.name) > 0) {
     window.alert("This rep has active tickets. Reassign before removing or disable future assignments only.");
     return;
@@ -9580,7 +9593,7 @@ function reassignTicketsFromUser(userId, targetName) {
 
   tickets.forEach((ticket) => {
     if (ticket.assignee === user.name && activeWorkloadStatuses.includes(displayStatusFor(ticket))) {
-      reassignTicket(ticket.id, target.name, `${CURRENT_USER} reassigned active tickets from ${user.name} to ${target.name}.`, false);
+      reassignTicket(ticket.id, target.name, `${currentDemoUserName()} reassigned active tickets from ${user.name} to ${target.name}.`, false);
     }
   });
   persistTickets();
@@ -9977,7 +9990,7 @@ function renderContext(ticket) {
     button.addEventListener("click", () => openAttachmentPreview(ticket.id, button.dataset.previewAttachment));
   });
   el.contextPanel.querySelector("#ticketPurchaseSourceSelect")?.addEventListener("change", (event) => {
-    setTicketPurchaseSource(ticket, event.target.value, CURRENT_USER, true);
+    setTicketPurchaseSource(ticket, event.target.value, currentDemoUserName(), true);
     render();
   });
   el.contextPanel.querySelector("#saveReceiptButton")?.addEventListener("click", () => saveTicketReceiptToAccount(ticket));
@@ -10816,7 +10829,7 @@ function handleToolbarAssignChange(event) {
   }
 
   if (value === "claim") {
-    bulkReassignTickets(selectedTickets.map((ticket) => ticket.id), CURRENT_USER);
+    bulkReassignTickets(selectedTickets.map((ticket) => ticket.id), currentDemoUserName());
     return;
   }
   if (value === "assign-team") {
@@ -11520,7 +11533,7 @@ function insertMacro(macroId) {
   if (scrollArea) scrollArea.scrollTop = scrollTop;
   ticket.conversation.push({
     type: "timeline",
-    author: CURRENT_USER,
+    author: currentDemoUserName(),
     timestamp: new Date().toISOString(),
     body: `Macro inserted: ${macro.name}.`
   });
@@ -11579,7 +11592,7 @@ function insertProductLink(ticket) {
   ticket.draft = composerEditorHtml(editor);
   ticket.conversation.push({
     type: "timeline",
-    author: CURRENT_USER,
+    author: currentDemoUserName(),
     timestamp: new Date().toISOString(),
     body: `Product link inserted for ${ticket.model}.`
   });
@@ -11925,7 +11938,7 @@ function addInternalNoteToTicket(ticket, body) {
   if (!note) return;
   ticket.conversation.push({
     type: "note",
-    author: CURRENT_USER,
+    author: currentDemoUserName(),
     timestamp: new Date().toISOString(),
     body: note
   });
@@ -11976,21 +11989,22 @@ function reassignTicket(ticketId, nextAssignee, timelineBody, shouldRender = tru
   if (!ticket || !nextAssignee || ticket.assignee === nextAssignee) return;
 
   const previousAssignee = ticket.assignee;
+  const actorName = currentDemoUserName();
   ticket.assignee = nextAssignee;
   ticket.conversation.push({
     type: "timeline",
     author: "System",
     timestamp: new Date().toISOString(),
-    body: timelineBody || `${CURRENT_USER} reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`
+    body: timelineBody || `${actorName} reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`
   });
   addInternalNoteToTicket(ticket, internalNote);
   ticket.aiAssignment = {
     assignedTo: nextAssignee,
     assignedAt: new Date().toISOString(),
-    reason: `${CURRENT_USER} manually reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`,
+    reason: `${actorName} manually reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`,
     workloadAtAssignment: activeTicketCountFor(nextAssignee)
   };
-  if (nextAssignee === CURRENT_USER) {
+  if (nextAssignee === actorName) {
     addNotification({
       category: "reassigned",
       title: "Ticket reassigned to you",
@@ -12008,6 +12022,7 @@ function bulkReassignTickets(ticketIds, nextAssignee, internalNote = "") {
   const activeReps = activeAssignmentUsers();
   if (!activeReps.some((user) => user.name === nextAssignee)) return;
   const targetTickets = tickets.filter((ticket) => ticketIds.includes(ticket.id));
+  const actorName = currentDemoUserName();
   targetTickets.forEach((ticket) => {
     const previousAssignee = ticket.assignee;
     ticket.assignee = nextAssignee;
@@ -12016,17 +12031,17 @@ function bulkReassignTickets(ticketIds, nextAssignee, internalNote = "") {
       author: "System",
       timestamp: new Date().toISOString(),
       body: previousAssignee === nextAssignee
-        ? `${CURRENT_USER} bulk confirmed assignment to ${nextAssignee}.`
-        : `${CURRENT_USER} bulk reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`
+        ? `${actorName} bulk confirmed assignment to ${nextAssignee}.`
+        : `${actorName} bulk reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`
     });
     addInternalNoteToTicket(ticket, internalNote);
     ticket.aiAssignment = {
       assignedTo: nextAssignee,
       assignedAt: new Date().toISOString(),
-      reason: `${CURRENT_USER} bulk reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`,
+      reason: `${actorName} bulk reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`,
       workloadAtAssignment: activeTicketCountFor(nextAssignee)
     };
-    if (nextAssignee === CURRENT_USER && previousAssignee !== nextAssignee) {
+    if (nextAssignee === actorName && previousAssignee !== nextAssignee) {
       addNotification({
         category: "reassigned",
         title: "Ticket reassigned to you",
@@ -12052,11 +12067,12 @@ function mergeSelectedTickets(ticketIds, primaryTicketId, internalNote = "") {
 
   const relatedTickets = selectedTickets.filter((ticket) => ticket.id !== primaryTicket.id);
   const relatedLabels = relatedTickets.map(ticketDisplayId);
+  const actorName = currentDemoUserName();
   primaryTicket.conversation.push({
     type: "timeline",
     author: "System",
     timestamp: new Date().toISOString(),
-    body: `${CURRENT_USER} marked related tickets for merge review: ${relatedLabels.join(", ")}.`
+    body: `${actorName} marked related tickets for merge review: ${relatedLabels.join(", ")}.`
   });
   addInternalNoteToTicket(primaryTicket, internalNote);
 
@@ -12065,7 +12081,7 @@ function mergeSelectedTickets(ticketIds, primaryTicketId, internalNote = "") {
       type: "timeline",
       author: "System",
       timestamp: new Date().toISOString(),
-      body: `${CURRENT_USER} marked this ticket as linked to primary ${ticketDisplayId(primaryTicket)} for merge review.`
+      body: `${actorName} marked this ticket as linked to primary ${ticketDisplayId(primaryTicket)} for merge review.`
     });
     addInternalNoteToTicket(ticket, internalNote);
   });
@@ -13148,7 +13164,7 @@ function replacementPartFor(ticket) {
 }
 
 function macroRepName() {
-  return profile.firstName || String(profile.displayName || CURRENT_USER).split(" ")[0] || "Robert";
+  return profileDisplayName().split(" ")[0] || profile.firstName || "Robert";
 }
 
 function reviewLinkFor(ticket) {
