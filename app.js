@@ -381,7 +381,7 @@ const toolbarStatusActions = [
   { value: "view:customer-replied", label: "Customer replied" },
   { value: "view:overdue", label: "Overdue" }
 ];
-const closedDateRangeOptions = ["Today", "Yesterday", "This Week", "This Month"];
+const closedDateRangeOptions = ["Today", "Yesterday", "This Week", "This Month", "This Quarter"];
 const seedPriorities = ["Urgent", "High", "Normal", "Low"];
 const productFamilies = workspaceConfig.productFamilies;
 const issueTypes = workspaceConfig.ticketCategories;
@@ -1191,6 +1191,7 @@ let replyMode = "reply";
 let activeProfileTab = "account";
 let activeNotificationFilter = "all";
 let notificationsOpen = false;
+let closedRangeMenuOpen = false;
 let customSelectObserver = null;
 let customSelectRefreshFrame = 0;
 let editableFieldObserver = null;
@@ -1435,6 +1436,10 @@ function init() {
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && notificationsOpen) closeNotificationsPanel();
+    if (event.key === "Escape" && closedRangeMenuOpen) {
+      closedRangeMenuOpen = false;
+      render();
+    }
     if (event.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
       event.preventDefault();
       setActiveQuickControl("search");
@@ -1442,8 +1447,13 @@ function init() {
     }
   });
   document.addEventListener("click", (event) => {
-    if (!notificationsOpen || event.target.closest(".notification-center")) return;
-    closeNotificationsPanel();
+    if (notificationsOpen && !event.target.closest(".notification-center")) {
+      closeNotificationsPanel();
+    }
+    if (closedRangeMenuOpen && !event.target.closest(".closed-tab, #closedRangeMenu")) {
+      closedRangeMenuOpen = false;
+      render();
+    }
   });
 
   applyUiState();
@@ -3860,21 +3870,21 @@ function timelineEventMeta(message) {
     return {
       kind: "system",
       label: "System",
-      icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 9.2 16.7 19 7"></path><path d="M4.8 5.5h10.8"></path><path d="M4.8 18.5h14.4"></path></svg>'
+      icon: '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M10.998 3.82599C12.8602 4.45429 14.3295 5.93581 14.9409 7.80551" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M2.87101 10.981C2.48391 9.05459 3.0321 7.041 4.3456 5.5766" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M13.131 14.443C11.655 15.743 9.63592 16.2743 7.70972 15.8675" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M9 5.75C10.105 5.75 11 4.855 11 3.75C11 2.645 10.105 1.75 9 1.75C7.895 1.75 7 2.645 7 3.75C7 4.855 7.895 5.75 9 5.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M3.80402 14.75C4.90902 14.75 5.80402 13.855 5.80402 12.75C5.80402 11.645 4.90902 10.75 3.80402 10.75C2.69902 10.75 1.80402 11.645 1.80402 12.75C1.80402 13.855 2.69902 14.75 3.80402 14.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M14.196 14.75C15.301 14.75 16.196 13.855 16.196 12.75C16.196 11.645 15.301 10.75 14.196 10.75C13.091 10.75 12.196 11.645 12.196 12.75C12.196 13.855 13.091 14.75 14.196 14.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg>'
     };
   }
   if (/assign|reassign|routed|owner/.test(text)) {
     return {
       kind: "assignment",
       label: author || "System",
-      icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 7.2a3.2 3.2 0 1 1-6.4 0 3.2 3.2 0 0 1 6.4 0Z"></path><path d="M5.8 19.2c.9-3.2 3.1-4.8 6.5-4.8 1.3 0 2.4.24 3.3.72"></path><path d="M17 14.5l3 3-3 3"></path><path d="M13.5 17.5H20"></path></svg>'
+      icon: '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6.25,2.75h-1c-1.105,0-2,.895-2,2V14.25c0,1.105,.895,2,2,2h7.5c1.105,0,2-.895,2-2V4.75c0-1.105-.895-2-2-2h-1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path><rect x="6.25" y="1.25" width="5.5" height="3" rx="1" ry="1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></rect></svg>'
     };
   }
   if (/status changed|changed status|closed\.|reopened|resolved|waiting on response|waiting customer|escalated|overdue|pending parts/.test(text)) {
     return {
       kind: "status",
       label: author || "System",
-      icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 9.2 16.7 19 7"></path><path d="M4.8 5.5h10.8"></path><path d="M4.8 18.5h14.4"></path></svg>'
+      icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12L8 19" stroke="currentColor" stroke-width="2" fill="none"></path><path d="M8 5L12.0414 12H20" stroke="currentColor" stroke-width="2" fill="none"></path><path d="M22.005 11.995L20 12L20.5 11.9987" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M12 2V4V3.5" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M2.005 11.995H4.00001H3.5" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M12 22V20V20.5" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M20.6678 16.9957L18.9289 15.9975L19.3625 16.2464" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M17.0007 3.33728L16.0007 5.06933L16.2507 4.63632" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M3.34723 6.99573L5.07495 7.99323L4.64193 7.74323" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M7.00067 20.6577L8.00067 18.9257L7.75067 19.3587" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M17.0084 20.6562L16.0016 18.9223L16.2527 19.3547" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M20.6618 6.99414L18.9298 7.99414L19.3628 7.74414" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M7.00836 3.33569L8.00586 5.06342L7.75586 4.6304" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M3.34137 16.994L5.07343 15.994L4.64041 16.244" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20Z" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path></svg>'
     };
   }
   if (/receipt|warranty|registered|registration|purchase proof|invoice/.test(text)) {
@@ -3888,13 +3898,13 @@ function timelineEventMeta(message) {
     return {
       kind: "attachment",
       label: author || "System",
-      icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 12.8 13.8 7.2a3.1 3.1 0 0 1 4.4 4.4l-6.4 6.4a4.4 4.4 0 0 1-6.2-6.2l6.1-6.1"></path><path d="M10.6 15.2 16 9.8"></path></svg>'
+      icon: '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3.762,14.989l6.074-6.075c.781-.781,2.047-.781,2.828,0l2.586,2.586" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path><rect x="2.75" y="2.75" width="12.5" height="12.5" rx="2" ry="2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></rect><circle cx="6.25" cy="7.25" r="1.25" fill="currentColor"></circle></svg>'
     };
   }
   return {
     kind: "system",
     label: author || "System",
-    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Z"></path><path d="M18.1 13.2c.08-.4.12-.8.12-1.2s-.04-.8-.12-1.2l1.85-1.42-1.76-3.05-2.16.87a6.6 6.6 0 0 0-1.88-1.08L13.82 3.7h-3.64l-.33 2.42A6.6 6.6 0 0 0 7.97 7.2l-2.16-.87-1.76 3.05L5.9 10.8c-.08.4-.12.8-.12 1.2s.04.8.12 1.2l-1.85 1.42 1.76 3.05 2.16-.87a6.6 6.6 0 0 0 1.88 1.08l.33 2.42h3.64l.33-2.42a6.6 6.6 0 0 0 1.88-1.08l2.16.87 1.76-3.05-1.85-1.42Z"></path></svg>'
+    icon: '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M10.998 3.82599C12.8602 4.45429 14.3295 5.93581 14.9409 7.80551" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M2.87101 10.981C2.48391 9.05459 3.0321 7.041 4.3456 5.5766" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M13.131 14.443C11.655 15.743 9.63592 16.2743 7.70972 15.8675" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M9 5.75C10.105 5.75 11 4.855 11 3.75C11 2.645 10.105 1.75 9 1.75C7.895 1.75 7 2.645 7 3.75C7 4.855 7.895 5.75 9 5.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M3.80402 14.75C4.90902 14.75 5.80402 13.855 5.80402 12.75C5.80402 11.645 4.90902 10.75 3.80402 10.75C2.69902 10.75 1.80402 11.645 1.80402 12.75C1.80402 13.855 2.69902 14.75 3.80402 14.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M14.196 14.75C15.301 14.75 16.196 13.855 16.196 12.75C16.196 11.645 15.301 10.75 14.196 10.75C13.091 10.75 12.196 11.645 12.196 12.75C12.196 13.855 13.091 14.75 14.196 14.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg>'
   };
 }
 
@@ -5854,17 +5864,21 @@ function renderQueueTabs() {
       <span class="queue-tab-indicator motion-tab-indicator" aria-hidden="true"></span>
       ${queueTabConfig
         .map((tab) => `
-          <button class="queue-view-tab" data-queue-tab="${tab.id}" aria-pressed="false" type="button">
+          <button class="queue-view-tab ${tab.id === "closed" ? "closed-tab" : ""}" data-queue-tab="${tab.id}" aria-pressed="false" type="button"${tab.id === "closed" ? ` aria-haspopup="listbox" aria-expanded="false"` : ""}>
             <span class="queue-tab-label">${escapeHtml(tab.label)}</span>
             <span class="queue-tab-count" data-queue-tab-count="${tab.id}"></span>
+            ${tab.id === "closed" ? `<svg class="closed-tab-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>` : ""}
           </button>
-          ${tab.id === "closed" ? renderClosedDateSelect(false) : ""}
         `)
         .join("")}
+      <div class="closed-range-menu" id="closedRangeMenu" role="listbox" hidden></div>
     `;
 
-    el.queueViewTabs.querySelector("#closedDateRangeSelect")?.addEventListener("change", (event) => {
-      filters.closedDateRange = event.target.value;
+    el.queueViewTabs.querySelector("#closedRangeMenu")?.addEventListener("click", (event) => {
+      const option = event.target.closest("[data-closed-range]");
+      if (!option) return;
+      filters.closedDateRange = option.dataset.closedRange;
+      closedRangeMenuOpen = false;
       resetQueuePagination();
       render();
     });
@@ -5883,20 +5897,24 @@ function renderQueueTabs() {
     }
   });
 
-  const closedDateFilter = el.queueViewTabs.querySelector(".closed-date-filter");
-  if (closedDateFilter) closedDateFilter.hidden = activeView !== "closed";
-  const closedDateHint = el.queueViewTabs.querySelector("[data-closed-date-hint]");
-  if (closedDateHint) {
-    const rangeCount = closedCountForRange(filters.closedDateRange);
-    const totalCount = queueTabCount(queueTabConfig.find((tab) => tab.id === "closed"));
-    closedDateHint.textContent = `${rangeCount} ticket${rangeCount === 1 ? "" : "s"} in ${filters.closedDateRange}; ${totalCount} total in Closed tab.`;
+  const closedButton = el.queueViewTabs.querySelector('[data-queue-tab="closed"]');
+  const closedMenu = el.queueViewTabs.querySelector("#closedRangeMenu");
+  const menuOpen = closedRangeMenuOpen && activeView === "closed" && uiState.activeScreen === "queue";
+  if (closedButton) {
+    closedButton.classList.toggle("menu-open", menuOpen);
+    closedButton.setAttribute("aria-expanded", String(menuOpen));
   }
-  const closedDateSelect = el.queueViewTabs.querySelector("#closedDateRangeSelect");
-  if (closedDateSelect) {
-    closedDateSelect.innerHTML = closedDateRangeOptions.map((option) => `
-      <option value="${escapeHtml(option)}"${filters.closedDateRange === option ? " selected" : ""}>${escapeHtml(option)} (${closedCountForRange(option)})</option>
-    `).join("");
-    closedDateSelect.value = filters.closedDateRange;
+  if (closedMenu) {
+    closedMenu.hidden = !menuOpen;
+    if (menuOpen) {
+      closedMenu.innerHTML = closedDateRangeOptions.map((option) => `
+        <button class="closed-range-option ${filters.closedDateRange === option ? "selected" : ""}" data-closed-range="${escapeHtml(option)}" role="option" aria-selected="${filters.closedDateRange === option}" type="button">
+          <span>${escapeHtml(option)}</span>
+          <span class="closed-range-count">${closedCountForRange(option)}</span>
+        </button>
+      `).join("");
+      if (closedButton) closedMenu.style.left = `${closedButton.offsetLeft}px`;
+    }
   }
 
   requestAnimationFrame(syncQueueTabIndicator);
@@ -5910,20 +5928,6 @@ function queueTabCountLabel(tab, count) {
   if (tab.id === "open") return `${count} open tickets across all reps`;
   if (tab.id === "assigned") return `${count} active tickets assigned to you`;
   return `${count} total tickets in Closed tab`;
-}
-
-function renderClosedDateSelect(visible) {
-  return `
-    <label class="closed-date-filter" ${visible ? "" : "hidden"}>
-      <span>Closed range</span>
-      <select id="closedDateRangeSelect" aria-label="Closed tickets date range">
-        ${closedDateRangeOptions.map((option) => `
-          <option value="${escapeHtml(option)}"${filters.closedDateRange === option ? " selected" : ""}>${escapeHtml(option)} (${closedCountForRange(option)})</option>
-        `).join("")}
-      </select>
-      <small data-closed-date-hint></small>
-    </label>
-  `;
 }
 
 function closedCountForRange(range) {
@@ -6087,10 +6091,6 @@ function renderAccountTab() {
         <p>Edit the profile details RepOS shows to teammates and customers.</p>
       </div>
       <div class="profile-grid account-grid">
-        <div class="profile-image-card">
-          <div class="profile-image-placeholder">${escapeHtml(profileInitials())}</div>
-          <button class="ghost-button" type="button">Change image</button>
-        </div>
         ${profileInput("firstName", "First name", profile.firstName)}
         ${profileInput("lastName", "Last name", profile.lastName)}
         ${profileInput("displayName", "Display name", profile.displayName)}
@@ -6100,17 +6100,6 @@ function renderAccountTab() {
         ${profileInput("extension", "Extension", profile.extension)}
         ${profileInput("username", "Username", profile.username)}
         ${profileInput("role", "Role", profile.role)}
-        <div class="profile-auth-card full-span">
-          <div>
-            <strong>Password</strong>
-            <span>Password controls are ready for the connected account layer.</span>
-          </div>
-          <button class="secondary-button" type="button">Change password</button>
-        </div>
-        <label class="profile-toggle full-span">
-          <input name="twoFactorEnabled" type="checkbox" ${profile.twoFactorEnabled ? "checked" : ""}>
-          <span>Default 2FA enabled</span>
-        </label>
       </div>
     </section>
   `;
@@ -6126,7 +6115,6 @@ function renderPreferencesTab() {
       </div>
       <div class="profile-grid">
         ${profileSelect("defaultLandingView", "Default landing view", ["Open Tickets", "Closed Tickets"], landingLabel(profile.defaultLandingView))}
-        ${profileSelect("defaultQueueView", "Default queue view", ["Table View", "Card View"], profile.defaultQueueView === "card" ? "Card View" : "Table View")}
         ${profileSelect("theme", "Theme", ["Light", "Dark", "System"], profile.theme)}
         ${profileSelect("ticketDensity", "Ticket density", ["Comfortable", "Compact", "Ultra Compact"], profile.ticketDensity)}
         ${profileSelect("defaultSort", "Default sort", ["Last Updated", "SLA", "Newest"], defaultSort)}
@@ -6134,7 +6122,6 @@ function renderPreferencesTab() {
           <span>Accent color</span>
           <input name="accentColor" type="color" value="${escapeHtml(profile.accentColor)}">
         </label>
-        ${profileCheckbox("compactRows", "Compact rows", profile.compactRows)}
         ${profileCheckbox("showMetrics", "Show metrics", profile.showMetrics)}
         ${profileCheckbox("sidebarCollapsedDefault", "Sidebar collapsed by default", profile.sidebarCollapsedDefault)}
         ${profileCheckbox("autoOpenFirstTicket", "Auto-open first ticket", profile.autoOpenFirstTicket)}
@@ -6161,10 +6148,6 @@ function renderSignatureTab() {
         </div>
         ${profileSelect("defaultSignature", "Default signature option", ["None", "My Signature", "Department Signature"], profile.defaultSignature)}
         ${profileCheckbox("insertSignature", "Insert signature into reply editor", profile.insertSignature)}
-        <div class="signature-preview full-span">
-          <span>Saved preview</span>
-          <p>${escapeHtml(profile.mySignature || "Not provided.").replaceAll("\n", "<br>")}</p>
-        </div>
       </div>
     </section>
   `;
@@ -6206,14 +6189,11 @@ function renderWorkspaceTab(workload) {
       </div>
       <div class="workspace-profile-grid">
         ${workspaceFact("Workspace", workspaceConfig.workspaceName)}
-        ${workspaceFact("State mode", demoStateModeLabel())}
         ${workspaceFact("Department", workspaceConfig.defaultDepartment)}
         ${workspaceFact("Queue", workspaceConfig.defaultQueue)}
         ${workspaceFact("Role", currentDemoUserRoleLabel())}
         ${workspaceFact("Support email", workspaceConfig.supportMailbox)}
         ${workspaceFact("Timezone", workspaceSettings.timezone)}
-        ${workspaceFact("Assignment eligible", currentAssignmentUser()?.assignmentEligible ? "Yes" : "No")}
-        ${workspaceFact("Assignment workload count", workload)}
       </div>
       ${currentUserIsAdmin() ? `<div class="profile-admin-callout"><span class="admin-badge">Admin</span><p>${escapeHtml(currentDemoUserName())} can manage reps and restore the local iSpring demo workspace back to seeded data. Restoring overwrites persisted local demo changes.</p><div class="profile-admin-actions">${adminControls}<button class="secondary-button danger-soft" id="resetWorkspaceDataButton" type="button">Restore seed demo data</button></div></div>` : ""}
     </section>
@@ -6611,6 +6591,8 @@ function closedDateRangeBounds(range) {
     start.setDate(start.getDate() - 6);
   } else if (range === "This Month") {
     start.setDate(1);
+  } else if (range === "This Quarter") {
+    start.setMonth(Math.floor(start.getMonth() / 3) * 3, 1);
   }
 
   if (range === "Yesterday") {
@@ -7132,12 +7114,12 @@ function renderTicketRow(ticket) {
       <div class="queue-row-content">
       <div class="queue-row-cell check-col" role="cell"><input data-select-ticket="${escapeHtml(ticket.id)}" type="checkbox" aria-label="Select ${escapeHtml(displayId)}" ${checked ? "checked" : ""}${disabledAttrs}></div>
       <div class="queue-row-cell" role="cell"><button class="table-link table-ticket-id" data-open-ticket="${escapeHtml(ticket.id)}" data-open-ticket-number="${escapeHtml(displayId)}" type="button"${disabledAttrs}>${escapeHtml(displayId)}</button></div>
-      <div class="queue-row-cell activity-cell" role="cell"><span class="table-date">${dateTimeLabel(lastUpdatedAt(ticket))}</span>${overdue ? "" : `<small class="queue-sla-line ${slaLineClass(ticket)}">${escapeHtml(dueLabel(ticket.dueAt))}</small>`}</div>
+      <div class="queue-row-cell activity-cell" role="cell"><span class="table-date">${dateTimeLabel(lastUpdatedAt(ticket))}</span></div>
       <div class="queue-row-cell subject-cell" role="cell">
         <span class="subject-row-inner">
           <span class="subject-copy">
             <span class="subject-line">
-              <span class="subject-msg-count" title="${escapeHtml(emailCountLabel(ticket))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 16.5C11 19.5376 13.4624 22 16.5 22C17.5018 22 18.441 21.7322 19.25 21.2642L21.725 22L22 21.725L21.2642 19.25C21.7322 18.441 22 17.5018 22 16.5C22 13.4624 19.5376 11 16.5 11C13.4624 11 11 13.4624 11 16.5Z" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M10 1C14.3996 1 18.0586 4.15692 18.8428 8.3291C18.1627 8.13447 17.4482 8.02279 16.71 8.00488C15.8511 5.11143 13.1724 3 10 3C6.13401 3 3 6.13401 3 10C3 11.2765 3.34066 12.4705 3.93555 13.499L4.15137 13.8721L4.02832 14.2852L3.31543 16.6836L5.71484 15.9717L6.12793 15.8486L6.50098 16.0645C6.97036 16.3359 7.47484 16.5517 8.00488 16.709C8.02271 17.4476 8.13439 18.1624 8.3291 18.8428C7.46539 18.6803 6.64438 18.3968 5.88672 18.0068L2.68457 18.959L2.11426 19.1279L0.87207 17.8857L1.04102 17.3154L1.99414 14.1113C1.3596 12.8779 1 11.4799 1 10C1 5.02944 5.02944 1 10 1Z" fill="currentColor"></path></svg><span>${emailCount}</span></span>
+              <span class="subject-msg-count" title="${escapeHtml(emailCountLabel(ticket))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12.01V12" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path><path d="M16 11.9999V11.9899" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path><path d="M8 12.0101V12.0001" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path><path d="M22 12C22 17.5228 17.5228 22 12 22C10.1786 22 8.47087 21.513 7 20.6622L2.5 22L2 21.5L3.33782 17C2.48697 15.5291 2 13.8214 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path></svg><span>${emailCount}</span></span>
               <button class="table-link subject-link" data-open-ticket="${escapeHtml(ticket.id)}" data-open-ticket-number="${escapeHtml(displayId)}" type="button"${disabledAttrs}>${escapeHtml(ticket.subject)}</button>
               ${overdueIcon}
             </span>
@@ -7391,7 +7373,7 @@ function renderDashboardPanel() {
   el.dashboardPanel.innerHTML = `
     <div class="dashboard-header">
       <div>
-        <h1>${currentDashboardView === "manager" ? "RepOS command center" : "My support dashboard"}</h1>
+        <h1>${currentDashboardView === "manager" ? "Manager Dashboard" : "Rep Dashboard"}</h1>
         <p>${currentDashboardView === "manager" ? "Team view for workload, SLA risk, and support queue movement." : "Your tickets first, with team trends shown only in aggregate."} ${escapeHtml(demoStateSentence())}</p>
       </div>
       <div class="dashboard-header-actions">
@@ -7487,44 +7469,14 @@ function renderDashboardOverview(currentDashboardView, scopedTickets, primaryTic
   `;
 }
 
-function renderManagerDashboard(scopedTickets, primaryTickets) {
+function renderManagerDashboard(scopedTickets) {
   return `
-    ${renderTodayPriority(primaryTickets, "Manager Priority", "What needs action now")}
-    <section class="dashboard-grid">
+    <section class="dashboard-grid dashboard-grid-lean">
       <article class="dashboard-card workload-card">
         <div class="section-title">
-          <p class="eyebrow">Team Workload</p>
           <h3>Rep performance and risk</h3>
         </div>
         ${renderRepWorkloadTable(scopedTickets)}
-      </article>
-      <article class="dashboard-card needs-action-card">
-        <div class="section-title">
-          <p class="eyebrow">Needs Action</p>
-          <h3>All needs-action tickets</h3>
-        </div>
-        ${renderNeedsActionTable(primaryTickets)}
-      </article>
-      <article class="dashboard-card sla-health-card">
-        <div class="section-title">
-          <p class="eyebrow">SLA / Response Health</p>
-          <h3>Risk signals</h3>
-        </div>
-        ${renderSlaHealth(scopedTickets)}
-      </article>
-      <article class="dashboard-card team-trends-card">
-        <div class="section-title">
-          <p class="eyebrow">Team-Level Trends</p>
-          <h3>Volume and topic patterns</h3>
-        </div>
-        ${renderTeamTrendOverview(scopedTickets)}
-      </article>
-      <article class="dashboard-card stuck-risk-card">
-        <div class="section-title">
-          <p class="eyebrow">Stuck / At Risk</p>
-          <h3>Tickets that may need manager review</h3>
-        </div>
-        ${renderStuckTickets(primaryTickets)}
       </article>
     </section>
   `;
@@ -7532,28 +7484,12 @@ function renderManagerDashboard(scopedTickets, primaryTickets) {
 
 function renderRepDashboard(scopedTickets, primaryTickets) {
   return `
-    ${renderTodayPriority(primaryTickets, "My Priority", "My work to move next", repPriorityCards(primaryTickets))}
-    <section class="dashboard-grid">
-      <article class="dashboard-card rep-workload-card">
-        <div class="section-title">
-          <p class="eyebrow">My Workload</p>
-          <h3>Status summary</h3>
-        </div>
-        ${renderMyWorkload(primaryTickets)}
-      </article>
+    <section class="dashboard-grid dashboard-grid-lean">
       <article class="dashboard-card needs-action-card">
         <div class="section-title">
-          <p class="eyebrow">My Needs Action</p>
           <h3>Tickets to touch next</h3>
         </div>
         ${renderNeedsActionTable(primaryTickets, { includeAssignee: false, limit: 10, emptyText: "No assigned tickets need immediate action right now." })}
-      </article>
-      <article class="dashboard-card team-trends-card">
-        <div class="section-title">
-          <p class="eyebrow">Team Trends</p>
-          <h3>Aggregate support patterns</h3>
-        </div>
-        ${renderTeamTrendOverview(scopedTickets)}
       </article>
     </section>
   `;
@@ -7987,10 +7923,9 @@ function renderRepWorkloadTable(scopedTickets) {
   const rows = visibleAssignmentUsers().map((user) => managerWorkloadRowData(user, scopedTickets));
   const maxActive = Math.max(1, ...rows.map((row) => row.active));
   return `
-    ${renderManagerWorkloadSnapshot(rows)}
     <div class="dashboard-table-wrap">
       <table class="dashboard-table rep-table manager-workload-table">
-        <thead><tr><th>Rep name</th><th>Active tickets</th><th>Assigned today</th><th>Customer replies waiting</th><th>Overdue tickets</th><th>SLA due soon</th><th>Closed today</th><th>Oldest open ticket age</th><th>Assignment eligible</th><th>Risk level</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Rep name</th><th>Active tickets</th><th>Customer replies waiting</th><th>Overdue tickets</th><th>Risk level</th><th>Actions</th></tr></thead>
         <tbody>
           ${rows.map((row) => {
             const activeWidth = Math.max(4, Math.min(100, (row.active / maxActive) * 100));
@@ -7998,13 +7933,8 @@ function renderRepWorkloadTable(scopedTickets) {
               <tr class="manager-risk-row risk-${row.risk.tone}">
                 <td><strong>${escapeHtml(row.user.name)}</strong><span class="workload-bar"><i style="width:${activeWidth}%"></i></span></td>
                 <td><span class="workload-chip">${row.active}</span></td>
-                <td>${row.assignedToday}</td>
                 <td><span class="workload-chip ${row.customerReplies >= 4 ? "chip-risk" : row.customerReplies >= 2 ? "chip-warn" : ""}">${row.customerReplies}</span></td>
                 <td><span class="workload-chip ${row.overdue >= 2 ? "chip-risk" : row.overdue === 1 ? "chip-warn" : ""}">${row.overdue}</span></td>
-                <td><span class="workload-chip ${row.dueSoon >= 3 ? "chip-risk" : row.dueSoon >= 1 ? "chip-warn" : ""}">${row.dueSoon}</span></td>
-                <td>${row.closedToday}</td>
-                <td>${escapeHtml(row.oldestOpenAge)}</td>
-                <td><span class="eligibility-pill ${row.user.assignmentEligible ? "eligible" : "not-eligible"}">${row.user.assignmentEligible ? "Yes" : "No"}</span></td>
                 <td><span class="risk-pill risk-${row.risk.tone}">${escapeHtml(row.risk.label)}</span></td>
                 <td>
                   <div class="dashboard-row-actions">
@@ -9737,10 +9667,10 @@ function renderConversation(ticket) {
           </label>
         </div>
       </div>
-      ${renderTicketDetailsPanel(ticket)}
     </div>
 
     <div class="conversation-scroll-area" id="conversationScrollArea">
+      ${renderTicketDetailsPanel(ticket)}
       <div class="thread" id="ticketThread" aria-label="Conversation thread">
         ${threadMessages.map((message) => renderMessage(message, ticket)).join("")}
       </div>
@@ -9773,28 +9703,19 @@ function renderConversation(ticket) {
           <button data-format-action="number" type="button" title="Numbered list" aria-label="Numbered list">1.</button>
           <button data-format-action="link" type="button" title="Insert link" aria-label="Insert link">Link</button>
           <span class="format-toolbar-divider" aria-hidden="true"></span>
-          <button class="format-attach-button" id="attachmentDropzone" type="button" title="Attach files" aria-label="Attach files"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.5 8.4 10 16.9a3.4 3.4 0 0 1-4.8-4.8l8.1-8.1a2.3 2.3 0 0 1 3.2 3.2l-7.8 7.8a1.2 1.2 0 0 1-1.7-1.7l7.1-7.1"></path></svg></button>
+          <button class="format-attach-button" id="attachmentDropzone" type="button" title="Attach files" aria-label="Attach files"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M13.75,4.25c-.414,0-.75,.336-.75,.75v6.75c0,2.068-1.682,3.75-3.75,3.75s-3.75-1.682-3.75-3.75V4.75c0-1.241,1.009-2.25,2.25-2.25s2.25,1.009,2.25,2.25v7c0,.414-.336,.75-.75,.75s-.75-.336-.75-.75V5c0-.414-.336-.75-.75-.75s-.75,.336-.75,.75v6.75c0,1.241,1.009,2.25,2.25,2.25s2.25-1.009,2.25-2.25V4.75c0-2.068-1.682-3.75-3.75-3.75s-3.75,1.682-3.75,3.75v7c0,2.895,2.355,5.25,5.25,5.25s5.25-2.355,5.25-5.25V5c0-.414-.336-.75-.75-.75Z" fill="currentColor"></path></svg></button>
         </div>
-        <textarea id="replyEditor" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" placeholder="${replyMode === "reply" ? "Write a customer-visible reply..." : "Write an internal note..."}">${escapeHtml(ticket.draft || "")}</textarea>
+        <div id="replyEditor" class="reply-editor-rich" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" data-placeholder="${replyMode === "reply" ? "Write a customer-visible reply..." : "Write an internal note..."}">${ticket.draft || ""}</div>
       </div>
       <input id="composerAttachmentInput" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple hidden>
       <p class="composer-validation" id="composerValidation" role="status" aria-live="polite"></p>
       <div class="composer-bar">
         <div class="composer-bottom-controls">
-          <label class="composer-status-field">
-            <span>Ticket status</span>
-            <select id="composerTicketStatusSelect" aria-label="Set ticket status after reply" ${ticketLocked ? "disabled" : ""}>
-              ${statusSelectOptions(displayStatusFor(ticket), "Composer status")}
-            </select>
-          </label>
-          <label class="signature-field">
+          <div class="signature-options" role="radiogroup" aria-label="Signature">
             <span>Signature</span>
-            <select id="signatureSelect" aria-label="Signature option">
-              <option value="None" ${profile.defaultSignature === "None" ? "selected" : ""}>None</option>
-              <option value="My Signature" ${profile.defaultSignature === "My Signature" ? "selected" : ""}>My Signature</option>
-              <option value="Department Signature" ${profile.defaultSignature === "Department Signature" ? "selected" : ""}>Department Signature</option>
-            </select>
-          </label>
+            <label class="signature-radio"><input type="radio" name="signatureOption" value="My Signature" ${profile.defaultSignature !== "Department Signature" ? "checked" : ""}> My signature</label>
+            <label class="signature-radio"><input type="radio" name="signatureOption" value="Department Signature" ${profile.defaultSignature === "Department Signature" ? "checked" : ""}> Department signature</label>
+          </div>
         </div>
         <div class="composer-actions">
           <button class="secondary-button" id="saveDraftButton" type="button">Save Draft</button>
@@ -9820,11 +9741,6 @@ function renderConversation(ticket) {
     event.target.value = ticket.assignee;
     openReassignConfirmModal(ticket.id, nextAssignee);
   });
-  document.querySelector("#composerTicketStatusSelect")?.addEventListener("change", (event) => {
-    const nextStatus = event.target.value;
-    event.target.value = displayStatusFor(ticket);
-    openStatusConfirmModal(ticket.id, nextStatus);
-  });
   document.querySelector("#customerHistoryButton")?.addEventListener("click", () => openCustomerHistory(ticket.id));
   document.querySelector("#composerMacroSelect")?.addEventListener("change", (event) => {
     event.preventDefault();
@@ -9847,9 +9763,12 @@ function renderConversation(ticket) {
   document.querySelectorAll("[data-preview-attachment]").forEach((button) => {
     button.addEventListener("click", () => openAttachmentPreview(ticket.id, button.dataset.previewAttachment));
   });
-  document.querySelector("#signatureSelect")?.addEventListener("change", (event) => {
-    syncComposerState();
-    showToast(`Signature set to ${event.target.value}.`);
+  document.querySelectorAll("input[name='signatureOption']").forEach((input) => {
+    input.addEventListener("change", (event) => {
+      if (!event.target.checked) return;
+      syncComposerState();
+      showToast(`Signature set to ${event.target.value}.`);
+    });
   });
   document.querySelectorAll("[data-reply-mode]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -9861,7 +9780,7 @@ function renderConversation(ticket) {
       });
       positionReplyTabPill(true, 0);
       const editor = document.querySelector("#replyEditor");
-      if (editor) editor.placeholder = replyMode === "reply" ? "Write a customer-visible reply..." : "Write an internal note...";
+      if (editor) editor.setAttribute("data-placeholder", replyMode === "reply" ? "Write a customer-visible reply..." : "Write an internal note...");
       const modeBadge = document.querySelector("#composerModeBadge");
       if (modeBadge) modeBadge.textContent = replyMode === "reply" ? "Customer visible" : "Team only";
       const sendBtn = document.querySelector("#sendReplyButton");
@@ -9897,7 +9816,7 @@ function renderTicketDetailsPanel(ticket) {
     ? dateTimeLabel(ticket.lastRepAt)
     : "No rep response yet";
   return `
-    <details class="ticket-details-panel">
+    <details class="ticket-details-panel" open>
       <summary>
         <span>Ticket Details</span>
         <strong>${escapeHtml(ticket.order || "No order")} / ${escapeHtml(ticket.source || "Unknown channel")}</strong>
@@ -9940,9 +9859,11 @@ function renderMessage(message, ticket) {
     const event = timelineEventMeta(message);
     return `
       <article class="timeline-row timeline-${event.kind}">
-        <span class="timeline-icon" aria-hidden="true">${event.icon}</span>
-        <p><strong class="timeline-label">${escapeHtml(event.label)}</strong><span class="timeline-dot" aria-hidden="true">&middot;</span><span class="timeline-body">${escapeHtml(timelineDisplayBody(ticket, message))}</span><span class="timeline-dot" aria-hidden="true">&middot;</span></p>
-        <time>${dateTimeLabel(message.timestamp)}</time>
+        <span class="timeline-content">
+          <span class="timeline-icon" aria-hidden="true">${event.icon}</span>
+          <span class="timeline-body">${escapeHtml(timelineDisplayBody(ticket, message))}</span>
+          <time>${dateTimeLabel(message.timestamp)}</time>
+        </span>
       </article>
     `;
   }
@@ -9959,11 +9880,19 @@ function renderMessage(message, ticket) {
           <time>${dateTimeLabel(message.timestamp)}</time>
         </div>
         ${emailSubject}
-        <p>${escapeHtml(message.type === "note" ? statusDisplayText(message.body) : message.body)}</p>
+        <div class="message-text">${renderMessageBodyHtml(message)}</div>
         ${renderThreadAttachments(message.attachments, ticket)}
       </div>
     </article>
   `;
+}
+
+function renderMessageBodyHtml(message) {
+  const raw = message.type === "note" ? statusDisplayText(message.body) : message.body;
+  // Messages composed in the rich editor are already safe HTML — render as-is.
+  // Everything else (customer/seed) is plain text, so escape and keep breaks.
+  if (message.html) return raw;
+  return escapeHtml(raw).replace(/\n/g, "<br>");
 }
 
 function avatarInitialsFor(name) {
@@ -10022,10 +9951,9 @@ function renderContext(ticket) {
 
   el.contextPanel.innerHTML = `
     ${renderCustomerSnapshot(ticket)}
-    <details class="context-accordion">
+    <details class="context-accordion" open>
       <summary>Order / Warranty</summary>
       ${renderOrderWarranty(ticket)}
-      ${renderSourceWarrantyMetadata(ticket)}
     </details>
     ${renderProductLinkSection(ticket)}
   `;
@@ -10305,12 +10233,8 @@ function renderDailyMacroMeta(macro, ticket) {
 function renderCustomerSnapshot(ticket) {
   return `
     <section class="context-card compact-context-card customer-snapshot-card">
-      <div class="section-title row-title">
-        <div>
-          <p class="eyebrow">Customer Snapshot</p>
-          <h3>${escapeHtml(ticket.customer.name)}</h3>
-        </div>
-        <span class="mini-count">${ticketCountForCustomerEmail(ticket.customer?.email)}</span>
+      <div class="section-title">
+        <h3>${escapeHtml(ticket.customer.name)}</h3>
       </div>
       <dl class="info-list">
         <div><dt>Email</dt><dd>${escapeHtml(ticket.customer.email)}</dd></div>
@@ -10387,8 +10311,11 @@ function updateDailyMacroPreview() {
 }
 
 function renderOrderWarranty(ticket) {
+  const account = accountForTicket(ticket);
   const receipt = receiptRecordFor(ticket);
   const registered = warrantyStatusFor(ticket) === "Registered";
+  const warranty = warrantyRecordFor(ticket) || (receipt ? warrantyRecordForReceipt(account, receipt) : null);
+  const registeredAt = warranty?.registeredAt ? dateTimeLabel(warranty.registeredAt) : "";
   const sourceReview = detectedPurchaseSourceReview(ticket);
   return `
     <section class="context-card nested-card order-warranty-card">
@@ -10396,20 +10323,23 @@ function renderOrderWarranty(ticket) {
         <h3>${escapeHtml(ticket.order || "No order yet")}</h3>
       </div>
       <dl class="info-list">
-        <div><dt>Order number</dt><dd>${escapeHtml(ticket.order || "Not provided")}</dd></div>
         <div><dt>Purchase source</dt><dd>
           <select id="ticketPurchaseSourceSelect" aria-label="Purchase source">
             ${workspaceConfig.purchaseSources.map((source) => `<option value="${escapeHtml(source)}"${purchaseSourceFor(ticket) === source ? " selected" : ""}>${escapeHtml(source)}</option>`).join("")}
           </select>
           ${sourceReview ? `<small class="source-review-note">${escapeHtml(sourceReview)}</small>` : ""}
         </dd></div>
-        <div><dt>Receipt</dt><dd>${escapeHtml(receiptStatusFor(ticket))}</dd></div>
-        <div><dt>Warranty</dt><dd>${escapeHtml(warrantyStatusFor(ticket))}</dd></div>
+        ${receipt ? `
+          <div><dt>Receipt file</dt><dd>${escapeHtml(receipt.fileName || "Not saved")}</dd></div>
+          <div><dt>Receipt status</dt><dd>${escapeHtml(receipt.status || receiptStatusFor(ticket))}</dd></div>
+          <div><dt>Receipt saved</dt><dd>${escapeHtml(receipt.savedAt ? dateTimeLabel(receipt.savedAt) : "Not provided")}</dd></div>
+          <div><dt>Uploaded by</dt><dd>${escapeHtml(receipt.uploadedBy || "Not provided")}</dd></div>
+        ` : `<div><dt>Receipt</dt><dd>Not saved</dd></div>`}
       </dl>
-      <div class="context-actions">
-        <button class="ghost-button compact-action-button" id="saveReceiptButton" type="button">Add receipt</button>
-        ${receipt ? `<label class="warranty-toggle compact-warranty-toggle"><input id="registerWarrantyToggle" type="checkbox" ${registered ? "checked" : ""}><span>${registered ? "Registered" : "Register warranty"}</span></label>` : `<span class="muted">Add receipt before warranty registration.</span>`}
-      </div>
+      ${receipt
+        ? `<label class="warranty-toggle compact-warranty-toggle"><input id="registerWarrantyToggle" type="checkbox" ${registered ? "checked" : ""}><span>${registered ? `Warranty registered${registeredAt ? ` &middot; <small>${escapeHtml(registeredAt)}</small>` : ""}` : "Register warranty"}</span></label>`
+        : `<p class="muted order-warranty-hint">Add a receipt before warranty registration.</p>`}
+      <button class="link-button order-warranty-add" id="saveReceiptButton" type="button">+ Add receipt</button>
     </section>
   `;
 }
@@ -10427,10 +10357,7 @@ function renderProductLinkSection(ticket) {
   return `
     <section class="context-card compact-context-card product-link-card">
       <div class="section-title row-title">
-        <div>
-          <p class="eyebrow">Product Link</p>
-          <h3>${productLink ? escapeHtml(productLink.label) : "No saved link found"}</h3>
-        </div>
+        <h3>${productLink ? escapeHtml(productLink.label) : "No saved link found"}</h3>
         <span class="product-link-status ${productLink ? "is-ready" : "is-missing"}">${productLink ? "Ready" : "Missing"}</span>
       </div>
       <div class="product-link-match-summary">
@@ -10438,11 +10365,9 @@ function renderProductLinkSection(ticket) {
         <strong>${escapeHtml(matchLabel)}</strong>
         <small>${productLink ? "Active link available for this ticket" : "Add an active link for this model and source"}</small>
       </div>
-      <dl class="info-list">
-        <div><dt>Ticket model</dt><dd>${escapeHtml(ticket.model || "Not provided")}${modelKey && modelKey !== ticket.model ? `<small class="product-link-muted">Matched ${escapeHtml(modelKey)}</small>` : ""}</dd></div>
-        <div><dt>Source</dt><dd>${escapeHtml(purchaseSource || "Not provided")}</dd></div>
-        <div><dt>Saved link</dt><dd class="link-value">${productLink ? `<a href="${escapeHtml(productLink.url)}" target="_blank" rel="noreferrer">${escapeHtml(productLink.url)}</a>` : "No saved link found."}</dd></div>
-      </dl>
+      ${productLink ? `<dl class="info-list">
+        <div><dt>Saved link</dt><dd class="link-value"><a href="${escapeHtml(productLink.url)}" target="_blank" rel="noreferrer">${escapeHtml(productLink.url)}</a></dd></div>
+      </dl>` : ""}
       <div class="context-actions split-actions product-link-actions">
         <button class="primary-button compact-action-button" id="insertSuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Insert product URL</button>
         <button class="ghost-button compact-action-button" id="copySuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Copy URL</button>
@@ -10513,8 +10438,7 @@ function renderSourceWarrantyMetadata(ticket) {
         <div><dt>Receipt status</dt><dd>${escapeHtml(receipt?.status || receiptStatusFor(ticket))}</dd></div>
         <div><dt>Receipt saved</dt><dd>${escapeHtml(receipt?.savedAt ? dateTimeLabel(receipt.savedAt) : "Not provided")}</dd></div>
         <div><dt>Uploaded by</dt><dd>${escapeHtml(receipt?.uploadedBy || "Not provided")}</dd></div>
-        <div><dt>Warranty record</dt><dd>${escapeHtml(warranty?.status || warrantyStatusFor(ticket))}</dd></div>
-        <div><dt>Registered</dt><dd>${escapeHtml(warranty?.registeredAt ? dateTimeLabel(warranty.registeredAt) : "No")}</dd></div>
+        <div><dt>Warranty registered</dt><dd>${escapeHtml(warranty?.registeredAt ? dateTimeLabel(warranty.registeredAt) : "No")}</dd></div>
       </dl>
     </section>
   `;
@@ -10807,7 +10731,16 @@ function handleQueueTabClick(event) {
   const button = event.target.closest("[data-queue-tab]");
   if (!button) return;
 
-  activeView = button.dataset.queueTab;
+  const tab = button.dataset.queueTab;
+  if (tab === "closed") {
+    // The Closed tab is itself a dropdown: open it (and switch to the closed
+    // view if we weren't already there), or toggle it if we were.
+    closedRangeMenuOpen = activeView === "closed" ? !closedRangeMenuOpen : true;
+    activeView = "closed";
+  } else {
+    closedRangeMenuOpen = false;
+    activeView = tab;
+  }
   resetQueuePagination();
   uiState.activeScreen = "queue";
   uiState.activeQuickControl = activeView;
@@ -11347,16 +11280,35 @@ function selectedTicket() {
 function handleComposerInput(event) {
   const ticket = selectedTicket();
   if (!ticket) return;
-  ticket.draft = event.target.value;
+  ticket.draft = composerEditorHtml(event.target);
   persistTickets();
   syncComposerState();
+}
+
+function composerEditorHtml(editor) {
+  return editor && "value" in editor ? editor.value : (editor?.innerHTML || "");
+}
+
+function composerEditorText(editor) {
+  if (!editor) return "";
+  return "value" in editor ? editor.value : (editor.innerText || editor.textContent || "");
+}
+
+function placeCaretAtEnd(element) {
+  if (!element || !window.getSelection) return;
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  range.collapse(false);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
 }
 
 function syncComposerState(showValidation = false) {
   const editor = document.querySelector("#replyEditor");
   const sendButton = document.querySelector("#sendReplyButton");
   const validation = document.querySelector("#composerValidation");
-  const hasBody = Boolean(editor?.value.trim());
+  const hasBody = Boolean(composerEditorText(editor).trim());
 
   if (sendButton) sendButton.disabled = !hasBody;
   if (!validation) return;
@@ -11368,53 +11320,25 @@ function syncComposerState(showValidation = false) {
 function applyComposerFormatting(action) {
   const editor = document.querySelector("#replyEditor");
   if (!editor) return;
+  editor.focus();
 
-  if (action === "link") {
-    const selected = selectedComposerText(editor) || "link text";
+  if (action === "bold") {
+    document.execCommand("bold");
+  } else if (action === "italic") {
+    document.execCommand("italic");
+  } else if (action === "underline") {
+    document.execCommand("underline");
+  } else if (action === "bullet") {
+    document.execCommand("insertUnorderedList");
+  } else if (action === "number") {
+    document.execCommand("insertOrderedList");
+  } else if (action === "link") {
     const url = window.prompt("Paste the link URL", "https://");
     if (url === null) return;
-    insertComposerText(`[${selected}](${url.trim() || "https://"})`, selected.length ? editor.selectionStart : null);
-  } else if (action === "bold") {
-    wrapComposerSelection("**", "**", "bold text");
-  } else if (action === "italic") {
-    wrapComposerSelection("_", "_", "italic text");
-  } else if (action === "underline") {
-    wrapComposerSelection("<u>", "</u>", "underlined text");
-  } else if (action === "bullet") {
-    prefixComposerLines("- ");
-  } else if (action === "number") {
-    prefixComposerLines("1. ");
+    document.execCommand("createLink", false, url.trim() || "https://");
   }
 
   handleComposerInput({ target: editor });
-  editor.focus();
-}
-
-function selectedComposerText(editor) {
-  return editor.value.slice(editor.selectionStart, editor.selectionEnd);
-}
-
-function wrapComposerSelection(prefix, suffix, fallback) {
-  const editor = document.querySelector("#replyEditor");
-  const selected = selectedComposerText(editor) || fallback;
-  const start = editor.selectionStart;
-  const text = `${prefix}${selected}${suffix}`;
-  insertComposerText(text);
-  editor.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
-}
-
-function prefixComposerLines(prefix) {
-  const editor = document.querySelector("#replyEditor");
-  const selected = selectedComposerText(editor) || "List item";
-  insertComposerText(selected.split("\n").map((line) => `${prefix}${line || "List item"}`).join("\n"));
-}
-
-function insertComposerText(text, replaceStart = null) {
-  const editor = document.querySelector("#replyEditor");
-  if (!editor) return;
-  const start = replaceStart ?? editor.selectionStart;
-  const end = editor.selectionEnd;
-  editor.setRangeText(text, start, end, "end");
 }
 
 function openComposerAttachmentPicker() {
@@ -11518,18 +11442,19 @@ function scrollTicketDetailToLatest() {
 function submitComposer() {
   const ticket = selectedTicket();
   const editor = document.querySelector("#replyEditor");
-  const rawBody = editor?.value.trim() || "";
+  const rawBody = composerEditorText(editor).trim();
   if (!ticket || !editor || !rawBody) {
     syncComposerState(true);
     return;
   }
-  const body = bodyWithSignature(editor.value.trim());
+  const body = bodyWithSignature(composerEditorHtml(editor).trim());
 
   const message = {
     type: replyMode === "reply" ? "rep" : "note",
     author: repLabel(),
     timestamp: new Date().toISOString(),
-    body
+    body,
+    html: true
   };
 
   ticket.conversation.push(message);
@@ -11548,10 +11473,11 @@ function submitComposer() {
 
 function bodyWithSignature(body) {
   if (!profile.insertSignature || replyMode !== "reply") return body;
-  const option = document.querySelector("#signatureSelect")?.value || profile.defaultSignature;
+  const option = document.querySelector("input[name='signatureOption']:checked")?.value || profile.defaultSignature;
   const signature = signatureText(option);
   if (!signature || body.includes(signature)) return body;
-  return `${body}\n\n${signature}`;
+  const signatureHtml = escapeHtml(signature).replace(/\n/g, "<br>");
+  return `${body}<br><br>${signatureHtml}`;
 }
 
 function signatureText(option) {
@@ -11566,10 +11492,10 @@ function saveDraft(silent = false) {
   const editor = document.querySelector("#replyEditor");
   if (!ticket || !editor) return;
 
-  ticket.draft = editor.value;
+  ticket.draft = composerEditorHtml(editor);
   persistTickets();
   syncComposerState();
-  if (!quiet) showToast(ticket.draft.trim() ? "Draft saved." : "Draft cleared.");
+  if (!quiet) showToast(composerEditorText(editor).trim() ? "Draft saved." : "Draft cleared.");
 }
 
 function insertMacro(macroId) {
@@ -11586,10 +11512,11 @@ function insertMacro(macroId) {
   const scrollArea = document.querySelector("#conversationScrollArea");
   const scrollTop = scrollArea?.scrollTop || 0;
   const text = applyVariables(macro.body, ticket);
-  const existing = editor.value.trimEnd();
-  editor.value = `${existing}${existing ? "\n\n" : ""}${text}`;
+  const macroHtml = escapeHtml(text).replace(/\n/g, "<br>");
+  const existingHtml = composerEditorHtml(editor).trim();
+  editor.innerHTML = existingHtml ? `${existingHtml}<br><br>${macroHtml}` : macroHtml;
   editor.focus({ preventScroll: true });
-  editor.setSelectionRange(editor.value.length, editor.value.length);
+  placeCaretAtEnd(editor);
   if (scrollArea) scrollArea.scrollTop = scrollTop;
   ticket.conversation.push({
     type: "timeline",
@@ -11597,7 +11524,7 @@ function insertMacro(macroId) {
     timestamp: new Date().toISOString(),
     body: `Macro inserted: ${macro.name}.`
   });
-  ticket.draft = editor.value;
+  ticket.draft = composerEditorHtml(editor);
   persistTickets();
   showToast("Canned response inserted.");
 }
@@ -11643,13 +11570,13 @@ function insertProductLink(ticket) {
   if (!ticket || !link || !editor) return;
   const scrollArea = document.querySelector("#conversationScrollArea");
   const scrollTop = scrollArea?.scrollTop || 0;
-  const text = link.url;
-  const existing = editor.value.trimEnd();
-  editor.value = `${existing}${existing ? "\n\n" : ""}${text}`;
+  const linkHtml = `<a href="${escapeHtml(link.url)}">${escapeHtml(link.url)}</a>`;
+  const existingHtml = composerEditorHtml(editor).trim();
+  editor.innerHTML = existingHtml ? `${existingHtml}<br><br>${linkHtml}` : linkHtml;
   editor.focus({ preventScroll: true });
-  editor.setSelectionRange(editor.value.length, editor.value.length);
+  placeCaretAtEnd(editor);
   if (scrollArea) scrollArea.scrollTop = scrollTop;
-  ticket.draft = editor.value;
+  ticket.draft = composerEditorHtml(editor);
   ticket.conversation.push({
     type: "timeline",
     author: CURRENT_USER,
@@ -12484,9 +12411,12 @@ function openCustomerHistory(ticketId, _section = "", editMode = false) {
       <div>
         <p class="eyebrow">Customer History</p>
         <h2>${escapeHtml(account.name || ticket.customer.name)}</h2>
-        <p>${escapeHtml(account.email || ticket.customer.email)}</p>
+        <p class="history-header-contact">${escapeHtml(account.email || ticket.customer.email)}${account.phone ? ` <span class="history-contact-sep" aria-hidden="true">·</span> ${escapeHtml(account.phone)}` : ""}</p>
       </div>
-      <button class="icon-button" id="closeCustomerHistoryButton" aria-label="Close" type="button">x</button>
+      <div class="history-header-actions">
+        ${editMode ? "" : `<button class="ghost-button" id="editCustomerButton" type="button">Edit customer</button>`}
+        <button class="icon-button" id="closeCustomerHistoryButton" aria-label="Close" type="button">x</button>
+      </div>
     </div>
     <div class="history-summary compact-history-summary">
       <article><strong>${history.length}</strong><span>Total</span></article>
@@ -12554,16 +12484,17 @@ function openCustomerHistory(ticketId, _section = "", editMode = false) {
 
 function renderCustomerHistorySinglePage({ account, ticket, history, editMode = false }) {
   return `
+    ${editMode ? `
     <section class="history-section compact-history-section customer-profile-section">
       <div class="section-title compact-section-title">
         <div>
           <p class="eyebrow">Customer profile</p>
-          <h3>Account summary</h3>
+          <h3>Edit customer</h3>
         </div>
-        ${editMode ? "" : `<button class="ghost-button" id="editCustomerButton" type="button">Edit customer</button>`}
       </div>
-      ${editMode ? renderCustomerEditForm(account, ticket, true) : renderCustomerProfileDetails(account, ticket, history)}
+      ${renderCustomerEditForm(account, ticket, true)}
     </section>
+    ` : ""}
     <section class="history-section compact-history-section ticket-history-section">
       <div class="section-title compact-section-title">
         <div>
@@ -12700,7 +12631,7 @@ function renderCustomerReceiptWarrantyCards(account) {
     return `<p class="muted">No saved receipts for this customer yet.</p>`;
   }
 
-  return `<div class="receipt-warranty-grid">${account.receipts.map((record) => {
+  return `<div class="receipt-link-list">${account.receipts.map((record) => {
     const warranty = ensureWarrantyRecordForReceipt(account, record);
     const registered = isRegisteredWarrantyRecord(warranty);
     const receiptVerified = record.status === "Verified";
@@ -12712,33 +12643,11 @@ function renderCustomerReceiptWarrantyCards(account) {
     const registeredBy = registered ? warranty.registeredBy || record.registeredBy || "Not provided" : "Not provided";
     const registeredDate = registered && warranty.registeredAt ? dateTimeLabel(warranty.registeredAt) : "Not provided";
     return `
-      <article class="history-record-card compact-receipt-card">
-        <div class="history-record-heading">
-          <strong>${escapeHtml(record.fileName || "Not provided")}</strong>
-        </div>
-        <div class="receipt-badge-row">
-          <span class="status-pill ${receiptVerified ? "status-closed" : "status-open"}">${escapeHtml(receiptStatus)}</span>
-          <span class="status-pill ${registered ? "status-closed" : "status-open"}">${escapeHtml(warrantyStatus)}</span>
-        </div>
-        <dl class="info-list receipt-warranty-details">
-          <div><dt>Receipt file name</dt><dd>${escapeHtml(record.fileName || "Not provided")}</dd></div>
-          <div><dt>Model</dt><dd>${escapeHtml(record.model || "Not provided")}</dd></div>
-          <div><dt>Order number</dt><dd>${escapeHtml(record.orderNumber || "Not provided")}</dd></div>
-          <div><dt>Purchase source</dt><dd>${escapeHtml(purchaseSource)}</dd></div>
-          <div><dt>Receipt status</dt><dd>${escapeHtml(receiptStatus)}</dd></div>
-          <div><dt>Warranty status</dt><dd>${escapeHtml(warrantyStatus)}</dd></div>
-          <div><dt>Uploaded by</dt><dd>${escapeHtml(uploadedBy)}</dd></div>
-          <div><dt>Uploaded date</dt><dd>${escapeHtml(uploadedDate)}</dd></div>
-          <div><dt>Registered by</dt><dd>${escapeHtml(registeredBy)}</dd></div>
-          <div><dt>Registered date</dt><dd>${escapeHtml(registeredDate)}</dd></div>
-        </dl>
-        <div class="history-card-actions compact-card-actions">
-          <button class="ghost-button" data-view-receipt="${escapeHtml(record.id || record.fileName || "Receipt")}" type="button">View receipt</button>
-          <button class="ghost-button" data-edit-receipt="${escapeHtml(record.id)}" type="button">Edit details</button>
-          <button class="ghost-button" data-verify-receipt="${escapeHtml(record.id)}" type="button">Mark receipt verified</button>
-          ${registered ? `<button class="ghost-button" data-unregister-warranty="${escapeHtml(warranty.id)}" type="button">Unregister warranty</button>` : `<button class="ghost-button" data-register-receipt="${escapeHtml(record.id)}" type="button">Register warranty</button>`}
-          <button class="ghost-button" data-apply-receipt="${escapeHtml(record.id)}" type="button">Apply to current ticket</button>
-        </div>
+      <article class="receipt-row-item">
+        <button class="receipt-file-link" data-view-receipt="${escapeHtml(record.id || record.fileName || "Receipt")}" type="button" title="Open ${escapeHtml(record.fileName || "receipt")}">
+          <svg class="receipt-file-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5L13.5 3Z"></path><path d="M13.5 3v6h6"></path></svg>
+          <span class="receipt-file-name">${escapeHtml(record.fileName || "Receipt")}</span>
+        </button>
       </article>
     `;
   }).join("")}</div>`;

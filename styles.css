@@ -2475,7 +2475,7 @@ body:not(.is-admin) .admin-only {
 
 .queue-controls {
   display: grid;
-  grid-template-columns: minmax(240px, 440px) 1fr;
+  grid-template-columns: minmax(240px, 1fr) auto;
   align-items: end;
   gap: 8px 16px;
   padding: 12px 14px;
@@ -2638,7 +2638,8 @@ body:not(.is-admin) .admin-only {
 .merge-toolbar-button .merge-button-icon {
   width: 18px;
   height: 18px;
-  stroke-width: 1.85;
+  fill: currentColor;
+  stroke: none;
 }
 
 .reset-filter-button {
@@ -2841,15 +2842,9 @@ body:not(.is-admin) .admin-only {
 .closed-date-filter {
   position: relative;
   z-index: var(--z-local-raised);
-  display: inline-grid;
-  grid-template-columns: auto minmax(142px, auto);
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  margin-left: 0;
-  padding-left: 2px;
-  color: var(--muted);
-  font-size: 10.5px;
-  font-weight: 700;
+  margin-left: 8px;
 }
 
 .closed-date-filter[hidden] {
@@ -2857,8 +2852,8 @@ body:not(.is-admin) .admin-only {
 }
 
 .closed-date-filter select {
-  min-width: 142px;
-  height: 30px;
+  min-width: 156px;
+  height: 32px;
 }
 
 .closed-date-filter .tessario-select {
@@ -8729,7 +8724,7 @@ body:not(.is-admin) .admin-only {
 }
 
 .account-grid {
-  grid-template-columns: 160px repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .profile-image-card {
@@ -11878,13 +11873,10 @@ textarea,
 }
 
 .format-attach-button svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  stroke: none;
 }
 
 /* Macro now sits alone — give it a sensible width instead of a half grid cell. */
@@ -11957,4 +11949,456 @@ textarea,
   font-weight: 750;
   letter-spacing: -0.01em;
   line-height: 1.1;
+}
+
+/* Keep the reply editor white on focus (was turning grey via --neu-surface-focus). */
+.detail-screen .composer-editor-card textarea,
+.detail-screen .composer-editor-card textarea:focus {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Ticket Details now lives in the scroll area (scrolls with the thread, no
+   longer pinned in the header) — align it with the thread's insets. */
+.detail-screen .conversation-scroll-area > .ticket-details-panel {
+  margin: 14px 22px 4px;
+}
+
+/* ===========================================================================
+   Customer history modal: Phone + Edit moved into the header, duplicate
+   Account-summary card removed, sections flattened to read as one surface.
+   =========================================================================== */
+.history-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-contact-sep {
+  margin: 0 4px;
+  color: #c2bcd6;
+}
+
+#customerHistoryModal .compact-history-section {
+  background: #ffffff;
+  border-color: var(--line-soft);
+}
+
+/* ===========================================================================
+   Remove the small uppercase "eyebrow" labels everywhere — the heading below
+   each one already names the section.
+   =========================================================================== */
+.eyebrow {
+  display: none;
+}
+
+/* Receipts as a clean clickable list (filename opens the saved file) instead
+   of a detail card per receipt; admin actions reveal on hover. */
+.receipt-link-list {
+  display: grid;
+  gap: 5px;
+}
+
+.receipt-row-item {
+  display: grid;
+  gap: 0;
+  padding: 8px 11px;
+  background: #ffffff;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+}
+
+.receipt-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.receipt-file-link {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  color: var(--accent-strong);
+  background: transparent;
+  border: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.receipt-file-icon {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.receipt-file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.receipt-file-link:hover .receipt-file-name,
+.receipt-file-link:focus-visible .receipt-file-name {
+  text-decoration: underline;
+}
+
+.receipt-row-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 5px;
+}
+
+.receipt-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.18s ease, opacity 0.18s ease, margin-top 0.18s ease;
+}
+
+.receipt-row-item:hover .receipt-row-actions,
+.receipt-row-item:focus-within .receipt-row-actions {
+  max-height: 44px;
+  margin-top: 8px;
+  opacity: 1;
+}
+
+.receipt-mini-action {
+  padding: 2px 9px;
+  color: var(--tessario-muted);
+  background: transparent;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.receipt-mini-action:hover,
+.receipt-mini-action:focus-visible {
+  color: var(--accent-strong);
+  border-color: rgba(124, 92, 255, 0.4);
+  outline: none;
+}
+
+/* ===========================================================================
+   Rich (contenteditable) reply editor — formatting buttons now actually format.
+   =========================================================================== */
+#replyEditor.reply-editor-rich {
+  min-height: 184px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 12px 13px;
+  color: var(--ink);
+  background: #ffffff;
+  border: 0;
+  outline: none;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#replyEditor.reply-editor-rich:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+#replyEditor.reply-editor-rich a { color: var(--accent-strong); }
+#replyEditor.reply-editor-rich ul,
+#replyEditor.reply-editor-rich ol { margin: 4px 0; padding-left: 22px; }
+
+/* Message body (was <p>, now <div> so block formatting renders correctly). */
+.message-text {
+  margin: 0;
+  color: var(--tessario-text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.message-text a { color: var(--accent-strong); text-decoration: underline; }
+.message-text ul,
+.message-text ol { margin: 6px 0; padding-left: 22px; }
+.message-text li { margin: 2px 0; }
+
+/* Signature radio bullets. */
+.signature-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tessario-text);
+  cursor: pointer;
+}
+
+.signature-radio input {
+  accent-color: var(--accent-strong);
+  cursor: pointer;
+}
+
+/* ===========================================================================
+   Search input: soft rounded pill (per request), expanded to fill the row up
+   to the toolbar controls.
+   =========================================================================== */
+#queueSearch {
+  width: 100%;
+  height: auto;
+  padding: 0.6rem 34px 0.6rem 36px;
+  color: #646464;
+  background-color: #f4f2f2;
+  border: none;
+  border-radius: 30px;
+  box-shadow: none;
+  transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+#queueSearch::placeholder {
+  color: #9a9a9a;
+}
+
+#queueSearch:hover {
+  box-shadow: 0 0 1em rgba(0, 0, 0, 0.08);
+}
+
+#queueSearch:focus {
+  outline: none;
+  background-color: #f0eeee;
+  box-shadow: 0 0 1em rgba(0, 0, 0, 0.08);
+}
+
+/* ===========================================================================
+   Closed tab is itself a dropdown: a popover range menu opens under it.
+   =========================================================================== */
+.queue-view-tabs {
+  position: relative;
+}
+
+.closed-tab-chevron {
+  width: 13px;
+  height: 13px;
+  margin-left: 3px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s ease;
+}
+
+.queue-view-tab.menu-open .closed-tab-chevron {
+  transform: rotate(180deg);
+}
+
+.closed-range-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1000;
+  min-width: 190px;
+  padding: 5px;
+  background: #ffffff;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  box-shadow: 0 14px 30px rgba(26, 26, 46, 0.14);
+}
+
+.closed-range-menu[hidden] {
+  display: none;
+}
+
+.closed-range-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 7px 10px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.closed-range-option:hover,
+.closed-range-option:focus-visible {
+  background: rgba(124, 92, 255, 0.08);
+  outline: none;
+}
+
+.closed-range-option.selected {
+  color: var(--accent-strong);
+  background: rgba(124, 92, 255, 0.12);
+}
+
+.closed-range-count {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Lean manager dashboard: single full-width card (rep table). */
+.dashboard-grid-lean {
+  grid-template-columns: 1fr;
+}
+
+/* Settings polish: clean circular hero avatar + a touch more grid spacing. */
+.profile-hero .profile-avatar {
+  color: #ffffff;
+  background: linear-gradient(150deg, #8b6cff, #6034e0);
+  border: none;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.profile-tab-panel {
+  gap: 16px;
+}
+
+.profile-grid {
+  gap: 12px 14px;
+}
+
+/* ===========================================================================
+   System / timeline events: a quiet hairline divider — faint lines flank the
+   centered "[icon] event · time" text so the events recede behind messages.
+   =========================================================================== */
+.timeline-row,
+.detail-screen .timeline-row {
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 9px 2px;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.timeline-row::before,
+.timeline-row::after,
+.detail-screen .timeline-row::before,
+.detail-screen .timeline-row::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: rgba(15, 23, 42, 0.07);
+}
+
+.timeline-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  color: #8893a3;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.timeline-content .timeline-icon {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+}
+
+.timeline-content .timeline-body {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-content time {
+  flex: 0 0 auto;
+  color: #a3abb8;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.timeline-content time::before {
+  content: "·";
+  margin-right: 6px;
+  color: #c4c9d3;
+}
+
+/* Order / Warranty: one cohesive card — flat warranty toggle (no boxy pill)
+   and a small text "Add receipt" action instead of a big gray button. */
+.order-warranty-card {
+  display: grid;
+  gap: 10px;
+}
+
+.order-warranty-card .warranty-toggle,
+.order-warranty-card .warranty-toggle:has(input:checked) {
+  width: 100%;
+  min-height: 0;
+  padding: 2px 0;
+  color: var(--ink);
+  font-weight: 600;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.order-warranty-card .warranty-toggle small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.order-warranty-add {
+  justify-self: start;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.order-warranty-hint {
+  margin: 0;
+  font-size: 11.5px;
+}
+
+/* Bigger, more defined system-event icons: a circular badge holding a larger,
+   bolder icon. */
+.detail-screen .timeline-content .timeline-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  background: #edecf3;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 50%;
+}
+
+.detail-screen .timeline-content .timeline-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.timeline-content .timeline-icon svg path {
+  stroke-width: 2;
 }
