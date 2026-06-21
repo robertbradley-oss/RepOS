@@ -1170,6 +1170,7 @@ let backendSyncTimer = 0;
 let backendSyncAvailable = false;
 const backendSyncQueue = new Map();
 let sessionUser = null;
+let backendAssignmentUsers = [];
 let lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 let profile = loadProfile();
 let customerAccounts = loadCustomerAccounts(tickets);
@@ -4650,6 +4651,7 @@ async function hydrateBackendState() {
     if (applySessionUserToWorkspace()) {
       hydrated = true;
     }
+    const backendAssignmentHydration = hydrateBackendAssignmentUsers();
 
     if (hydrated) {
       selectedTicketId = selectedTicketId && tickets.some((ticket) => ticket.id === selectedTicketId)
@@ -4658,11 +4660,33 @@ async function hydrateBackendState() {
       applyProfilePreferences({ initialize: true });
       render({ preserveQueueList: false, suppressQueueRowEnter: true });
     }
+    backendAssignmentHydration.then((changed) => {
+      if (changed) render({ preserveQueueList: true, suppressQueueRowEnter: true });
+    });
   } catch (error) {
     backendSyncAvailable = false;
     console.warn("RepOS backend sync is unavailable; using browser localStorage.", error);
   } finally {
     backendSyncReady = true;
+  }
+}
+
+async function hydrateBackendAssignmentUsers() {
+  try {
+    const response = await fetch("/api/users", { cache: "no-store" });
+    if (!response.ok) throw new Error(`Backend users failed: ${response.status}`);
+    const payload = await response.json();
+    const nextUsers = Array.isArray(payload?.users)
+      ? payload.users.map(backendUserToAssignmentUser).filter(Boolean)
+      : [];
+    const changed = JSON.stringify(backendAssignmentUsers) !== JSON.stringify(nextUsers);
+    backendAssignmentUsers = nextUsers;
+    return changed;
+  } catch (error) {
+    const changed = backendAssignmentUsers.length > 0;
+    backendAssignmentUsers = [];
+    console.warn("RepOS backend assignment users are unavailable; using legacy assignment users.", error);
+    return changed;
   }
 }
 
@@ -4715,6 +4739,20 @@ function sessionUserRole(user = sessionUser) {
   if (!isBackendPlainObject(user)) return "";
   const role = String(user.role || "").trim().toLowerCase();
   return ["admin", "manager", "rep", "owner"].includes(role) ? role : "";
+}
+
+function backendUserToAssignmentUser(user) {
+  if (!isBackendPlainObject(user)) return null;
+  const name = normalizeRepName(user.assignmentName || user.repName || user.name || user.displayName || "");
+  if (!name) return null;
+  const role = String(user.role || "").trim().toLowerCase();
+  return {
+    id: String(user.id || slugify(name)),
+    name,
+    role: userRoles.includes(role) ? role : "rep",
+    assignmentEligible: user.active !== false,
+    removed: false
+  };
 }
 
 function applySessionUserToWorkspace() {
@@ -7317,7 +7355,7 @@ function renderToolbarStatusOptions() {
 
 function renderToolbarAssignOptions() {
   if (!el.assignSelect) return;
-  const activeReps = activeAssignmentUsers();
+  const activeReps = activeAssignmentOptionUsers();
   const options = [
     `<option value="">Assign</option>`,
     `<option value="claim">Claim</option>`,
@@ -7365,7 +7403,7 @@ function slaLineClass(ticket) {
 }
 
 function assignmentSelectOptions(currentAssignee) {
-  const options = [...activeAssignmentUsers()];
+  const options = [...activeAssignmentOptionUsers()];
   if (currentAssignee && !options.some((user) => user.name === currentAssignee)) {
     options.unshift({ id: slugify(currentAssignee), name: currentAssignee, role: "rep", assignmentEligible: false, removed: false });
   }
@@ -9413,8 +9451,35 @@ function activeAssignmentUsers() {
   return users.filter((user) => !user.removed && user.assignmentEligible);
 }
 
+function mergedAssignmentOptionUsers() {
+  const merged = [];
+  const seen = new Set();
+  const addUser = (user) => {
+    const name = normalizeRepName(user?.name || "");
+    const key = assignmentUserNameKey(name);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    merged.push({ ...user, name });
+  };
+  users.forEach(addUser);
+  backendAssignmentUsers.forEach(addUser);
+  return merged;
+}
+
+function activeAssignmentOptionUsers() {
+  return mergedAssignmentOptionUsers().filter((user) => !user.removed && user.assignmentEligible);
+}
+
+function assignmentUserNameKey(value) {
+  return normalizeRepName(value).toLowerCase();
+}
+
+function sameAssignmentUserName(left, right) {
+  return assignmentUserNameKey(left) === assignmentUserNameKey(right);
+}
+
 function firstEligibleReassignTarget(currentAssignee) {
-  return activeAssignmentUsers().find((user) => user.name !== currentAssignee)?.name || "";
+  return activeAssignmentOptionUsers().find((user) => !sameAssignmentUserName(user.name, currentAssignee))?.name || "";
 }
 
 function visibleAssignmentUsers() {
@@ -9430,7 +9495,7 @@ function closedTicketCountFor(repName) {
 }
 
 function chooseRandomAssignmentUser() {
-  const eligible = activeAssignmentUsers();
+  const eligible = activeAssignmentOptionUsers();
   if (!eligible.length) return null;
   return eligible[Math.floor(Math.random() * eligible.length)];
 }
@@ -9473,7 +9538,7 @@ function assignmentForNewTicket(ticket, options = {}) {
 function subjectMentionAssignmentFor(ticket) {
   const subject = String(ticket.subject || "").toLowerCase();
   if (!subject) return null;
-  const mentionedRep = activeAssignmentUsers().find((user) => {
+  const mentionedRep = activeAssignmentOptionUsers().find((user) => {
     const parts = user.name.split(/\s+/);
     const csNumber = (parts[0] || "").toLowerCase();
     const firstName = (parts[1] || parts[0] || "").toLowerCase();
@@ -9504,7 +9569,7 @@ function repeatCustomerAssignmentFor(ticket) {
     .filter((item) => item.customer?.email?.toLowerCase() === email && item.assignee)
     .sort((a, b) => new Date(lastUpdatedAt(b)) - new Date(lastUpdatedAt(a)))[0];
   if (!previous) return null;
-  const previousRep = activeAssignmentUsers().find((user) => user.name === previous.assignee);
+  const previousRep = activeAssignmentOptionUsers().find((user) => sameAssignmentUserName(user.name, previous.assignee));
   if (!previousRep) return null;
   return {
     assignee: previous.assignee,
@@ -11684,8 +11749,8 @@ function openStatusConfirmModal(ticketId, nextStatus) {
 function openReassignConfirmModal(ticketId, nextAssignee = "") {
   const ticket = tickets.find((item) => item.id === ticketId);
   if (!ticket || isTicketActionLocked(ticket.id)) return;
-  const activeReps = activeAssignmentUsers();
-  const selectedAssignee = activeReps.some((user) => user.name === nextAssignee) ? nextAssignee : activeReps[0]?.name || "";
+  const activeReps = activeAssignmentOptionUsers();
+  const selectedAssignee = activeReps.some((user) => sameAssignmentUserName(user.name, nextAssignee)) ? nextAssignee : activeReps[0]?.name || "";
   if (!selectedAssignee || selectedAssignee === ticket.assignee) return;
 
   el.workflowConfirmModal.innerHTML = `
@@ -11778,8 +11843,8 @@ function openBulkStatusConfirmModal(nextStatus) {
 
 function openBulkReassignConfirmModal(nextAssignee) {
   const selectedTickets = getVisibleSelectedTickets();
-  const activeReps = activeAssignmentUsers();
-  if (!selectedTickets.length || !activeReps.some((user) => user.name === nextAssignee)) return;
+  const activeReps = activeAssignmentOptionUsers();
+  if (!selectedTickets.length || !activeReps.some((user) => sameAssignmentUserName(user.name, nextAssignee))) return;
 
   el.workflowConfirmModal.innerHTML = `
     <form id="bulkReassignConfirmForm">
@@ -12019,8 +12084,8 @@ function reassignTicket(ticketId, nextAssignee, timelineBody, shouldRender = tru
 }
 
 function bulkReassignTickets(ticketIds, nextAssignee, internalNote = "") {
-  const activeReps = activeAssignmentUsers();
-  if (!activeReps.some((user) => user.name === nextAssignee)) return;
+  const activeReps = activeAssignmentOptionUsers();
+  if (!activeReps.some((user) => sameAssignmentUserName(user.name, nextAssignee))) return;
   const targetTickets = tickets.filter((ticket) => ticketIds.includes(ticket.id));
   const actorName = currentDemoUserName();
   targetTickets.forEach((ticket) => {
