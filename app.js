@@ -9608,7 +9608,9 @@ function handleAddRep(event) {
   const form = new FormData(event.currentTarget);
   const name = String(form.get("repName") || "").trim();
   const role = String(form.get("repRole") || "rep");
-  if (!name || users.some((user) => !user.removed && user.name.toLowerCase() === name.toLowerCase())) return;
+  const activeLegacyDuplicate = users.some((user) => !user.removed && sameAssignmentUserName(user.name, name));
+  const backendAssignmentDuplicate = backendAssignmentUsers.some((user) => sameAssignmentUserName(user.name, name));
+  if (!name || activeLegacyDuplicate || backendAssignmentDuplicate) return;
 
   users.push({
     id: slugify(name),

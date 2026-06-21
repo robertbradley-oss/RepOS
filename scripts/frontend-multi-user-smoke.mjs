@@ -17,6 +17,11 @@ const helperSource = [
   "sameAssignmentUserName",
   "activeAssignmentUsers",
   "assignmentSelectOptions",
+  "visibleAssignmentUsers",
+  "handleAddRep",
+  "toggleAssignmentEligibility",
+  "removeAssignmentUser",
+  "reassignTicketsFromUser",
   "slugify",
   "profileDisplayName",
   "currentDemoUserName",
@@ -51,6 +56,8 @@ function createHarness(fetchPayload = null, options = {}) {
   const renderCalls = [];
   const warnings = [];
   let persistUserCalls = 0;
+  let persistTicketCalls = 0;
+  let reassignTicketCalls = 0;
   const context = {
     CURRENT_USER: "CS14 Robert",
     MIN_TICKET_NUMBER: 1000,
@@ -95,11 +102,23 @@ function createHarness(fetchPayload = null, options = {}) {
       }
     },
     window: {
-      fetch: true
+      fetch: true,
+      alert(message) {
+        throw new Error(`Unexpected alert during frontend multi-user smoke: ${message}`);
+      }
     },
     console: {
       warn(...args) {
         warnings.push(args);
+      }
+    },
+    FormData: class SmokeFormData {
+      constructor(target) {
+        this.target = target || {};
+      }
+
+      get(name) {
+        return this.target.fields?.[name] ?? this.target[name] ?? "";
       }
     },
     fetch: async (url, options = {}) => {
@@ -131,7 +150,15 @@ function createHarness(fetchPayload = null, options = {}) {
     },
     persistUsers() {
       persistUserCalls += 1;
-      throw new Error("Backend user hydration must not call persistUsers().");
+      throw new Error("Frontend multi-user smoke did not expect persistUsers().");
+    },
+    persistTickets() {
+      persistTicketCalls += 1;
+      throw new Error("Backend-only admin user operations must not call persistTickets().");
+    },
+    reassignTicket() {
+      reassignTicketCalls += 1;
+      throw new Error("Backend-only admin user operations must not call reassignTicket().");
     },
     normalizeRepName(value) {
       return String(value || "").replace(/\s+/g, " ").trim();
@@ -178,7 +205,16 @@ function createHarness(fetchPayload = null, options = {}) {
   };
   vm.createContext(context);
   vm.runInContext(helperSource, context, { filename: "app.js#frontend-multi-user-helpers" });
-  return { context, fetchCalls, renderCalls, storage, warnings, persistUserCalls: () => persistUserCalls };
+  return {
+    context,
+    fetchCalls,
+    renderCalls,
+    storage,
+    warnings,
+    persistUserCalls: () => persistUserCalls,
+    persistTicketCalls: () => persistTicketCalls,
+    reassignTicketCalls: () => reassignTicketCalls
+  };
 }
 
 async function flushBackendAssignmentHydration() {
@@ -297,6 +333,33 @@ for (const role of ["admin", "owner", "manager", "rep"]) {
 }
 
 {
+  const legacyUsers = [
+    { id: "cs14-robert", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
+    { id: "cs1-nick", name: "CS1 Nick", role: "rep", assignmentEligible: true, removed: false }
+  ];
+  const { context, fetchCalls, storage, persistUserCalls } = createHarness(null, {
+    backendUsersPayload: {
+      users: [
+        { id: "backend-six", assignmentName: "CS6 Backend", role: "rep", active: true },
+        { id: "backend-seven", assignmentName: "CS7 Backend", role: "manager", active: true }
+      ]
+    }
+  });
+  context.users = JSON.parse(JSON.stringify(legacyUsers));
+
+  await context.hydrateBackendAssignmentUsers();
+
+  assert.deepEqual(context.users, legacyUsers, "backend-auth users should not enter legacy persisted users");
+  assert.equal(storage.has(context.USERS_STORAGE_KEY), false, "backend-auth hydration should not write legacy users to localStorage");
+  assert.equal(persistUserCalls(), 0, "backend-auth hydration should not call persistUsers");
+  assert.deepEqual(fetchCalls.map((call) => [call.method, call.url]), [["GET", "/api/users"]], "backend-auth overlay should only fetch /api/users");
+  assert.equal(fetchCalls.some((call) => call.method === "PUT" || call.url === "/api/state/users"), false, "backend-auth overlay should not PUT state users");
+  assert.deepEqual(context.visibleAssignmentUsers().map((user) => user.name), ["CS14 Robert", "CS1 Nick"], "Admin Hub visible users should remain legacy-only");
+  assert(context.activeAssignmentOptionUsers().some((user) => user.name === "CS6 Backend"), "backend-auth-only user should appear as an active assignment option");
+  assert(context.activeAssignmentOptionUsers().some((user) => user.name === "CS7 Backend"), "second backend-auth-only user should appear as an active assignment option");
+}
+
+{
   const { context } = createHarness(null, {
     backendUsersPayload: {
       users: [
@@ -322,6 +385,112 @@ for (const role of ["admin", "owner", "manager", "rep"]) {
 }
 
 {
+  const { context, renderCalls, persistUserCalls, persistTicketCalls, reassignTicketCalls } = createHarness(null, {
+    backendUsersPayload: {
+      users: [
+        { id: "backend-only", assignmentName: "CS6 Backend", role: "rep", active: true }
+      ]
+    }
+  });
+  context.users = [
+    { id: "cs14-robert", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
+    { id: "legacy-nick", name: "CS1 Nick", role: "rep", assignmentEligible: true, removed: false }
+  ];
+  context.tickets = [
+    { id: "NICK-1", assignee: "CS1 Nick", status: "Open" }
+  ];
+
+  await context.hydrateBackendAssignmentUsers();
+  const beforeUsers = JSON.parse(JSON.stringify(context.users));
+  const beforeBackendUsers = JSON.stringify(context.backendAssignmentUsers);
+  const beforeTickets = JSON.parse(JSON.stringify(context.tickets));
+
+  context.toggleAssignmentEligibility("backend-only");
+  context.removeAssignmentUser("backend-only");
+  context.reassignTicketsFromUser("backend-only", "CS14 Robert");
+  context.reassignTicketsFromUser("legacy-nick", "CS6 Backend");
+
+  assert.deepEqual(context.users, beforeUsers, "legacy mutators should ignore backend-only user ids");
+  assert.equal(JSON.stringify(context.backendAssignmentUsers), beforeBackendUsers, "legacy mutators should not edit backend-auth overlay users");
+  assert.deepEqual(context.tickets, beforeTickets, "legacy reassign helper should not reassign to a backend-only target");
+  assert.equal(persistUserCalls(), 0, "backend-only legacy mutator attempts should not call persistUsers");
+  assert.equal(persistTicketCalls(), 0, "backend-only legacy mutator attempts should not call persistTickets");
+  assert.equal(reassignTicketCalls(), 0, "backend-only legacy mutator attempts should not call reassignTicket");
+  assert.equal(renderCalls.length, 0, "backend-only legacy mutator attempts should not render");
+}
+
+{
+  const { context, renderCalls, storage, persistUserCalls } = createHarness(null, {
+    backendUsersPayload: {
+      users: [
+        { id: "backend-only", assignmentName: "CS6 Backend", role: "rep", active: true }
+      ]
+    }
+  });
+  const prevented = { value: false };
+
+  await context.hydrateBackendAssignmentUsers();
+  const beforeUsers = JSON.parse(JSON.stringify(context.users));
+  context.handleAddRep({
+    preventDefault() {
+      prevented.value = true;
+    },
+    currentTarget: {
+      fields: {
+        repName: " cs6   backend ",
+        repRole: "manager"
+      }
+    }
+  });
+  context.handleAddRep({
+    preventDefault() {},
+    currentTarget: {
+      fields: {
+        repName: " cs1   nick ",
+        repRole: "rep"
+      }
+    }
+  });
+
+  assert.equal(prevented.value, true, "add rep handler should prevent the form submit");
+  assert.deepEqual(context.users, beforeUsers, "add rep should block normalized duplicate names from entering legacy users");
+  assert.equal(storage.has(context.USERS_STORAGE_KEY), false, "blocked backend-auth duplicate add should not write legacy users to localStorage");
+  assert.equal(persistUserCalls(), 0, "blocked backend-auth duplicate add should not call persistUsers");
+  assert.equal(renderCalls.length, 0, "blocked backend-auth duplicate add should not render");
+}
+
+{
+  const { context, renderCalls, storage, persistUserCalls } = createHarness(null, {
+    backendUsersPayload: {
+      users: [
+        { id: "backend-only", assignmentName: "CS6 Backend", role: "rep", active: true }
+      ]
+    }
+  });
+  context.users = [
+    { id: "cs14-robert", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
+    { id: "removed-backend-duplicate", name: "CS6 Backend", role: "rep", assignmentEligible: false, removed: true }
+  ];
+
+  await context.hydrateBackendAssignmentUsers();
+  const beforeUsers = JSON.parse(JSON.stringify(context.users));
+  context.handleAddRep({
+    preventDefault() {},
+    currentTarget: {
+      fields: {
+        repName: "CS6 Backend",
+        repRole: "rep"
+      }
+    }
+  });
+
+  assert.deepEqual(context.users, beforeUsers, "add rep should block backend-auth duplicate names even when a removed legacy row exists");
+  assert.equal(storage.has(context.USERS_STORAGE_KEY), false, "blocked removed-legacy backend duplicate add should not write legacy users to localStorage");
+  assert.equal(persistUserCalls(), 0, "blocked removed-legacy backend duplicate add should not call persistUsers");
+  assert.equal(renderCalls.length, 0, "blocked removed-legacy backend duplicate add should not render");
+}
+
+{
   const { context } = createHarness(null, {
     backendUsersPayload: {
       users: [
@@ -340,6 +509,9 @@ for (const role of ["admin", "owner", "manager", "rep"]) {
 
   const freeTextOptions = context.assignmentSelectOptions("Former Rep");
   assert(freeTextOptions.includes('value="Former Rep" selected'), "current free-text assignee should be inserted and selected");
+  assert.equal((freeTextOptions.match(/value="Former Rep"/g) || []).length, 1, "current free-text assignee should be inserted once");
+  const escapedFreeTextOptions = context.assignmentSelectOptions('Former & "Rep"');
+  assert(escapedFreeTextOptions.includes('value="Former &amp; &quot;Rep&quot;" selected'), "current free-text assignee should be escaped and selected");
 }
 
 {
