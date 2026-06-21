@@ -646,7 +646,9 @@ async function parseUploadRequest(request) {
   const contentType = request.headers["content-type"] || "";
   const boundary = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[1] || contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[2];
   if (!contentType.includes("multipart/form-data") || !boundary) {
-    throw new Error("Expected multipart/form-data upload.");
+    throw new ValidationError("invalid_upload_request", "Expected multipart/form-data upload.", {
+      field: "Content-Type"
+    });
   }
   const body = await readLimitedBody(request, maxUploadBytes);
   const parts = parseMultipartBody(body, boundary);
@@ -669,7 +671,7 @@ async function readLimitedBody(request, maxBytes) {
   for await (const chunk of request) {
     size += chunk.length;
     if (size > maxBytes) {
-      throw new Error("Upload body is too large.");
+      throw new ValidationError("upload_body_too_large", "Upload body is too large.", { maxBytes }, 413);
     }
     chunks.push(chunk);
   }
@@ -723,10 +725,13 @@ async function persistUploadedFile(file, { category, ownerType, ownerId, uploade
   const originalName = sanitizeFileName(file.filename);
   const extension = extname(originalName).toLowerCase();
   if (!allowedUploadTypes.has(extension)) {
-    throw new Error(`Unsupported upload type: ${extension || "unknown"}`);
+    throw new ValidationError("unsupported_upload_type", `Unsupported upload type: ${extension || "unknown"}.`, {
+      extension: extension || "unknown",
+      allowedExtensions: Array.from(allowedUploadTypes.keys())
+    }, 415);
   }
   if (!file.data.length) {
-    throw new Error("Uploaded file is empty.");
+    throw new ValidationError("empty_upload", "Uploaded file is empty.", { field: "file" });
   }
 
   const id = randomUUID();

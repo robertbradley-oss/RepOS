@@ -49,6 +49,18 @@ try {
     throw new Error("Settings read did not return the expected iSpring workspace defaults.");
   }
 
+  const bootstrap = await fetch(`http://127.0.0.1:${port}/api/bootstrap`);
+  const bootstrapPayload = await bootstrap.json();
+  if (
+    !bootstrap.ok ||
+    bootstrapPayload.session?.user?.role !== "admin" ||
+    bootstrapPayload.state?.settings?.workspaceName !== "iSpring Water Systems" ||
+    !Object.hasOwn(bootstrapPayload.state || {}, "knowledgeDocs") ||
+    !Object.hasOwn(bootstrapPayload.state || {}, "fileRecords")
+  ) {
+    throw new Error("Admin bootstrap did not return the expected session and full workspace state.");
+  }
+
   const settingsPatch = await fetch(`http://127.0.0.1:${port}/api/settings`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -399,6 +411,17 @@ try {
     throw new Error("Customer receipt upload did not return expected file metadata.");
   }
 
+  const invalidReceiptUploadType = new FormData();
+  invalidReceiptUploadType.append("file", new Blob(["Smoke invalid upload"], { type: "application/octet-stream" }), "smoke-receipt.exe");
+  const invalidReceiptUpload = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/receipts/upload`, {
+    method: "POST",
+    body: invalidReceiptUploadType
+  });
+  const invalidReceiptUploadPayload = await invalidReceiptUpload.json();
+  if (invalidReceiptUpload.status !== 415 || invalidReceiptUploadPayload.error !== "unsupported_upload_type") {
+    throw new Error("Unsupported receipt upload did not return the expected JSON error.");
+  }
+
   const receiptDownload = await fetch(`http://127.0.0.1:${port}${receiptUploadPayload.file.downloadUrl}`);
   if (!receiptDownload.ok || await receiptDownload.text() !== "Smoke receipt upload") {
     throw new Error("Protected receipt download did not return the uploaded content.");
@@ -434,6 +457,27 @@ try {
   const knowledgePayload = await knowledgeUpload.json();
   if (knowledgePayload.document?.fileName !== "smoke-knowledge.txt" || !knowledgePayload.document?.approvedForAi) {
     throw new Error("Knowledge upload did not return expected document metadata.");
+  }
+
+  const invalidKnowledgeUpload = await fetch(`http://127.0.0.1:${port}/api/knowledge/files/upload`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileName: "not-multipart.txt" })
+  });
+  const invalidKnowledgeUploadPayload = await invalidKnowledgeUpload.json();
+  if (invalidKnowledgeUpload.status !== 400 || invalidKnowledgeUploadPayload.error !== "invalid_upload_request") {
+    throw new Error("Invalid knowledge upload did not return the expected JSON error.");
+  }
+
+  const emptyKnowledgeForm = new FormData();
+  emptyKnowledgeForm.append("file", new Blob([], { type: "text/plain" }), "empty-knowledge.txt");
+  const emptyKnowledgeUpload = await fetch(`http://127.0.0.1:${port}/api/knowledge/files/upload`, {
+    method: "POST",
+    body: emptyKnowledgeForm
+  });
+  const emptyKnowledgeUploadPayload = await emptyKnowledgeUpload.json();
+  if (emptyKnowledgeUpload.status !== 400 || emptyKnowledgeUploadPayload.error !== "empty_upload") {
+    throw new Error("Empty knowledge upload did not return the expected JSON error.");
   }
 
   const knowledgeDownload = await fetch(`http://127.0.0.1:${port}${knowledgePayload.file.downloadUrl}`);
@@ -483,6 +527,7 @@ try {
 
   await runPersistenceReloadSmoke(dataFile, uploadDir);
   await runStrictAuthSmoke();
+  await runResetSmoke(port);
   console.log("Backend smoke test passed.");
 } finally {
   server.kill();
@@ -549,6 +594,11 @@ async function runStrictAuthSmoke() {
       throw new Error(`Strict mode should protect queue views, got ${unauthenticatedQueueViews.status}.`);
     }
 
+    const unauthenticatedBootstrap = await fetch(`http://127.0.0.1:${strictPort}/api/bootstrap`);
+    if (unauthenticatedBootstrap.status !== 401) {
+      throw new Error(`Strict mode should protect bootstrap, got ${unauthenticatedBootstrap.status}.`);
+    }
+
     const unauthenticatedSettingsPatch = await fetch(`http://127.0.0.1:${strictPort}/api/settings`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -587,8 +637,45 @@ async function runStrictAuthSmoke() {
     if (!authenticatedQueueViews.ok) {
       throw new Error(`Strict authenticated queue views failed: ${authenticatedQueueViews.status}`);
     }
+
+    const authenticatedBootstrap = await fetch(`http://127.0.0.1:${strictPort}/api/bootstrap`, {
+      headers: { Cookie: cookie }
+    });
+    const authenticatedBootstrapPayload = await authenticatedBootstrap.json();
+    if (
+      !authenticatedBootstrap.ok ||
+      !authenticatedBootstrapPayload.session?.authenticated ||
+      authenticatedBootstrapPayload.session?.user?.role !== "admin" ||
+      authenticatedBootstrapPayload.state?.settings?.workspaceName !== "iSpring Water Systems" ||
+      !Object.hasOwn(authenticatedBootstrapPayload.state || {}, "knowledgeDocs") ||
+      !Object.hasOwn(authenticatedBootstrapPayload.state || {}, "fileRecords")
+    ) {
+      throw new Error("Strict authenticated bootstrap did not return the expected admin workspace state.");
+    }
   } finally {
     strictServer.kill();
+  }
+}
+
+async function runResetSmoke(targetPort) {
+  const reset = await fetch(`http://127.0.0.1:${targetPort}/api/reset`, {
+    method: "POST"
+  });
+  const resetPayload = await reset.json();
+  if (!reset.ok || resetPayload.state?.settings?.workspaceName !== "iSpring Water Systems") {
+    throw new Error(`Reset failed to return the default iSpring workspace state: ${reset.status}`);
+  }
+
+  const customerAfterReset = await fetch(`http://127.0.0.1:${targetPort}/api/customers/by-email/smoke%40example.com`);
+  const customerAfterResetPayload = await customerAfterReset.json();
+  if (customerAfterReset.status !== 404 || customerAfterResetPayload.error !== "customer_not_found") {
+    throw new Error("Reset did not clear the smoke customer record.");
+  }
+
+  const customersAfterReset = await fetch(`http://127.0.0.1:${targetPort}/api/customers?search=SMOKE`);
+  const customersAfterResetPayload = await customersAfterReset.json();
+  if (!customersAfterReset.ok || customersAfterResetPayload.customers?.length) {
+    throw new Error("Reset did not clear smoke customer list results.");
   }
 }
 
