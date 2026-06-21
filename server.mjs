@@ -118,6 +118,20 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  if (request.method === "GET" && url.pathname === "/api/users/current") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    sendJson(response, 200, { user: publicUser(user) });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/users") {
+    const user = await requireAuth(request, response);
+    if (!user) return;
+    sendJson(response, 200, { users: await activePublicUsers() });
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/auth/users") {
     const user = await requireRole(request, response, ["admin", "owner"]);
     if (!user) return;
@@ -149,7 +163,7 @@ async function handleApi(request, response, url) {
   if (request.method === "GET" && url.pathname === "/api/bootstrap") {
     const user = await requireAuth(request, response);
     if (!user) return;
-    const state = await store.loadState();
+    const state = await stateWithPublicAuthUsers(await store.loadState());
     sendJson(response, 200, {
       state: stateForUser(state, user),
       session: {
@@ -200,7 +214,7 @@ async function handleApi(request, response, url) {
       summary: buildAnalyticsSummary({
         tickets,
         settings: await workspaceSettings(),
-        user,
+        user: userWithAssignmentName(user),
         windowHours: options.value.windowHours,
         recentActivityLimit: options.value.limit
       })
@@ -238,7 +252,7 @@ async function handleApi(request, response, url) {
       ? state.tickets
       : await store.listTickets({ limit: 500 });
     const result = filterTicketsForQueueView(tickets, queueView, {
-      currentUserName: settings.currentUserName || settings.defaultAssignee || user.repName || user.displayName,
+      currentUserName: currentAssignmentName(user) || settings.currentUserName || settings.defaultAssignee,
       settings
     }, query.value);
     sendJson(response, 200, {
@@ -266,6 +280,7 @@ async function handleApi(request, response, url) {
     const user = await requireAuth(request, response);
     if (!user) return;
     const input = await readJsonBody(request);
+    await validateTicketAssignee(input);
     const settings = await workspaceSettings();
     sendJson(response, 201, { ticket: withTicketSla(await store.createTicket(input, { actor: user }), settings) });
     return;
@@ -289,6 +304,7 @@ async function handleApi(request, response, url) {
       const user = await requireAuth(request, response);
       if (!user) return;
       const patch = await readJsonBody(request);
+      await validateTicketAssignee(patch);
       const ticket = await store.patchTicket(ticketId, patch, { actor: user });
       const settings = await workspaceSettings();
       sendJson(response, ticket ? 200 : 404, ticket ? { ticket: withTicketSla(ticket, settings) } : { error: "ticket_not_found" });
@@ -611,6 +627,13 @@ function stateForUser(state, user) {
   return filtered;
 }
 
+async function stateWithPublicAuthUsers(state) {
+  return {
+    ...state,
+    authUsers: (await store.listAuthUsers()).map(publicUser)
+  };
+}
+
 async function createStore() {
   if (process.env.DATABASE_URL) {
     const { createPostgresStore } = await import("./lib/postgres-store.mjs");
@@ -820,9 +843,60 @@ function ticketFiltersFromSearch(searchParams, user) {
   const filters = Object.fromEntries(searchParams.entries());
   const assignee = String(filters.assignee || "").trim().toLowerCase();
   if (["me", "current", "current-user"].includes(assignee)) {
-    filters.assignee = user.repName || user.displayName || user.email || "";
+    filters.assignee = currentAssignmentName(user);
   }
   return filters;
+}
+
+async function activePublicUsers() {
+  return (await store.listAuthUsers())
+    .filter((user) => user?.active !== false)
+    .map(publicUser);
+}
+
+async function validateTicketAssignee(payload) {
+  if (!isPlainObject(payload) || !Object.hasOwn(payload, "assignee")) return;
+  const assignee = String(payload.assignee ?? "").trim();
+  if (!assignee) return;
+  const directory = await assignableUsersDirectory();
+  if (directory.names.has(normalizeAssignmentName(assignee))) return;
+  throw new ValidationError("invalid_ticket_assignee", "Ticket assignee must be an active RepOS user.", {
+    field: "assignee",
+    assignee,
+    allowedAssignees: directory.allowed
+  });
+}
+
+async function assignableUsersDirectory() {
+  const names = new Set();
+  const allowed = [];
+  const add = (name) => {
+    const clean = String(name || "").trim();
+    const normalized = normalizeAssignmentName(clean);
+    if (!normalized || names.has(normalized)) return;
+    names.add(normalized);
+    allowed.push(clean);
+  };
+
+  for (const user of await store.listAuthUsers()) {
+    if (user?.active === false) continue;
+    add(user.repName);
+    add(user.displayName);
+  }
+
+  const legacyUsers = await store.getResource("users");
+  if (Array.isArray(legacyUsers)) {
+    for (const user of legacyUsers) {
+      if (!user || user.removed === true || user.assignmentEligible === false) continue;
+      add(user.name || user.displayName);
+    }
+  }
+
+  return { names, allowed: allowed.sort((a, b) => a.localeCompare(b)) };
+}
+
+function normalizeAssignmentName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 function analyticsOptionsFromSearch(searchParams) {
@@ -1111,6 +1185,14 @@ function userHasRole(user, roles) {
   return roles.includes(String(user?.role || "").toLowerCase());
 }
 
+function currentAssignmentName(user) {
+  return String(user?.repName || user?.displayName || user?.email || "").trim();
+}
+
+function userWithAssignmentName(user) {
+  return { ...user, assignmentName: currentAssignmentName(user) };
+}
+
 async function getCurrentUser(request, response) {
   const token = parseCookies(request.headers.cookie || "")[sessionCookieName];
   if (token) {
@@ -1144,11 +1226,14 @@ function defaultAuthUser(settings = defaultWorkspaceSettings()) {
 }
 
 function publicUser(user) {
+  const assignmentName = currentAssignmentName(user);
   return {
     id: user.id,
     email: user.email,
+    name: assignmentName,
     displayName: user.displayName,
     repName: user.repName,
+    assignmentName,
     role: user.role,
     active: user.active !== false
   };

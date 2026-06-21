@@ -8,6 +8,7 @@
     "start": "node server.mjs",
     "smoke:frontend-admin-role": "node scripts/frontend-admin-role-smoke.mjs",
     "smoke:frontend-ticket-api": "node scripts/frontend-ticket-api-smoke.mjs",
+    "smoke:multi-user": "node scripts/backend-multi-user-smoke.mjs",
     "smoke": "node scripts/backend-smoke.mjs"
   },
   "dependencies": {
