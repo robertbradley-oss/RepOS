@@ -91,6 +91,110 @@ That command is browserless and does not use Playwright. It exercises the fronte
 - `GET /api/files/:id`
 - `POST /api/reset`
 
+## Planned Ticket Merge Contract
+
+Ticket merging is not implemented on the backend yet. The frontend demo can already mark a primary ticket as merged, preserve secondary conversation and attachment context, and hide secondary tickets from visible queues, but the durable backend contract should be defined before adding a runtime merge endpoint.
+
+Future endpoint:
+
+```text
+POST /api/tickets/:id/merge
+```
+
+`id` is the primary ticket ID. The request body should be a JSON object:
+
+```json
+{
+  "secondaryTicketIds": ["ISP-28480", "ISP-28482"],
+  "note": "Duplicate customer thread",
+  "closeSecondary": true
+}
+```
+
+- `secondaryTicketIds` is required and must contain at least one unique ticket ID.
+- `note` is optional and should be stored as an internal/audit note when present.
+- `closeSecondary` or a similar future option can make the secondary status decision explicit. The recommended first implementation should default to retiring secondaries with `mergedInto` metadata and should avoid a broader status-policy matrix until the workflow needs it.
+
+Recommended first permission model: require an authenticated user who can access all target tickets. If that access check is not yet reliable, restrict the first implementation to `admin` and `owner` users rather than adding a complex role matrix.
+
+Future implementation should use a dedicated store merge operation for JSON-file and Postgres parity. Do not route merge metadata through generic ticket patch handling, because merge needs multi-ticket validation, atomic/no-partial-write behavior, and coordinated primary/secondary timeline entries.
+
+Response shape should return the updated primary ticket, the secondary merge summaries, and the audit entries created by the operation:
+
+```json
+{
+  "ticket": {},
+  "merged": [
+    {
+      "id": "ISP-28480",
+      "mergedInto": "ISP-28494",
+      "mergedAt": "2026-06-22T18:42:00.000Z",
+      "mergedBy": "CS14 Robert"
+    },
+    {
+      "id": "ISP-28482",
+      "mergedInto": "ISP-28494",
+      "mergedAt": "2026-06-22T18:42:00.000Z",
+      "mergedBy": "CS14 Robert"
+    }
+  ],
+  "audit": [
+    {
+      "ticketId": "ISP-28494",
+      "type": "merge",
+      "body": "CS14 Robert merged ISP-28480 into this ticket."
+    }
+  ]
+}
+```
+
+Validation should happen before any tickets are mutated:
+
+- Return `400 invalid_merge_payload` when the body is not an object, `secondaryTicketIds` is missing or empty, IDs are malformed, or duplicate secondary IDs are supplied.
+- Return `400 cannot_merge_ticket_into_itself` when the primary ID appears in `secondaryTicketIds`.
+- Return `404 ticket_not_found` when the primary ticket does not exist.
+- Return `404 secondary_ticket_not_found` with the missing IDs when any secondary ticket does not exist.
+- Return `409 ticket_already_merged` when the primary or a secondary already has `mergedInto`, unless a later product decision explicitly supports chained merges.
+- Return `409 unsafe_ticket_status` when closed, already merged, or otherwise locked tickets would make the merge ambiguous.
+- Return `409 merge_cycle_detected` if metadata would create a cycle.
+- Return `409 customer_mismatch` when target tickets belong to different customer emails or customer IDs. If support later needs cross-customer merges, make that an explicit override rather than the default.
+
+Stable merge metadata:
+
+- Primary ticket: `merged: true`, `mergedFrom: [...]`, and normal `updatedAt` refresh.
+- Secondary tickets: `mergedInto: primaryTicketId`, `mergedAt`, `mergedBy`, and normal `updatedAt` refresh.
+- Primary timeline: one merge event summarizing the secondary tickets and actor.
+- Secondary timeline: one merged-into event pointing back to the primary ticket.
+
+Conversation and attachment preservation rules:
+
+- Secondary conversation entries should be represented on the primary ticket without losing the original secondary tickets.
+- Copied or referenced conversation entries must include source-ticket metadata, such as `mergedFrom` or `sourceTicketId`, so thread origin remains traceable.
+- Secondary attachments should be preserved on or reachable from the primary ticket.
+- Attachment duplication should be avoided with stable identity, preferring attachment/file IDs before filename or URL fallbacks.
+- Original secondary tickets remain intact and receive breadcrumb metadata rather than being deleted.
+
+Backend queue and API behavior after merge:
+
+- `GET /api/tickets` should exclude tickets with `mergedInto` from normal visible results by default.
+- `GET /api/queue-views/:id/tickets` should hide `mergedInto` tickets by default, with totals and pagination based on the filtered visible set.
+- `GET /api/analytics/summary` should exclude `mergedInto` tickets from open counts and normal workload totals. Keep the total-count rule explicit in implementation tests so archived merge records are not accidentally double-counted.
+- A future `includeMerged=true` query flag may expose merged-into tickets for admin review, direct links, or audit views.
+- Existing tickets without merge metadata should continue to behave normally.
+
+`/api/state/tickets` remains a legacy/demo full-state sync path. Do not remove it as part of merge work, but future durable ticket mutations should prefer normalized ticket endpoints. If `/api/state/tickets` remains writable, document that it can bypass normalized merge validation and keep smoke coverage around that compatibility boundary.
+
+Future smoke coverage should include:
+
+- Successful backend merge endpoint response and persisted metadata.
+- Validation for missing, empty, duplicate, self, nonexistent, already-merged, locked-status, cycle, customer-mismatch, overlong note, unauthenticated, and insufficient-role cases.
+- Validation failures leaving all target tickets unchanged.
+- Queue views and `GET /api/tickets` hiding `mergedInto` tickets by default, with stable totals, pagination, and search over carried secondary context.
+- Analytics excluding merged-into tickets from open, assigned, pending, closed, SLA, recent activity, and workload counts according to the documented total-count rule.
+- Primary conversations and attachments preserving source-ticket metadata, original timestamps, protected file metadata, and download URLs without duplicate attachments.
+- Primary and secondary ticket fields, merge metadata, and breadcrumbs surviving JSON-file reload and Postgres `data` round trips.
+- `/api/state/tickets` compatibility remaining intact across `GET /api/state/tickets`, `/api/bootstrap`, normalized ticket reads, queue views, and analytics while normalized mutation behavior stays authoritative.
+
 ## File Uploads
 
 Local uploads are written to `.uploads/` by default and are served only through authenticated API routes. Set `TESSARIO_UPLOAD_DIR` to use a different local folder and `TESSARIO_MAX_UPLOAD_BYTES` to change the default 20 MB upload limit.
