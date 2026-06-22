@@ -91,11 +91,11 @@ That command is browserless and does not use Playwright. It exercises the fronte
 - `GET /api/files/:id`
 - `POST /api/reset`
 
-## Planned Ticket Merge Contract
+## Ticket Merge Contract
 
-Ticket merging is not implemented on the backend yet. The frontend demo can already mark a primary ticket as merged, preserve secondary conversation and attachment context, and hide secondary tickets from visible queues, but the durable backend contract should be defined before adding a runtime merge endpoint.
+Ticket merging is available through the normalized backend ticket API. The endpoint marks a primary ticket as merged, preserves secondary conversation and attachment context on the primary, and hides secondary tickets from normal backend list, queue, and analytics surfaces by default.
 
-Future endpoint:
+Endpoint:
 
 ```text
 POST /api/tickets/:id/merge
@@ -113,11 +113,11 @@ POST /api/tickets/:id/merge
 
 - `secondaryTicketIds` is required and must contain at least one unique ticket ID.
 - `note` is optional and should be stored as an internal/audit note when present.
-- `closeSecondary` or a similar future option can make the secondary status decision explicit. The recommended first implementation should default to retiring secondaries with `mergedInto` metadata and should avoid a broader status-policy matrix until the workflow needs it.
+- `closeSecondary` is optional. When true, secondary tickets are marked `Closed` after receiving `mergedInto` metadata; when omitted, secondary status is preserved and the `mergedInto` breadcrumb is the durable retirement signal.
 
-Recommended first permission model: require an authenticated user who can access all target tickets. If that access check is not yet reliable, restrict the first implementation to `admin` and `owner` users rather than adding a complex role matrix.
+Current permission model: require an authenticated user. Keep any future ticket-level access or role expansion simple and explicit.
 
-Future implementation should use a dedicated store merge operation for JSON-file and Postgres parity. Do not route merge metadata through generic ticket patch handling, because merge needs multi-ticket validation, atomic/no-partial-write behavior, and coordinated primary/secondary timeline entries.
+The implementation uses a dedicated store merge operation for JSON-file and Postgres parity. Do not route merge metadata through generic ticket patch handling, because merge needs multi-ticket validation, atomic/no-partial-write behavior, and coordinated primary/secondary timeline entries.
 
 Response shape should return the updated primary ticket, the secondary merge summaries, and the audit entries created by the operation:
 
@@ -184,7 +184,7 @@ Backend queue and API behavior after merge:
 
 `/api/state/tickets` remains a legacy/demo full-state sync path. Do not remove it as part of merge work, but future durable ticket mutations should prefer normalized ticket endpoints. If `/api/state/tickets` remains writable, document that it can bypass normalized merge validation and keep smoke coverage around that compatibility boundary.
 
-Future smoke coverage should include:
+Smoke coverage should continue to include:
 
 - Successful backend merge endpoint response and persisted metadata.
 - Validation for missing, empty, duplicate, self, nonexistent, already-merged, locked-status, cycle, customer-mismatch, overlong note, unauthenticated, and insufficient-role cases.

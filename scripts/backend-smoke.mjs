@@ -383,6 +383,8 @@ try {
     throw new Error("Invalid analytics query did not return the expected JSON error.");
   }
 
+  await runTicketMergeSmoke(port);
+
   const customerNote = await fetch(`http://127.0.0.1:${port}/api/customers/smoke%40example.com/notes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -676,6 +678,213 @@ async function runResetSmoke(targetPort) {
   const customersAfterResetPayload = await customersAfterReset.json();
   if (!customersAfterReset.ok || customersAfterResetPayload.customers?.length) {
     throw new Error("Reset did not clear smoke customer list results.");
+  }
+}
+
+async function runTicketMergeSmoke(targetPort) {
+  const primaryInput = {
+    id: "MERGE-PRIMARY",
+    subject: "Merge primary smoke ticket",
+    status: "Open",
+    customer: {
+      name: "Merge Customer",
+      email: "merge-smoke@example.com"
+    },
+    conversation: [
+      {
+        id: "merge-primary-message",
+        type: "customer",
+        author: "Merge Customer",
+        timestamp: "2026-06-22T10:00:00.000Z",
+        body: "Primary thread before merge."
+      }
+    ],
+    attachments: [
+      {
+        id: "merge-shared-attachment",
+        fileName: "shared-proof.pdf",
+        downloadUrl: "/api/files/shared-proof"
+      }
+    ]
+  };
+  const secondaryInput = {
+    id: "MERGE-SECONDARY",
+    subject: "Merge secondary smoke ticket",
+    status: "Open",
+    customer: {
+      name: "Merge Customer",
+      email: "merge-smoke@example.com"
+    },
+    conversation: [
+      {
+        id: "merge-secondary-message",
+        type: "customer",
+        author: "Merge Customer",
+        timestamp: "2026-06-22T10:05:00.000Z",
+        body: "Secondary thread carries serial ABC-42."
+      }
+    ],
+    attachments: [
+      {
+        id: "merge-secondary-attachment",
+        fileName: "secondary-proof.pdf",
+        downloadUrl: "/api/files/secondary-proof"
+      },
+      {
+        id: "merge-shared-attachment",
+        fileName: "shared-proof.pdf",
+        downloadUrl: "/api/files/shared-proof"
+      }
+    ]
+  };
+
+  for (const input of [primaryInput, secondaryInput]) {
+    const created = await fetch(`http://127.0.0.1:${targetPort}/api/tickets`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input)
+    });
+    if (created.status !== 201) throw new Error(`Merge smoke ticket create failed for ${input.id}: ${created.status}`);
+  }
+
+  const emptyMerge = await fetch(`http://127.0.0.1:${targetPort}/api/tickets/MERGE-PRIMARY/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secondaryTicketIds: [] })
+  });
+  const emptyMergePayload = await emptyMerge.json();
+  if (emptyMerge.status !== 400 || emptyMergePayload.error !== "invalid_merge_payload") {
+    throw new Error("Empty merge secondary list did not return the expected JSON error.");
+  }
+
+  const missingPrimary = await fetch(`http://127.0.0.1:${targetPort}/api/tickets/MERGE-MISSING/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secondaryTicketIds: ["MERGE-SECONDARY"] })
+  });
+  const missingPrimaryPayload = await missingPrimary.json();
+  if (missingPrimary.status !== 404 || missingPrimaryPayload.error !== "ticket_not_found") {
+    throw new Error("Missing primary merge did not return the expected JSON error.");
+  }
+
+  const missingSecondary = await fetch(`http://127.0.0.1:${targetPort}/api/tickets/MERGE-PRIMARY/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secondaryTicketIds: ["MERGE-MISSING"] })
+  });
+  const missingSecondaryPayload = await missingSecondary.json();
+  if (missingSecondary.status !== 404 || missingSecondaryPayload.error !== "secondary_ticket_not_found") {
+    throw new Error("Missing secondary merge did not return the expected JSON error.");
+  }
+
+  const selfMerge = await fetch(`http://127.0.0.1:${targetPort}/api/tickets/MERGE-PRIMARY/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secondaryTicketIds: ["MERGE-PRIMARY"] })
+  });
+  const selfMergePayload = await selfMerge.json();
+  if (selfMerge.status !== 400 || selfMergePayload.error !== "cannot_merge_ticket_into_itself") {
+    throw new Error("Self merge did not return the expected JSON error.");
+  }
+
+  const duplicateMerge = await fetch(`http://127.0.0.1:${targetPort}/api/tickets/MERGE-PRIMARY/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secondaryTicketIds: ["MERGE-SECONDARY", "MERGE-SECONDARY"] })
+  });
+  const duplicateMergePayload = await duplicateMerge.json();
+  if (duplicateMerge.status !== 400 || duplicateMergePayload.error !== "invalid_merge_payload") {
+    throw new Error("Duplicate secondary merge did not return the expected JSON error.");
+  }
+
+  const merge = await fetch(`http://127.0.0.1:${targetPort}/api/tickets/MERGE-PRIMARY/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      secondaryTicketIds: ["MERGE-SECONDARY"],
+      note: "Smoke merge note."
+    })
+  });
+  const mergePayload = await merge.json();
+  if (!merge.ok || mergePayload.ticket?.id !== "MERGE-PRIMARY") {
+    throw new Error(`Ticket merge failed: ${merge.status}`);
+  }
+  if (!mergePayload.ticket?.merged || !mergePayload.ticket?.mergedFrom?.includes("MERGE-SECONDARY")) {
+    throw new Error("Merged primary did not include expected merge metadata.");
+  }
+  if (!mergePayload.merged?.some((ticket) => ticket.id === "MERGE-SECONDARY" && ticket.mergedInto === "MERGE-PRIMARY")) {
+    throw new Error("Merge response did not include expected secondary summary.");
+  }
+  if (!mergePayload.audit?.some((event) => event.ticketId === "MERGE-PRIMARY") || !mergePayload.audit?.some((event) => event.ticketId === "MERGE-SECONDARY")) {
+    throw new Error("Merge response did not include expected audit entries.");
+  }
+  if (!mergePayload.ticket?.conversation?.some((message) => message.sourceTicketId === "MERGE-SECONDARY" && /ABC-42/.test(message.body || ""))) {
+    throw new Error("Merged primary did not carry secondary conversation source metadata.");
+  }
+  if (!mergePayload.ticket?.conversation?.some((message) => message.type === "note" && /Smoke merge note/.test(message.body || ""))) {
+    throw new Error("Merged primary did not include the merge note.");
+  }
+  if (!mergePayload.ticket?.attachments?.some((attachment) => attachment.sourceTicketId === "MERGE-SECONDARY" && attachment.fileName === "secondary-proof.pdf")) {
+    throw new Error("Merged primary did not carry secondary attachment source metadata.");
+  }
+  if ((mergePayload.ticket?.attachments || []).filter((attachment) => attachment.id === "merge-shared-attachment").length !== 1) {
+    throw new Error("Merged primary did not de-duplicate carried attachments by stable identity.");
+  }
+
+  const secondaryRead = await fetch(`http://127.0.0.1:${targetPort}/api/tickets/MERGE-SECONDARY`);
+  const secondaryReadPayload = await secondaryRead.json();
+  if (
+    !secondaryRead.ok ||
+    secondaryReadPayload.ticket?.mergedInto !== "MERGE-PRIMARY" ||
+    !secondaryReadPayload.ticket?.conversation?.some((message) => message.id === "merge-secondary-message") ||
+    !secondaryReadPayload.ticket?.conversation?.some((message) => /merged this ticket into/i.test(message.body || ""))
+  ) {
+    throw new Error("Merged secondary did not preserve original thread plus breadcrumb metadata.");
+  }
+
+  const alreadyMerged = await fetch(`http://127.0.0.1:${targetPort}/api/tickets/MERGE-PRIMARY/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secondaryTicketIds: ["MERGE-SECONDARY"] })
+  });
+  const alreadyMergedPayload = await alreadyMerged.json();
+  if (alreadyMerged.status !== 409 || alreadyMergedPayload.error !== "ticket_already_merged") {
+    throw new Error("Already merged secondary did not return the expected JSON error.");
+  }
+
+  const listed = await fetch(`http://127.0.0.1:${targetPort}/api/tickets?search=ABC-42`);
+  const listedPayload = await listed.json();
+  const listedIds = new Set((listedPayload.tickets || []).map((ticket) => ticket.id));
+  if (!listed.ok || !listedIds.has("MERGE-PRIMARY") || listedIds.has("MERGE-SECONDARY")) {
+    throw new Error("Ticket list did not hide merged secondary while keeping carried secondary search context.");
+  }
+
+  const listedWithMerged = await fetch(`http://127.0.0.1:${targetPort}/api/tickets?includeMerged=true&search=ABC-42`);
+  const listedWithMergedPayload = await listedWithMerged.json();
+  const listedWithMergedIds = new Set((listedWithMergedPayload.tickets || []).map((ticket) => ticket.id));
+  if (!listedWithMerged.ok || !listedWithMergedIds.has("MERGE-PRIMARY") || !listedWithMergedIds.has("MERGE-SECONDARY")) {
+    throw new Error("Ticket list includeMerged flag did not expose merged secondary tickets.");
+  }
+
+  const openQueue = await fetch(`http://127.0.0.1:${targetPort}/api/queue-views/open/tickets`);
+  const openQueuePayload = await openQueue.json();
+  const openQueueIds = new Set((openQueuePayload.tickets || []).map((ticket) => ticket.id));
+  if (!openQueue.ok || !openQueueIds.has("MERGE-PRIMARY") || openQueueIds.has("MERGE-SECONDARY")) {
+    throw new Error("Open queue did not hide merged secondary tickets by default.");
+  }
+
+  const openQueueWithMerged = await fetch(`http://127.0.0.1:${targetPort}/api/queue-views/open/tickets?includeMerged=true`);
+  const openQueueWithMergedPayload = await openQueueWithMerged.json();
+  const openQueueWithMergedIds = new Set((openQueueWithMergedPayload.tickets || []).map((ticket) => ticket.id));
+  if (!openQueueWithMerged.ok || !openQueueWithMergedIds.has("MERGE-PRIMARY") || !openQueueWithMergedIds.has("MERGE-SECONDARY")) {
+    throw new Error("Open queue includeMerged flag did not expose merged secondary tickets.");
+  }
+
+  const analytics = await fetch(`http://127.0.0.1:${targetPort}/api/analytics/summary?windowHours=24&limit=20`);
+  const analyticsPayload = await analytics.json();
+  const metrics = analyticsPayload.summary?.metrics || {};
+  if (!analytics.ok || metrics.totalTicketCount !== 5 || metrics.openTicketCount !== 3) {
+    throw new Error(`Merge-aware analytics did not exclude merged secondary tickets: ${JSON.stringify(metrics)}`);
   }
 }
 

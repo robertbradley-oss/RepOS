@@ -286,7 +286,7 @@ async function handleApi(request, response, url) {
     return;
   }
 
-  const ticketRoute = url.pathname.match(/^\/api\/tickets\/([^/]+)(?:\/(messages|notes|attachments))?$/);
+  const ticketRoute = url.pathname.match(/^\/api\/tickets\/([^/]+)(?:\/(merge|messages|notes|attachments))?$/);
   if (ticketRoute) {
     const ticketId = decodeURIComponent(ticketRoute[1]);
     const childRoute = ticketRoute[2] || "";
@@ -308,6 +308,19 @@ async function handleApi(request, response, url) {
       const ticket = await store.patchTicket(ticketId, patch, { actor: user });
       const settings = await workspaceSettings();
       sendJson(response, ticket ? 200 : 404, ticket ? { ticket: withTicketSla(ticket, settings) } : { error: "ticket_not_found" });
+      return;
+    }
+
+    if (request.method === "POST" && childRoute === "merge") {
+      const user = await requireAuth(request, response);
+      if (!user) return;
+      const input = await readJsonBody(request);
+      const result = await store.mergeTickets(ticketId, input, { actor: user });
+      const settings = await workspaceSettings();
+      sendJson(response, 200, {
+        ...result,
+        ticket: withTicketSla(result.ticket, settings)
+      });
       return;
     }
 
