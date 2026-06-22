@@ -5227,6 +5227,103 @@ function syncTicketAttachmentsToBackend(ticketId, attachments) {
   return sendTicketBackendOperations(ticketId, operations, { applyResponse: false });
 }
 
+async function sendTicketMergeToBackend(primaryTicketId, secondaryTicketIds, internalNote = "") {
+  if (!backendTicketEndpointsAvailable()) {
+    return { status: "unavailable" };
+  }
+
+  const body = { secondaryTicketIds };
+  const note = String(internalNote || "").trim();
+  if (note) body.note = note;
+
+  try {
+    const response = await fetch(backendTicketUrl(primaryTicketId, "/merge"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (response.ok) {
+      return { status: "ok", payload };
+    }
+    if (response.status === 404 && payload?.error === "not_found") {
+      return { status: "unavailable", payload };
+    }
+    return { status: "blocked", responseStatus: response.status, payload };
+  } catch (error) {
+    console.warn("RepOS backend ticket merge failed; falling back to local merge.", error);
+    return { status: "unavailable", error };
+  }
+}
+
+function applyBackendMergeResponse(primaryTicketId, secondaryTicketIds, payload) {
+  if (!payload?.ticket?.id) return false;
+  const primaryTicket = replaceLocalTicketFromBackend(payload.ticket);
+  if (!primaryTicket) return false;
+
+  const secondaryIdSet = new Set(secondaryTicketIds.map((ticketId) => String(ticketId)));
+  const secondaryLabels = secondaryTicketIds.map((ticketId) => {
+    const ticket = ticketById(ticketId);
+    return ticket ? ticketDisplayId(ticket) : String(ticketId);
+  });
+  primaryTicket.mergedFrom = [
+    ...new Set([
+      ...(Array.isArray(primaryTicket.mergedFrom)
+        ? primaryTicket.mergedFrom.filter((label) => !secondaryIdSet.has(String(label)))
+        : []),
+      ...secondaryLabels
+    ])
+  ];
+
+  const mergedSummaries = Array.isArray(payload.merged) ? payload.merged : [];
+  const mergedById = new Map(mergedSummaries.map((item) => [String(item.id), item]));
+  const auditById = new Map(
+    (Array.isArray(payload.audit) ? payload.audit : [])
+      .filter((event) => event?.ticketId)
+      .map((event) => [String(event.ticketId), event])
+  );
+
+  secondaryTicketIds.forEach((ticketId) => {
+    const ticket = ticketById(ticketId);
+    if (!ticket) return;
+    const summary = mergedById.get(String(ticketId)) || {};
+    const audit = auditById.get(String(ticketId));
+    ticket.conversation = Array.isArray(ticket.conversation) ? ticket.conversation : [];
+    ticket.mergedInto = summary.mergedInto || primaryTicketId;
+    if (summary.mergedAt) ticket.mergedAt = summary.mergedAt;
+    if (summary.mergedBy) ticket.mergedBy = summary.mergedBy;
+    if (summary.mergedAt) ticket.updatedAt = summary.mergedAt;
+    if (audit?.body && !ticket.conversation.some((message) => message?.body === audit.body && message?.timestamp === audit.timestamp)) {
+      ticket.conversation.push({
+        type: audit.type || "timeline",
+        author: audit.author || "System",
+        timestamp: audit.timestamp || summary.mergedAt || new Date().toISOString(),
+        body: audit.body
+      });
+    }
+  });
+
+  selectedTicketIds.clear();
+  selectedTicketId = primaryTicket.id;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  render();
+  showToast(`Merged ${secondaryTicketIds.length + 1} tickets into ${ticketDisplayId(primaryTicket)}.`);
+  return true;
+}
+
+function backendTicketMergeErrorMessage(payload, status) {
+  const error = String(payload?.error || "");
+  if (error === "authentication_required") return "Sign in before merging tickets.";
+  if (error === "insufficient_role") return "Only admins and owners can merge tickets.";
+  if (error === "invalid_merge_payload") return payload?.message || "Choose at least one valid secondary ticket to merge.";
+  if (error === "cannot_merge_ticket_into_itself") return "Choose a different secondary ticket before merging.";
+  if (error === "ticket_not_found" || error === "secondary_ticket_not_found") return "One of the selected tickets was not found. Refresh the queue and try again.";
+  if (error === "ticket_already_merged") return "One of the selected tickets has already been merged.";
+  if (error === "unsafe_ticket_status") return "One of the selected tickets cannot be merged in its current status.";
+  if (error === "customer_mismatch") return "Selected tickets must belong to the same customer before merging.";
+  return payload?.message || `Ticket merge failed${status ? ` (${status})` : ""}.`;
+}
+
 function accountForTicket(ticket) {
   const email = ticket?.customer?.email || "";
   return ensureCustomerAccount(customerAccounts, email) || createEmptyCustomerAccount(email);
@@ -7722,9 +7819,9 @@ function syncToolbarControlState() {
   const selectedCount = getVisibleSelectedTickets().length;
   el.ticketActionToolbar.classList.toggle("has-selection", Boolean(selectedCount));
   if (el.mergeTicketsButton) {
-    const canMerge = selectedCount >= 2;
+    const canMerge = currentUserIsAdmin() && selectedCount >= 2;
     el.mergeTicketsButton.disabled = !canMerge;
-    el.mergeTicketsButton.title = "Merge tickets";
+    el.mergeTicketsButton.title = currentUserIsAdmin() ? "Merge tickets" : "Admins and owners can merge tickets";
     el.mergeTicketsButton.setAttribute("aria-label", "Merge tickets");
     el.mergeTicketsButton.setAttribute("aria-disabled", String(!canMerge));
   }
@@ -12243,6 +12340,10 @@ function openBulkReassignConfirmModal(nextAssignee) {
 }
 
 function openMergeTicketsConfirmModal() {
+  if (!currentUserIsAdmin()) {
+    showToast("Only admins and owners can merge tickets.");
+    return;
+  }
   const selectedTickets = getVisibleSelectedTickets();
   if (selectedTickets.length < 2) {
     showToast("Select at least two tickets to merge.");
@@ -12482,7 +12583,33 @@ function bulkReassignTickets(ticketIds, nextAssignee, internalNote = "") {
   showToast(`${targetTickets.length} ticket${targetTickets.length === 1 ? "" : "s"} reassigned.`);
 }
 
-function mergeSelectedTickets(ticketIds, primaryTicketId, internalNote = "") {
+async function mergeSelectedTickets(ticketIds, primaryTicketId, internalNote = "") {
+  if (!currentUserIsAdmin()) {
+    showToast("Only admins and owners can merge tickets.");
+    return;
+  }
+
+  const secondaryTicketIds = ticketIds.filter((ticketId) => String(ticketId) !== String(primaryTicketId));
+  const backendResult = await sendTicketMergeToBackend(primaryTicketId, secondaryTicketIds, internalNote);
+  if (backendResult?.status === "ok") {
+    if (applyBackendMergeResponse(primaryTicketId, secondaryTicketIds, backendResult.payload)) return;
+    showToast("Merged on backend. Refreshing local queue state.");
+    return;
+  }
+  if (backendResult?.status === "blocked") {
+    showToast(backendTicketMergeErrorMessage(backendResult.payload, backendResult.responseStatus));
+    return;
+  }
+
+  mergeSelectedTicketsLocally(ticketIds, primaryTicketId, internalNote);
+}
+
+function mergeSelectedTicketsLocally(ticketIds, primaryTicketId, internalNote = "") {
+  if (!currentUserIsAdmin()) {
+    showToast("Only admins and owners can merge tickets.");
+    return;
+  }
+
   const selectedTickets = tickets.filter((ticket) => ticketIds.includes(ticket.id));
   const primaryTicket = selectedTickets.find((ticket) => ticket.id === primaryTicketId) || selectedTickets[0];
   if (!primaryTicket || selectedTickets.length < 2) return;
