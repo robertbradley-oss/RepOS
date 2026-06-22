@@ -7,6 +7,7 @@
     "dev": "node server.mjs",
     "start": "node server.mjs",
     "smoke:frontend-admin-role": "node scripts/frontend-admin-role-smoke.mjs",
+    "smoke:frontend-merge-workflow": "node scripts/frontend-merge-workflow-smoke.mjs",
     "smoke:frontend-multi-user": "node scripts/frontend-multi-user-smoke.mjs",
     "smoke:frontend-ticket-api": "node scripts/frontend-ticket-api-smoke.mjs",
     "smoke:multi-user": "node scripts/backend-multi-user-smoke.mjs",

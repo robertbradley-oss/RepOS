@@ -6934,6 +6934,7 @@ function ticketMatchesVisibleQueue(ticket, matcher = activeQueueMatcher()) {
   const globalQuery = filters.global.trim().toLowerCase();
   const queueQuery = filters.queue.trim().toLowerCase();
 
+  if (ticket.mergedInto) return false;
   if (!matcher(ticket)) return false;
   if (filters.status !== "All statuses" && displayStatusFor(ticket) !== filters.status) return false;
   if (activeView === "closed" && !ticketMatchesClosedDateRange(ticket)) return false;
@@ -7498,6 +7499,12 @@ function renderTicketRow(ticket) {
   const overdueIcon = overdue
     ? `<span class="subject-overdue-icon" title="Overdue" aria-label="Overdue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.3201 3H10.6801L1.5 18.5L2.5 21H21.5L22.5 18.5L13.3201 3Z" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path><path d="M12 17H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path><path d="M12 13V9" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path></svg></span>`
     : "";
+  const mergedLabel = Array.isArray(ticket.mergedFrom) && ticket.mergedFrom.length
+    ? `Merged from ${ticket.mergedFrom.join(", ")}`
+    : "Merged ticket";
+  const mergedIcon = ticket.merged
+    ? `<span class="subject-merged-icon" title="${escapeHtml(mergedLabel)}" aria-label="${escapeHtml(mergedLabel)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.4" stroke="currentColor" stroke-width="2" fill="none"></circle><circle cx="6" cy="18" r="2.4" stroke="currentColor" stroke-width="2" fill="none"></circle><circle cx="18" cy="9" r="2.4" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M6 8.4v7.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M6 13.2c0-3.4 2.6-5.4 6-5.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M12.2 7.2 15.6 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path></svg></span>`
+    : "";
 
   return `
     <div class="queue-row-shell motion-row-hover motion-row-enter ${previewed ? "previewed" : ""} ${checked ? "checked" : ""} ${locked ? "row-action-disabled" : ""}" role="row" data-ticket-id="${escapeHtml(ticket.id)}" data-ticket-number="${escapeHtml(displayId)}" tabindex="0" ${previewed ? `aria-current="true"` : ""} ${locked ? `aria-disabled="true"` : ""}>
@@ -7511,6 +7518,7 @@ function renderTicketRow(ticket) {
             <span class="subject-line">
               <span class="subject-msg-count" title="${escapeHtml(emailCountLabel(ticket))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12.01V12" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path><path d="M16 11.9999V11.9899" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path><path d="M8 12.0101V12.0001" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path><path d="M22 12C22 17.5228 17.5228 22 12 22C10.1786 22 8.47087 21.513 7 20.6622L2.5 22L2 21.5L3.33782 17C2.48697 15.5291 2 13.8214 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" stroke-width="2" stroke-miterlimit="10" stroke-linecap="square" fill="none"></path></svg><span>${emailCount}</span></span>
               <button class="table-link subject-link" data-open-ticket="${escapeHtml(ticket.id)}" data-open-ticket-number="${escapeHtml(displayId)}" type="button"${disabledAttrs}>${escapeHtml(ticket.subject)}</button>
+              ${mergedIcon}
               ${overdueIcon}
             </span>
           </span>
@@ -12247,7 +12255,7 @@ function openMergeTicketsConfirmModal() {
         <div>
           <p class="eyebrow">Confirm merge</p>
           <h2>${selectedTickets.length} selected</h2>
-          <p>Record these tickets as related under one primary ticket.</p>
+          <p>Combine these tickets into one. All messages move into the primary ticket; the others are closed out.</p>
         </div>
         <button class="icon-button" id="closeWorkflowConfirmButton" aria-label="Close" type="button">x</button>
       </div>
@@ -12482,29 +12490,64 @@ function mergeSelectedTickets(ticketIds, primaryTicketId, internalNote = "") {
   const relatedTickets = selectedTickets.filter((ticket) => ticket.id !== primaryTicket.id);
   const relatedLabels = relatedTickets.map(ticketDisplayId);
   const actorName = currentDemoUserName();
+  const mergedAt = new Date().toISOString();
+  primaryTicket.conversation = Array.isArray(primaryTicket.conversation) ? primaryTicket.conversation : [];
+
+  relatedTickets.forEach((ticket) => {
+    ticket.conversation = Array.isArray(ticket.conversation) ? ticket.conversation : [];
+    // Pull every message from the secondary ticket into the primary thread,
+    // tagging each with where it came from so the origin is still traceable.
+    const carriedMessages = ticket.conversation.map((message) => ({
+      ...message,
+      mergedFrom: message.mergedFrom || ticketDisplayId(ticket)
+    }));
+    primaryTicket.conversation.push(...carriedMessages);
+
+    // Carry over attachments, de-duplicated by stable attachment identity.
+    if (Array.isArray(ticket.attachments) && ticket.attachments.length) {
+      primaryTicket.attachments = primaryTicket.attachments || [];
+      const attachmentKey = (file) => String(file?.id || file?.fileName || file?.name || file?.downloadUrl || "");
+      const existingKeys = new Set(primaryTicket.attachments.map(attachmentKey).filter(Boolean));
+      ticket.attachments.forEach((file) => {
+        const key = attachmentKey(file);
+        if (file && (!key || !existingKeys.has(key))) {
+          primaryTicket.attachments.push(file);
+          if (key) existingKeys.add(key);
+        }
+      });
+    }
+  });
+
+  // Keep the combined thread in chronological order.
+  primaryTicket.conversation.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  // Record the merge on the primary ticket and flag it for the queue badge.
   primaryTicket.conversation.push({
     type: "timeline",
     author: "System",
-    timestamp: new Date().toISOString(),
-    body: `${actorName} marked related tickets for merge review: ${relatedLabels.join(", ")}.`
+    timestamp: mergedAt,
+    body: `${actorName} merged ${relatedLabels.join(", ")} into this ticket.`
   });
   addInternalNoteToTicket(primaryTicket, internalNote);
+  primaryTicket.merged = true;
+  primaryTicket.mergedFrom = [...new Set([...(primaryTicket.mergedFrom || []), ...relatedLabels])];
 
+  // Retire the secondary tickets: leave a breadcrumb, then hide them from queues.
   relatedTickets.forEach((ticket) => {
     ticket.conversation.push({
       type: "timeline",
       author: "System",
-      timestamp: new Date().toISOString(),
-      body: `${actorName} marked this ticket as linked to primary ${ticketDisplayId(primaryTicket)} for merge review.`
+      timestamp: mergedAt,
+      body: `${actorName} merged this ticket into ${ticketDisplayId(primaryTicket)}.`
     });
-    addInternalNoteToTicket(ticket, internalNote);
+    ticket.mergedInto = primaryTicket.id;
   });
 
   selectedTicketIds.clear();
   selectedTicketId = primaryTicket.id;
   persistTickets();
   render();
-  showToast(`Merge noted for ${selectedTickets.length} tickets.`);
+  showToast(`Merged ${selectedTickets.length} tickets into ${ticketDisplayId(primaryTicket)}.`);
 }
 
 function copyQueueTicketLink() {
@@ -13898,6 +13941,7 @@ function diagnosisForFamily(family) {
 }
 
 function isOpen(ticket) {
+  if (ticket.mergedInto) return false;
   return displayStatusFor(ticket) === "Open";
 }
 

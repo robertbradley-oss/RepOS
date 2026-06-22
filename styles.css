@@ -3606,6 +3606,19 @@ body:not(.is-admin) .admin-only {
   stroke: currentColor;
 }
 
+.subject-merged-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--accent-strong, var(--accent, #6034e0));
+}
+
+.subject-merged-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+}
+
 .subject-row-inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
