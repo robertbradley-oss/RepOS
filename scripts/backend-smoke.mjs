@@ -527,6 +527,16 @@ try {
     throw new Error("Non-admin Knowledge Vault file download did not return the expected JSON error.");
   }
 
+  const repMerge = await fetch(`http://127.0.0.1:${port}/api/tickets/MERGE-PRIMARY/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: repCookie },
+    body: JSON.stringify({ secondaryTicketIds: ["SMOKE-CUSTOMEREMAIL"] })
+  });
+  const repMergePayload = await repMerge.json();
+  if (repMerge.status !== 403 || repMergePayload.error !== "insufficient_role") {
+    throw new Error("Non-admin ticket merge did not return the expected JSON error.");
+  }
+
   await runPersistenceReloadSmoke(dataFile, uploadDir);
   await runStrictAuthSmoke();
   await runResetSmoke(port);

@@ -115,7 +115,7 @@ POST /api/tickets/:id/merge
 - `note` is optional and should be stored as an internal/audit note when present.
 - `closeSecondary` is optional. When true, secondary tickets are marked `Closed` after receiving `mergedInto` metadata; when omitted, secondary status is preserved and the `mergedInto` breadcrumb is the durable retirement signal.
 
-Current permission model: require an authenticated user. Keep any future ticket-level access or role expansion simple and explicit.
+Current permission model: require an authenticated `admin` or `owner` user. Keep any future ticket-level access or role expansion simple and explicit.
 
 The implementation uses a dedicated store merge operation for JSON-file and Postgres parity. Do not route merge metadata through generic ticket patch handling, because merge needs multi-ticket validation, atomic/no-partial-write behavior, and coordinated primary/secondary timeline entries.
 

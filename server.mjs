@@ -312,7 +312,7 @@ async function handleApi(request, response, url) {
     }
 
     if (request.method === "POST" && childRoute === "merge") {
-      const user = await requireAuth(request, response);
+      const user = await requireRole(request, response, ["admin", "owner"]);
       if (!user) return;
       const input = await readJsonBody(request);
       const result = await store.mergeTickets(ticketId, input, { actor: user });
