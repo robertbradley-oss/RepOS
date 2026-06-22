@@ -235,6 +235,38 @@ npm.cmd run dev
 
 In strict mode, protected routes return `401` until a session exists. For local development, `POST /api/auth/dev-login` creates a session for the seeded admin unless `TESSARIO_DISABLE_DEV_LOGIN=1` is set.
 
+### Railway strict auth
+
+Railway deployments should choose the auth mode intentionally:
+
+- Demo/open mode: `TESSARIO_AUTH_MODE=development` auto-creates or reuses the seeded `CS14 Robert` admin session. This is convenient for disposable demos but is not production-secure.
+- Controlled demo mode: `TESSARIO_AUTH_MODE=strict` with `TESSARIO_DISABLE_DEV_LOGIN=0` requires an explicit session but still allows the dev-login endpoint to create one. Use only for temporary controlled demos.
+- Locked-down demo mode: set both `TESSARIO_AUTH_MODE=strict` and `TESSARIO_DISABLE_DEV_LOGIN=1`. This makes protected routes return `401 authentication_required` without a valid `tessario_session` and disables `POST /api/auth/dev-login`. It reduces accidental open access, but it is not a production authentication system.
+
+```text
+TESSARIO_AUTH_MODE=strict
+TESSARIO_DISABLE_DEV_LOGIN=1
+TESSARIO_SESSION_DAYS=7
+```
+
+Strict mode with dev login disabled can block new access because RepOS does not yet include password, OAuth, passwordless, or invite-based production login. Existing valid session cookies may continue to work until expiry, but they are not a reliable access plan.
+
+After updating Railway variables and redeploying, verify the live backend:
+
+```powershell
+curl.exe --ssl-no-revoke https://repos-production-e956.up.railway.app/api/health
+curl.exe --ssl-no-revoke https://repos-production-e956.up.railway.app/api/session
+curl.exe --ssl-no-revoke https://repos-production-e956.up.railway.app/api/tickets
+curl.exe --ssl-no-revoke -X POST https://repos-production-e956.up.railway.app/api/auth/dev-login
+```
+
+With strict mode plus disabled dev login, expected results are:
+
+- health: `200` with `authMode:"strict"`
+- session: `200` with `authenticated:false`
+- tickets: `401 authentication_required`
+- dev-login POST: `403 dev_login_disabled`
+
 Admin-guarded routes currently include:
 
 - `GET /api/auth/users`

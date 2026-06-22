@@ -93,6 +93,8 @@ Common runtime settings:
 - `TESSARIO_DATA_FILE`: Defaults to `.data/tessario-state.json`.
 - `TESSARIO_UPLOAD_DIR`: Defaults to `.uploads`.
 - `TESSARIO_AUTH_MODE`: Defaults to `development`; use `strict` for explicit-session auth checks.
+- `TESSARIO_DISABLE_DEV_LOGIN`: Defaults to `0`; set `1` to disable `POST /api/auth/dev-login`.
+- `TESSARIO_SESSION_DAYS`: Defaults to `7`.
 - `DATABASE_URL`: Optional. When set, RepOS uses Postgres and runs `db/schema.sql` on startup unless `TESSARIO_AUTO_MIGRATE=0`.
 
 ## How To Deploy A Demo
@@ -139,6 +141,42 @@ npm.cmd run start
 ```
 
 Use mounted/persistent paths for `TESSARIO_DATA_FILE` and `TESSARIO_UPLOAD_DIR`, or set `DATABASE_URL` for Postgres state. Uploaded file bytes still use `TESSARIO_UPLOAD_DIR`, so use durable object storage or a persistent volume before treating uploads as production data.
+
+### Railway Auth Settings
+
+Railway deployments that leave `TESSARIO_AUTH_MODE` unset run in development auth mode. In that mode RepOS auto-creates or reuses the seeded `CS14 Robert` admin session, which is convenient for an open demo but is not production-secure.
+
+Recommended choices:
+
+- Demo/open mode: leave `TESSARIO_AUTH_MODE=development` for a disposable demo where automatic admin access is acceptable.
+- Controlled demo mode: set `TESSARIO_AUTH_MODE=strict` and leave `TESSARIO_DISABLE_DEV_LOGIN=0` only while you intentionally use `POST /api/auth/dev-login` to create a demo session. This still is not production-secure.
+- Locked-down demo mode: set both values below. Protected API routes require a valid `tessario_session`, and the dev-login endpoint is disabled. This reduces accidental open access, but it is not a production authentication system.
+
+```text
+TESSARIO_AUTH_MODE=strict
+TESSARIO_DISABLE_DEV_LOGIN=1
+TESSARIO_SESSION_DAYS=7
+```
+
+Strict mode with dev login disabled can block new access because RepOS does not yet include password, OAuth, passwordless, or invite-based production login. Existing valid session cookies may continue to work until expiry, but they are not a reliable access plan.
+
+After changing Railway auth settings and redeploying, verify the live backend:
+
+```powershell
+curl.exe --ssl-no-revoke https://repos-production-e956.up.railway.app/api/health
+curl.exe --ssl-no-revoke https://repos-production-e956.up.railway.app/api/session
+curl.exe --ssl-no-revoke https://repos-production-e956.up.railway.app/api/tickets
+curl.exe --ssl-no-revoke -X POST https://repos-production-e956.up.railway.app/api/auth/dev-login
+```
+
+With strict mode plus disabled dev login, expected results are:
+
+- health: `200` with `authMode:"strict"`
+- session: `200` with `authenticated:false`
+- tickets: `401 authentication_required`
+- dev-login POST: `403 dev_login_disabled`
+
+JSON-file persistence on Railway is acceptable for a demo when mounted storage is intentional. Use `DATABASE_URL` with `PGSSLMODE=require` before treating deployed state as production data.
 
 ## Current App Structure
 
