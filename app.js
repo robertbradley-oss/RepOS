@@ -7745,8 +7745,14 @@ function slaLineClass(ticket) {
 
 function assignmentSelectOptions(currentAssignee) {
   const options = [...activeAssignmentOptionUsers()];
-  if (currentAssignee && !options.some((user) => user.name === currentAssignee)) {
-    options.unshift({ id: slugify(currentAssignee), name: currentAssignee, role: "rep", assignmentEligible: false, removed: false });
+  if (currentAssignee) {
+    const exactOption = options.some((user) => user.name === currentAssignee);
+    const equivalentIndex = options.findIndex((user) => sameAssignmentUserName(user.name, currentAssignee));
+    if (!exactOption && equivalentIndex >= 0) {
+      options[equivalentIndex] = { ...options[equivalentIndex], name: currentAssignee };
+    } else if (!exactOption) {
+      options.unshift({ id: slugify(currentAssignee), name: currentAssignee, role: "rep", assignmentEligible: false, removed: false });
+    }
   }
   return options.map((user) => `<option value="${escapeHtml(user.name)}"${user.name === currentAssignee ? " selected" : ""}>${escapeHtml(user.name)}</option>`).join("");
 }
@@ -9812,7 +9818,7 @@ function activeAssignmentOptionUsers() {
 }
 
 function assignmentUserNameKey(value) {
-  return normalizeRepName(value).toLowerCase();
+  return normalizeRepName(value).replace(/\s+/g, " ").toLowerCase();
 }
 
 function sameAssignmentUserName(left, right) {

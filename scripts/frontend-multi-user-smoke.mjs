@@ -161,7 +161,7 @@ function createHarness(fetchPayload = null, options = {}) {
       throw new Error("Backend-only admin user operations must not call reassignTicket().");
     },
     normalizeRepName(value) {
-      return String(value || "").replace(/\s+/g, " ").trim();
+      return String(value || "").trim();
     },
     normalizeWorkspaceSettings(value = {}) {
       return {
@@ -364,23 +364,43 @@ for (const role of ["admin", "owner", "manager", "rep"]) {
     backendUsersPayload: {
       users: [
         { id: "duplicate-nick", assignmentName: " cs1   nick ", role: "manager", active: true },
-        { id: "new-backend", assignmentName: "CS6 Backend", role: "rep", active: true }
+        { id: "new-backend", assignmentName: "CS6 Backend", role: "rep", active: true },
+        { id: "duplicate-removed", assignmentName: "CS8 Removed", role: "manager", active: true },
+        { id: "duplicate-disabled", assignmentName: "CS9 Disabled", role: "owner", active: true },
+        { id: "duplicate-backend-six", assignmentName: " cs6   backend ", role: "manager", active: true }
       ]
     }
   });
   context.users = [
     { id: "cs14-robert", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
-    { id: "legacy-nick", name: "CS1 Nick", role: "rep", assignmentEligible: false, removed: false }
+    { id: "legacy-nick", name: "CS1 Nick", role: "rep", assignmentEligible: false, removed: false },
+    { id: "removed-duplicate", name: "CS8 Removed", role: "rep", assignmentEligible: false, removed: true },
+    { id: "disabled-duplicate", name: "CS9 Disabled", role: "rep", assignmentEligible: false, removed: false }
   ];
 
   await context.hydrateBackendAssignmentUsers();
   const merged = context.mergedAssignmentOptionUsers();
   const nickRows = merged.filter((user) => context.sameAssignmentUserName(user.name, "CS1 Nick"));
+  const removedRows = merged.filter((user) => context.sameAssignmentUserName(user.name, "CS8 Removed"));
+  const disabledRows = merged.filter((user) => context.sameAssignmentUserName(user.name, "CS9 Disabled"));
+  const backendSixRows = merged.filter((user) => context.sameAssignmentUserName(user.name, "CS6 Backend"));
   assert.equal(nickRows.length, 1, "legacy/backend duplicate names should collapse to one visible user");
   assert.equal(nickRows[0].id, "legacy-nick", "legacy metadata should win on duplicate assignment names");
+  assert.equal(nickRows[0].role, "rep", "legacy role should win over backend role on duplicate assignment names");
   assert.equal(nickRows[0].assignmentEligible, false, "legacy assignment eligibility should be preserved on duplicate");
+  assert.equal(removedRows.length, 1, "removed legacy/backend duplicate names should collapse to one row");
+  assert.equal(removedRows[0].id, "removed-duplicate", "removed legacy metadata should win on duplicate assignment names");
+  assert.equal(removedRows[0].removed, true, "removed legacy duplicate should stay removed after backend hydration");
+  assert.equal(disabledRows.length, 1, "disabled legacy/backend duplicate names should collapse to one row");
+  assert.equal(disabledRows[0].id, "disabled-duplicate", "disabled legacy metadata should win on duplicate assignment names");
+  assert.equal(disabledRows[0].role, "rep", "disabled legacy role should win over backend role on duplicate assignment names");
+  assert.equal(disabledRows[0].assignmentEligible, false, "disabled legacy duplicate should stay disabled after backend hydration");
+  assert.equal(backendSixRows.length, 1, "backend duplicate payload names should collapse to one backend gap-fill option");
+  assert.equal(backendSixRows[0].id, "new-backend", "first backend gap-fill metadata should win among backend duplicates");
   assert(merged.some((user) => user.name === "CS6 Backend"), "backend users should fill gaps absent from legacy users");
   assert(!context.activeAssignmentOptionUsers().some((user) => user.name === "CS1 Nick"), "legacy disabled duplicate should remain disabled in option list");
+  assert(!context.activeAssignmentOptionUsers().some((user) => user.name === "CS8 Removed"), "removed legacy duplicate should not be resurrected by backend users");
+  assert(!context.activeAssignmentOptionUsers().some((user) => user.name === "CS9 Disabled"), "disabled legacy duplicate should not be resurrected by backend users");
   assert(context.activeAssignmentOptionUsers().some((user) => user.name === "CS6 Backend"), "new backend user should be active in option list");
 }
 
@@ -507,11 +527,52 @@ for (const role of ["admin", "owner", "manager", "rep"]) {
   await context.hydrateBackendAssignmentUsers();
   assert.deepEqual(context.tickets.map((ticket) => ticket.assignee), beforeAssignees, "backend user hydration should not rewrite historical assignees");
 
+  const backendOnlyOptions = context.assignmentSelectOptions("Legacy Free Text");
+  assert(backendOnlyOptions.includes('value="Legacy Free Text" selected'), "backend-only current assignee should use the existing backend option and be selected");
+  assert.equal((backendOnlyOptions.match(/value="Legacy Free Text"/g) || []).length, 1, "backend-only current assignee should not be inserted twice");
+
   const freeTextOptions = context.assignmentSelectOptions("Former Rep");
   assert(freeTextOptions.includes('value="Former Rep" selected'), "current free-text assignee should be inserted and selected");
   assert.equal((freeTextOptions.match(/value="Former Rep"/g) || []).length, 1, "current free-text assignee should be inserted once");
   const escapedFreeTextOptions = context.assignmentSelectOptions('Former & "Rep"');
   assert(escapedFreeTextOptions.includes('value="Former &amp; &quot;Rep&quot;" selected'), "current free-text assignee should be escaped and selected");
+}
+
+{
+  const { context } = createHarness(null, {
+    backendUsersPayload: {
+      users: [
+        { id: "backend-only", assignmentName: "CS6 Backend", role: "rep", active: true },
+        { id: "backend-removed-shadow", assignmentName: "CS8 Removed", role: "rep", active: true },
+        { id: "backend-disabled-shadow", assignmentName: "CS9 Disabled", role: "rep", active: true }
+      ]
+    }
+  });
+  context.users = [
+    { id: "cs14-robert", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
+    { id: "cs1-nick", name: "CS1 Nick", role: "rep", assignmentEligible: true, removed: false },
+    { id: "removed-legacy", name: "CS8 Removed", role: "rep", assignmentEligible: false, removed: true },
+    { id: "disabled-legacy", name: "CS9 Disabled", role: "rep", assignmentEligible: false, removed: false }
+  ];
+
+  await context.hydrateBackendAssignmentUsers();
+
+  const removedCurrentOptions = context.assignmentSelectOptions("CS8 Removed");
+  assert(removedCurrentOptions.includes('value="CS8 Removed" selected'), "removed legacy current assignee should be preserved and selected");
+  assert.equal((removedCurrentOptions.match(/value="CS8 Removed"/g) || []).length, 1, "removed legacy current assignee should be inserted once");
+
+  const disabledCurrentOptions = context.assignmentSelectOptions("CS9 Disabled");
+  assert(disabledCurrentOptions.includes('value="CS9 Disabled" selected'), "disabled legacy current assignee should be preserved and selected");
+  assert.equal((disabledCurrentOptions.match(/value="CS9 Disabled"/g) || []).length, 1, "disabled legacy current assignee should be inserted once");
+
+  const backendOnlyCurrentOptions = context.assignmentSelectOptions("CS6 Backend");
+  assert(backendOnlyCurrentOptions.includes('value="CS6 Backend" selected'), "backend-only current assignee should be selected from active backend options");
+  assert.equal((backendOnlyCurrentOptions.match(/value="CS6 Backend"/g) || []).length, 1, "backend-only active current assignee should not insert a duplicate option");
+
+  const normalizedCurrentOptions = context.assignmentSelectOptions(" cs1   nick ");
+  assert(normalizedCurrentOptions.includes('value=" cs1   nick " selected'), "normalized-equivalent current assignee should be preserved and selected");
+  assert.equal((normalizedCurrentOptions.match(/value="CS1 Nick"/g) || []).length, 0, "normalized-equivalent current assignee should not render a duplicate canonical option");
+  assert.equal((normalizedCurrentOptions.match(/value=" cs1   nick "/g) || []).length, 1, "normalized-equivalent current assignee should render once");
 }
 
 {

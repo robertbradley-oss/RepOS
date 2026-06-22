@@ -98,20 +98,33 @@ try {
   }, adminCookie);
   assert(legacyPatch.response.ok && legacyPatch.payload.ticket?.assignee === "CS2 Julius", "Legacy assignment-user compatibility patch failed.");
 
+  const normalizedPatch = await patchJson(port, "/api/tickets/VALID-AUTH-ASSIGNEE", {
+    assignee: " cs2   julius "
+  }, adminCookie);
+  assert(normalizedPatch.response.ok && normalizedPatch.payload.ticket?.assignee === "cs2   julius", "Normalized legacy assignment-user compatibility patch failed.");
+
   for (const [assignee, expected] of [
     ["Unknown Rep", "unknown assignee"],
     ["CS3 Sean", "removed legacy assignee"],
+    ["CS4 Disabled", "disabled legacy assignee"],
     ["CS9 Inactive", "inactive auth assignee"]
   ]) {
     const invalid = await patchJson(port, "/api/tickets/VALID-AUTH-ASSIGNEE", { assignee }, adminCookie);
     assert(invalid.response.status === 400, `Invalid ${expected} did not return 400.`);
     assert(invalid.payload.error === "invalid_ticket_assignee", `Invalid ${expected} returned wrong error.`);
+    assert(Array.isArray(invalid.payload.details?.allowedAssignees), `Invalid ${expected} did not return allowedAssignees.`);
+    assert(invalid.payload.details.allowedAssignees.includes("CS1 Nick"), `Invalid ${expected} allowedAssignees omitted active auth user.`);
+    assert(invalid.payload.details.allowedAssignees.includes("CS2 Julius"), `Invalid ${expected} allowedAssignees omitted eligible legacy user.`);
+    assert(!invalid.payload.details.allowedAssignees.includes(assignee), `Invalid ${expected} was included in allowedAssignees.`);
   }
 
   const emptyAssignee = await patchJson(port, "/api/tickets/VALID-AUTH-ASSIGNEE", {
     assignee: ""
   }, adminCookie);
   assert(emptyAssignee.response.ok && emptyAssignee.payload.ticket?.assignee === "", "Empty assignee patch did not leave the ticket unassigned.");
+
+  const emptyPatch = await patchJson(port, "/api/tickets/VALID-AUTH-ASSIGNEE", {}, adminCookie);
+  assert(emptyPatch.response.ok && emptyPatch.payload.ticket?.assignee === "", "Empty patch did not preserve the unassigned ticket.");
 
   const invalidCreate = await postJson(port, "/api/tickets", {
     id: "INVALID-ASSIGNEE",
@@ -122,6 +135,9 @@ try {
   }, adminCookie);
   assert(invalidCreate.response.status === 400, "Invalid create assignee did not return 400.");
   assert(invalidCreate.payload.error === "invalid_ticket_assignee", "Invalid create assignee returned wrong error.");
+  assert(Array.isArray(invalidCreate.payload.details?.allowedAssignees), "Invalid create assignee did not return allowedAssignees.");
+  assert(invalidCreate.payload.details.allowedAssignees.includes("Manager Maya"), "Invalid create allowedAssignees omitted active auth displayName.");
+  assert(!invalidCreate.payload.details.allowedAssignees.includes("Unknown Rep"), "Invalid create allowedAssignees included unknown assignee.");
 
   const managerBootstrap = await getJson(port, "/api/bootstrap", managerCookie);
   assert(managerBootstrap.response.ok, `Manager bootstrap failed: ${managerBootstrap.response.status}`);
@@ -165,12 +181,15 @@ async function writeSeedState(targetFile) {
       authUser("owner-olivia", "owner@example.com", "Owner Olivia", "owner", now),
       authUser("manager-maya", "manager@example.com", "Manager Maya", "manager", now),
       authUser("cs1-nick", "nick@example.com", "CS1 Nick", "rep", now),
+      authUser("cs3-sean-auth-duplicate", "sean@example.com", "CS3 Sean", "rep", now),
+      authUser("cs4-disabled-auth-duplicate", "disabled@example.com", "CS4 Disabled", "rep", now),
       authUser("cs9-inactive", "inactive@example.com", "CS9 Inactive", "rep", now, false)
     ],
     authSessions: [],
     users: [
       { id: "cs2-julius", name: "CS2 Julius", role: "rep", assignmentEligible: true, removed: false },
-      { id: "cs3-sean", name: "CS3 Sean", role: "rep", assignmentEligible: true, removed: true }
+      { id: "cs3-sean", name: "CS3 Sean", role: "rep", assignmentEligible: true, removed: true },
+      { id: "cs4-disabled", name: "CS4 Disabled", role: "rep", assignmentEligible: false, removed: false }
     ],
     tickets: [
       {

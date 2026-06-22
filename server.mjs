@@ -878,18 +878,33 @@ async function assignableUsersDirectory() {
     allowed.push(clean);
   };
 
-  for (const user of await store.listAuthUsers()) {
-    if (user?.active === false) continue;
-    add(user.repName);
-    add(user.displayName);
-  }
-
   const legacyUsers = await store.getResource("users");
+  const legacyAssignableNames = [];
+  const legacyBlockedNames = new Set();
   if (Array.isArray(legacyUsers)) {
     for (const user of legacyUsers) {
-      if (!user || user.removed === true || user.assignmentEligible === false) continue;
-      add(user.name || user.displayName);
+      const clean = String(user?.name || user?.displayName || "").trim();
+      const normalized = normalizeAssignmentName(clean);
+      if (!normalized) continue;
+      if (user.removed === true || user.assignmentEligible === false) {
+        legacyBlockedNames.add(normalized);
+      } else {
+        legacyAssignableNames.push(clean);
+      }
     }
+  }
+
+  legacyAssignableNames.forEach(add);
+
+  const addAuthUserName = (name) => {
+    if (legacyBlockedNames.has(normalizeAssignmentName(name))) return;
+    add(name);
+  };
+
+  for (const user of await store.listAuthUsers()) {
+    if (user?.active === false) continue;
+    addAuthUserName(user.repName);
+    addAuthUserName(user.displayName);
   }
 
   return { names, allowed: allowed.sort((a, b) => a.localeCompare(b)) };
