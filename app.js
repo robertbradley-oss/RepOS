@@ -435,6 +435,7 @@ const tableColumns = [
   { key: "updated", label: "Last Activity" },
   { key: "subject", label: "Subject" },
   { key: "customer", label: "Customer" },
+  { key: "priority", label: "Priority" },
   { key: "assignee", label: "Assigned To" },
   { key: "status", label: "Status" }
 ];
@@ -1460,7 +1461,18 @@ function init() {
   applyUiState();
   updateProfileButton();
   render();
+  openTicketFromHash();
+  window.addEventListener("hashchange", openTicketFromHash);
   hydrateBackendState();
+}
+
+// "Copy ticket link" produces a `#<ticket-id>` URL; honor it on load and on
+// hashchange so a pasted link actually opens the ticket it points to.
+function openTicketFromHash() {
+  const raw = decodeURIComponent((location.hash || "").replace(/^#/, "")).trim();
+  if (!raw) return;
+  const ticket = tickets.find((item) => item.id === raw);
+  if (ticket) openTicketDetail(ticket.id);
 }
 
 function applyWorkspaceBranding() {
@@ -6456,6 +6468,7 @@ function renderQueuePreview(ticket) {
         <div class="header-row">
           <span class="ticket-id">${escapeHtml(ticketDisplayId(ticket))}</span>
           <span class="badge status ${statusBadgeModifier(displayStatusFor(ticket))}"><span>Status</span> ${escapeHtml(displayStatusFor(ticket))}</span>
+          <span class="badge priority ${priorityBadgeModifier(ticket.priority)}"><span>Priority</span> ${escapeHtml(ticket.priority || "Normal")}</span>
         </div>
         <strong>${escapeHtml(ticket.subject)}</strong>
       </div>
@@ -7622,6 +7635,7 @@ function renderTicketRow(ticket) {
         </span>
       </div>
       <div class="queue-row-cell" role="cell"><button class="table-link customer-link" data-open-history="${escapeHtml(ticket.id)}" type="button"${disabledAttrs}><strong>${escapeHtml(ticket.customer.name)}</strong></button></div>
+      <div class="queue-row-cell priority-cell" role="cell">${renderBadge(ticket.priority || "Normal", "priority")}</div>
       <div class="queue-row-cell" role="cell">${escapeHtml(ticket.assignee)}</div>
       <div class="queue-row-cell" role="cell">${renderBadge(displayStatusFor(ticket), "status")}</div>
       </div>
@@ -7828,7 +7842,9 @@ function syncToolbarControlState() {
 }
 
 function renderBadge(label, className) {
-  const extra = className === "status" ? ` ${statusBadgeModifier(label)}` : "";
+  let extra = "";
+  if (className === "status") extra = ` ${statusBadgeModifier(label)}`;
+  else if (className === "priority") extra = ` ${priorityBadgeModifier(label)}`;
   return `<span class="badge ${className}${extra}">${escapeHtml(label)}</span>`;
 }
 
@@ -7837,6 +7853,18 @@ function statusBadgeModifier(label) {
   if (value.includes("waiting")) return "is-waiting";
   if (value.includes("closed")) return "is-closed";
   return "is-open";
+}
+
+// Priority pills follow the same "neutral unless it means something" rule as
+// status: Low/Normal stay quiet, High escalates to amber, Urgent to red.
+const PRIORITY_RANK = { urgent: 3, high: 2, normal: 1, low: 0 };
+
+function priorityBadgeModifier(label) {
+  const value = String(label ?? "").toLowerCase();
+  if (value.includes("urgent")) return "is-urgent";
+  if (value.includes("high")) return "is-high";
+  if (value.includes("low")) return "is-low";
+  return "is-normal";
 }
 
 function slaLineClass(ticket) {
@@ -10174,6 +10202,7 @@ function renderConversation(ticket) {
           </button>
           <span class="ticket-id">${escapeHtml(ticketDisplayId(ticket))}</span>
           <span class="badge status ${statusBadgeModifier(displayStatusFor(ticket))}">${escapeHtml(displayStatusFor(ticket))}</span>
+          <span class="badge priority ${priorityBadgeModifier(ticket.priority)}">${escapeHtml(ticket.priority || "Normal")}</span>
           <span class="sla ${isOverdue(ticket) ? "overdue" : ""}">${dueLabel(ticket.dueAt)}</span>
           <span class="email-count-badge" title="${escapeHtml(debugLabel)}" data-email-count="${emailMessageCount(ticket)}" data-visible-email-messages="${visibleEmailMessages(ticket).length}" data-total-thread-items="${threadMessages.length}">${escapeHtml(countLabel)}</span>
         </div>
@@ -10354,6 +10383,7 @@ function renderTicketDetailsPanel(ticket) {
         <strong>${escapeHtml(ticket.order || "No order")} / ${escapeHtml(ticket.source || "Unknown channel")}</strong>
       </summary>
       <dl class="ticket-details-grid">
+        <div><dt>Priority</dt><dd>${renderBadge(ticket.priority || "Normal", "priority")}</dd></div>
         <div><dt>Order number</dt><dd>${escapeHtml(ticket.order || "Not provided")}</dd></div>
         <div><dt>Source / channel</dt><dd>${escapeHtml(ticket.source || "Unknown")}</dd></div>
         <div><dt>Model</dt><dd>${escapeHtml(ticket.model || "Not provided")}</dd></div>
@@ -11193,6 +11223,7 @@ function tableCellText(ticket, key) {
     subject: `${ticket.subject} ${lastCustomerMessage(ticket)}`,
     customer: `${ticket.customer.name} ${ticket.customer.email}`,
     team: ticket.family,
+    priority: ticket.priority || "Normal",
     status: displayStatusFor(ticket),
     assignee: ticket.assignee,
     channel: ticket.source,
@@ -11207,6 +11238,10 @@ function compareTableValues(a, b, key) {
   if (key === "updated") return new Date(lastUpdatedAt(a)) - new Date(lastUpdatedAt(b));
   if (key === "emails") return emailMessageCount(a) - emailMessageCount(b);
   if (key === "sla") return new Date(a.dueAt) - new Date(b.dueAt);
+  if (key === "priority") {
+    return (PRIORITY_RANK[priorityBadgeModifier(a.priority).slice(3)] ?? 1)
+      - (PRIORITY_RANK[priorityBadgeModifier(b.priority).slice(3)] ?? 1);
+  }
   return tableCellText(a, key).localeCompare(tableCellText(b, key), undefined, { numeric: true });
 }
 
@@ -11224,6 +11259,7 @@ function ticketSearchText(ticket) {
     displayStatusFor(ticket),
     ticket.source,
     ticket.assignee,
+    ticket.priority,
     dashboardQueueReasonTerms(ticket),
     ...ticket.tags,
     ...ticket.missing,

@@ -3081,18 +3081,19 @@ body:not(.is-admin) .admin-only {
 }
 
 .queue-table {
-  --queue-table-columns: 36px 116px 152px minmax(300px, 1.25fr) minmax(200px, 0.85fr) 158px 120px;
+  --queue-table-columns: 36px 116px 152px minmax(300px, 1.25fr) minmax(200px, 0.85fr) 104px 158px 120px;
   width: 100%;
-  min-width: 1180px;
+  min-width: 1284px;
   min-height: calc(100% + 1px);
   color: var(--tessario-text);
 }
 
 /* In the all-Open view every row's Status is "Open", so the column carries no
-   information — drop it and let the remaining columns reclaim the space. */
+   information — drop it and let the remaining columns reclaim the space.
+   Priority stays: unlike Status, it varies row-to-row even in the Open view. */
 .queue-view-open .queue-table {
-  --queue-table-columns: 36px 116px 152px minmax(300px, 1.3fr) minmax(200px, 0.95fr) 170px;
-  min-width: 1060px;
+  --queue-table-columns: 36px 116px 152px minmax(300px, 1.3fr) minmax(200px, 0.95fr) 104px 170px;
+  min-width: 1164px;
 }
 
 .queue-view-open .queue-table-header-cell:last-child,
@@ -3913,6 +3914,45 @@ body:not(.is-admin) .admin-only {
   color: var(--green);
   background: rgba(28, 122, 71, 0.10);
   border-color: rgba(28, 122, 71, 0.22);
+}
+
+/* Priority pills share the status grammar: a leading dot carries the severity
+   colour, the pill body stays neutral. Low/Normal read quiet; High and Urgent
+   escalate, so the eye lands on what actually needs triage first. */
+.badge.priority {
+  gap: 5px;
+  color: #5b6472;
+  background: #eef0f3;
+  border-color: #e1e5ea;
+}
+
+.badge.priority::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badge.priority.is-low {
+  color: #8a93a2;
+}
+
+.badge.priority.is-normal {
+  color: #5b6472;
+}
+
+.badge.priority.is-high {
+  color: var(--amber);
+  background: rgba(255, 159, 10, 0.13);
+  border-color: rgba(255, 159, 10, 0.26);
+}
+
+.badge.priority.is-urgent {
+  color: var(--red);
+  background: rgba(229, 62, 62, 0.12);
+  border-color: rgba(229, 62, 62, 0.26);
 }
 
 .chip {
