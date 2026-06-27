@@ -12013,7 +12013,7 @@ function scrollTicketDetailToLatest() {
   });
 }
 
-function submitComposer() {
+async function submitComposer() {
   const ticket = selectedTicket();
   const editor = document.querySelector("#replyEditor");
   const rawBody = composerEditorText(editor).trim();
@@ -12023,8 +12023,9 @@ function submitComposer() {
   }
   const body = bodyWithSignature(composerEditorHtml(editor).trim());
 
+  const isReply = replyMode === "reply";
   const message = {
-    type: replyMode === "reply" ? "rep" : "note",
+    type: isReply ? "rep" : "note",
     author: repLabel(),
     timestamp: new Date().toISOString(),
     body,
@@ -12033,16 +12034,38 @@ function submitComposer() {
 
   ticket.conversation.push(message);
   ticket.draft = "";
-  if (replyMode === "reply") {
+  if (isReply) {
     ticket.lastRepAt = message.timestamp;
   }
   persistTicketsLocalOnly();
-  syncTicketMessageToBackend(ticket.id, message, replyMode === "reply"
+  const syncPromise = syncTicketMessageToBackend(ticket.id, message, isReply
     ? { draft: "", lastRepAt: message.timestamp }
     : { draft: "" });
+
+  // Sending a reply shows a brief "Loading" window while it goes out; an
+  // internal note is added instantly.
+  if (isReply) {
+    showSendingOverlay();
+    await Promise.all([
+      Promise.resolve(syncPromise).catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 800))
+    ]);
+    hideSendingOverlay();
+  }
+
   shouldScrollThreadToBottom = true;
   render();
-  showToast(replyMode === "reply" ? "Reply sent." : "Internal note added.");
+  showToast(isReply ? "Reply sent." : "Internal note added.");
+}
+
+function showSendingOverlay() {
+  const overlay = document.getElementById("sendingOverlay");
+  if (overlay) overlay.hidden = false;
+}
+
+function hideSendingOverlay() {
+  const overlay = document.getElementById("sendingOverlay");
+  if (overlay) overlay.hidden = true;
 }
 
 function bodyWithSignature(body) {

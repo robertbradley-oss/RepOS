@@ -193,6 +193,17 @@
     <dialog class="modal knowledge-file-modal motion-modal-open" id="knowledgeFileModal" hidden></dialog>
     <div class="toast motion-fade-in" id="toast" role="status" aria-live="polite" hidden></div>
 
+    <div class="loading-overlay" id="sendingOverlay" role="status" aria-live="polite" aria-label="Sending message" hidden>
+      <div class="loading-window">
+        <div class="three-body" aria-hidden="true">
+          <div class="three-body__dot"></div>
+          <div class="three-body__dot"></div>
+          <div class="three-body__dot"></div>
+        </div>
+        <span class="loading-label">Loading</span>
+      </div>
+    </div>
+
     <script src="./app.js"></script>
     <script>
       (function () {
