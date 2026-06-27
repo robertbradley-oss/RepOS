@@ -10361,6 +10361,9 @@ function renderConversation(ticket) {
       const composerRect = composer?.getBoundingClientRect();
       const composerBelowArea = composerRect ? composerRect.top > areaRect.bottom - 120 : false;
       floatBtn.classList.toggle("visible", composerBelowArea);
+      // Past a small scroll, collapse the ticket header to a slim sticky bar
+      // (ticket # + status + assignee) so the thread gets the vertical room.
+      document.body.classList.toggle("detail-condensed", scrollArea.scrollTop > 24);
     };
     detailFloatScrollHandler = syncFloatBtn;
     detailFloatScrollRoot = scrollArea;
@@ -10433,14 +10436,14 @@ function renderMessage(message, ticket) {
   const author = message.author || (message.type === "customer" ? (ticket.customer?.name || "Customer") : "Agent");
   const roleLabel = message.type === "note" ? "Internal note" : message.type === "customer" ? "Customer" : "Agent";
   return `
-    <article class="message ${message.type} chat-message-bubble">
-      <span class="message-avatar" aria-hidden="true">${escapeHtml(avatarInitialsFor(author))}</span>
+    <article class="message ${message.type} thread-card">
+      <div class="message-head">
+        <strong>${escapeHtml(author)}</strong>
+        <span class="message-posted">posted</span>
+        <span class="message-role">${escapeHtml(roleLabel)}</span>
+        <time>${dateTimeLabel(message.timestamp)}</time>
+      </div>
       <div class="message-body">
-        <div class="message-head">
-          <strong>${escapeHtml(author)}</strong>
-          <span class="message-role">${escapeHtml(roleLabel)}</span>
-          <time>${dateTimeLabel(message.timestamp)}</time>
-        </div>
         ${emailSubject}
         <div class="message-text">${renderMessageBodyHtml(message)}</div>
         ${renderThreadAttachments(message.attachments, ticket)}

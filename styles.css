@@ -11800,47 +11800,176 @@ textarea,
 
 
 /* ===========================================================================
-   Conversation as a true chat: customer messages on the left, the team's
-   (agent + internal notes) on the right, bubbles sized to their content so the
-   thread alternates across the width like a chat app.
+   Conversation thread, osTicket pass: full-width cards, each topped by a colour-
+   coded header strip — agent/team = warm tan, customer = blue, internal note =
+   amber — carrying the author + "posted" + timestamp, over a clean white body.
+   Modernised (soft borders, tidy type, subtle lift) but the familiar osTicket
+   scan pattern the team already knows.
    =========================================================================== */
+.detail-screen .thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 24px 18px;
+  background: #f4f5f8;
+}
+
 .detail-screen .message,
 .detail-screen .message.customer,
 .detail-screen .message.rep,
 .detail-screen .message.note {
-  width: auto;
-  max-width: min(760px, 74%);
-  justify-self: auto;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
-.detail-screen .message.customer {
-  align-self: flex-start;
+/* The card. */
+.detail-screen .message-body {
+  display: block;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #e2e5ec;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  overflow: hidden;
 }
 
-/* Team + internal notes sit on the right, avatar flipped to the outer edge. */
-.detail-screen .message.rep,
-.detail-screen .message.note {
-  align-self: flex-end;
-  grid-template-columns: minmax(0, 1fr) 32px;
+/* Colour-coded header strip. */
+.detail-screen .message-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 14px;
+  background: #eef0f3;
+  border-bottom: 1px solid rgba(16, 24, 40, 0.06);
 }
 
-.detail-screen .message.rep .message-avatar,
-.detail-screen .message.note .message-avatar {
-  grid-column: 2;
-  grid-row: 1;
+.detail-screen .message-head strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2430;
+}
+
+.detail-screen .message-posted {
+  margin-left: -2px;
+  color: #6b7280;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.detail-screen .message-head time {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: #5f6675;
+}
+
+/* Small avatar chip in the strip — a clean touch osTicket itself lacks. */
+.detail-screen .message-head .message-avatar {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  margin: 0;
+  font-size: 9.5px;
+}
+
+/* Agent / team = warm tan header. */
+.detail-screen .message.rep .message-head {
+  background: #fbe7cd;
+  border-bottom-color: #f0d4a8;
+}
+
+/* Customer = light blue header. */
+.detail-screen .message.customer .message-head {
+  background: #d9e7f7;
+  border-bottom-color: #c1d4ec;
+}
+
+/* Internal note = amber header + faint warm body wash. */
+.detail-screen .message.note .message-head {
+  background: #fce7b4;
+  border-bottom-color: #f0d588;
 }
 
 .detail-screen .message.rep .message-body,
-.detail-screen .message.note .message-body {
-  grid-column: 1;
-  grid-row: 1;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 4px;
+.detail-screen .message.customer .message-body {
+  background: #ffffff;
+  border-color: #e2e5ec;
 }
 
-/* System events stay centered between the two sides. */
+.detail-screen .message.note .message-body {
+  background: #fffdf6;
+  border-color: #efdfb6;
+}
+
+/* White body padding (head provides its own; body content is padded here). */
+.detail-screen .message-body > .message-subject,
+.detail-screen .message-body > .message-text,
+.detail-screen .message-body > .thread-attachments {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.detail-screen .message-body > .message-text {
+  padding-top: 11px;
+  padding-bottom: 12px;
+}
+
+.detail-screen .message-body > .message-subject {
+  padding-top: 11px;
+}
+
+.detail-screen .message-body > .thread-attachments {
+  padding-bottom: 12px;
+}
+
+/* System events: centered, quiet dividers between the cards. */
 .detail-screen .timeline-row {
   align-self: center;
+}
+
+/* ===========================================================================
+   Scrolled-down ticket: collapse the tall header (subject, pills, copy-link)
+   into a slim sticky bar that keeps only ticket # + status + assignee — the
+   osTicket pattern — so the thread reclaims the vertical space. `.detail-
+   condensed` is toggled on body once the thread scrolls past the top.
+   =========================================================================== */
+.detail-screen.detail-condensed .ticket-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.detail-screen.detail-condensed .ticket-header-top {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+/* Everything that isn't ticket # + status drops away. */
+.detail-screen.detail-condensed .ticket-title-stack,
+.detail-screen.detail-condensed .compact-action-button,
+.detail-screen.detail-condensed .header-row .sla,
+.detail-screen.detail-condensed .header-row .email-count-badge,
+.detail-screen.detail-condensed .header-row .badge.priority {
+  display: none;
+}
+
+/* Status + Assignee controls hug the right and stay usable while scrolled. */
+.detail-screen.detail-condensed .ticket-header-main {
+  flex: 1 1 auto;
+  margin: 0;
+  justify-content: flex-end;
+}
+
+.detail-screen.detail-condensed .ticket-header-controls {
+  margin: 0;
 }
 
 /* ===========================================================================
