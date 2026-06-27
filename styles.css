@@ -11826,6 +11826,8 @@ textarea,
   background: #f4f5f8;
 }
 
+/* The card is the whole message wrapper, so its rounded corners clip BOTH the
+   nameplate (head) and the body — their edges match as one unified card. */
 .detail-screen .message,
 .detail-screen .message.customer,
 .detail-screen .message.rep,
@@ -11837,19 +11839,20 @@ textarea,
   padding: 0;
   background: transparent;
   border: 0;
-  box-shadow: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
-/* The card — borderless, edges defined only by a soft diffuse shadow so the
-   cards read as gently raised rather than hard-outlined boxes. */
+/* Body no longer carries the card chrome — the wrapper does. */
 .detail-screen .message-body {
   display: block;
   padding: 0;
   background: #ffffff;
   border: none;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
-  overflow: hidden;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
 }
 
 /* Colour-coded header strip — no hard divider; the colour shift alone separates
