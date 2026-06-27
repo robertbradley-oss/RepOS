@@ -707,6 +707,28 @@ h6 {
   opacity: 1;
 }
 
+/* Collapsed rail: the floating slider mis-measures the 40x40 icon (drifting in
+   size and position during the collapse, which read as an odd height), so hide
+   it and paint the active highlight with the ::before pseudo instead — a pseudo
+   background isn't clamped by the JS motion that drives the item's own bg, and
+   it sits exactly on the icon's 40x40 footprint. */
+.sidebar-collapsed .sidebar-nav-indicator {
+  display: none;
+}
+
+.sidebar-collapsed .nav-item.active::before {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  width: auto;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  opacity: 1;
+  transform: none;
+}
+
 .nav-item {
   position: relative;
   z-index: var(--z-local-raised);
