@@ -10444,8 +10444,6 @@ function renderMessage(message, ticket) {
     <article class="message ${message.type} thread-card">
       <div class="message-head">
         <strong>${escapeHtml(author)}</strong>
-        <span class="message-posted">posted</span>
-        <span class="message-role">${escapeHtml(roleLabel)}</span>
         <time>${dateTimeLabel(message.timestamp)}</time>
       </div>
       <div class="message-body">
