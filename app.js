@@ -1399,6 +1399,11 @@ function init() {
   el.refreshQueueButton?.addEventListener("click", refreshQueueFromToolbar);
   el.toggleSidebarButton.addEventListener("click", () => toggleSidebar());
   setupSidebarTooltips();
+  // Inter loads asynchronously; the active-nav pill is measured at boot against
+  // the fallback font, so re-place it once the web font's metrics are in.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => syncSidebarActiveIndicator());
+  }
   el.adminNavButton?.addEventListener("click", showAdminScreen);
   el.settingsNavButton.addEventListener("click", () => openProfileModal("account"));
   el.knowledgeVaultNavButton?.addEventListener("click", showKnowledgeVaultScreen);
@@ -7636,7 +7641,7 @@ function renderTicketRow(ticket) {
       </div>
       <div class="queue-row-cell" role="cell"><button class="table-link customer-link" data-open-history="${escapeHtml(ticket.id)}" type="button"${disabledAttrs}><strong>${escapeHtml(ticket.customer.name)}</strong></button></div>
       <div class="queue-row-cell priority-cell" role="cell">${renderBadge(ticket.priority || "Normal", "priority")}</div>
-      <div class="queue-row-cell" role="cell">${escapeHtml(ticket.assignee)}</div>
+      <div class="queue-row-cell assignee-cell" role="cell">${escapeHtml(ticket.assignee)}</div>
       <div class="queue-row-cell" role="cell">${renderBadge(displayStatusFor(ticket), "status")}</div>
       </div>
     </div>

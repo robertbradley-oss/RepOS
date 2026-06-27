@@ -25,15 +25,19 @@
     inset -1px -1px 0 0 rgba(255, 255, 255, 0.55),
     inset 0 0 0 1px rgba(15, 23, 42, 0.04);
 
-  --neu-surface: #eae9f1;
-  --neu-surface-focus: #eae9f1;
+  /* Fields rest on a soft neutral gray so they read as distinct wells against
+     the white panels, then brighten to white on focus. */
+  --neu-surface: #ebedf2;
+  --neu-surface-focus: #ffffff;
+  /* Flattened: neumorphism retired. The former soft inset/outset "pillow"
+     shadows are now flat hairline rings, so every control that referenced
+     these tokens reads as a clean bordered surface. */
   --neu-shadow-out:
-    6px 6px 16px #cbc9d6,
-    -6px -6px 16px #ffffff;
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 0 0 1px var(--hairline);
   --neu-shadow-in:
-    inset 6px 6px 15px #cbc9d6,
-    inset -6px -6px 15px #ffffff;
-  --neu-card-bg: #e9edf3;
+    inset 0 0 0 1px var(--hairline-strong);
+  --neu-card-bg: #ffffff;
   --neu-card-shadow-dark: #c7cdd7;
   --neu-card-shadow-light: #ffffff;
 
@@ -42,9 +46,10 @@
   --shadow-floating: 0 4px 8px rgba(15, 23, 42, 0.08), 0 28px 54px -18px rgba(15, 23, 42, 0.26);
   --shadow-neu-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -14px rgba(15, 23, 42, 0.17);
 
-  --bg-glow-1: #c3b0ff;
-  --bg-glow-2: #e0c8fb;
-  --bg-glow-3: #c0bef4;
+  /* Canvas glows retired for a flat neutral page. */
+  --bg-glow-1: transparent;
+  --bg-glow-2: transparent;
+  --bg-glow-3: transparent;
 
   /* ---- RepOS product brand tokens ---- */
   --repos-navy: var(--ink);
@@ -54,7 +59,7 @@
   --repos-cyan: #22d3ee;
   --repos-teal: #14b8a6;
   --repos-violet: var(--accent);
-  --repos-bg: #ece8f6;
+  --repos-bg: #f6f6f9;
   --repos-card: #ffffff;
   --repos-border: var(--hairline);
   --repos-muted: var(--ink-secondary);
@@ -100,11 +105,11 @@
   --amber-soft: rgba(255, 248, 238, 0.72);
   --red: #8f1d17;
   --green: #1c7a47;
-  --radius-sm: 10px;
-  --radius-md: 13px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
-  --font-display: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "SF Mono", "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
   --shadow: var(--shadow-neu-card);
   --shadow-soft: var(--shadow-resting);
@@ -442,19 +447,21 @@ h6 {
 
 .app-shell {
   display: grid;
-  grid-template-columns: var(--sidebar-expanded-width) minmax(0, 1fr);
-  gap: 18px;
+  /* Sidebar column is widened by its 12px floating margins (24px total) so the
+     rail keeps its designed content width while floating clear of the edges. */
+  grid-template-columns: calc(var(--sidebar-expanded-width) + 24px) minmax(0, 1fr);
+  gap: 0;
   width: 100%;
   height: 100vh;
   min-height: 0;
-  padding: 18px;
+  padding: 0;
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: hidden;
 }
 
 .sidebar-layout-collapsed .app-shell {
-  grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
+  grid-template-columns: calc(var(--sidebar-collapsed-width) + 24px) minmax(0, 1fr);
 }
 
 .sidebar {
@@ -467,9 +474,12 @@ h6 {
   overflow: hidden;
   padding: 18px 12px 14px;
   color: var(--ink);
-  background: var(--card-fade-bg);
-  border: 1px solid var(--hairline);
-  border-radius: 24px;
+  /* Floating rail: a violet-washed card inset from the viewport so it reads as
+     a distinct panel, while the content + detail panels stay flush edge-to-edge. */
+  margin: 12px;
+  background: #f4f0fc;
+  border: 1px solid rgba(124, 92, 255, 0.12);
+  border-radius: 18px;
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-neu-card);
@@ -1564,8 +1574,8 @@ kbd {
 
 .primary-button,
 .secondary-button {
-  border-radius: 999px;
-  padding-inline: 18px;
+  border-radius: var(--radius-md);
+  padding-inline: 16px;
 }
 
 .primary-button {
@@ -1584,8 +1594,7 @@ kbd {
 .secondary-button:hover,
 .ghost-button:hover,
 .icon-button:hover {
-  transform: translateY(var(--motion-distance-lift));
-  box-shadow: var(--shadow-control-hover);
+  transform: none;
 }
 
 .primary-button:disabled:hover,
@@ -1611,15 +1620,17 @@ kbd {
 }
 
 .secondary-button {
-  padding: 0 11px;
+  padding: 0 14px;
   color: var(--ink);
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: #ffffff;
+  border: 1px solid var(--hairline-strong);
+  box-shadow: 0 1px 1px rgba(16, 24, 40, 0.04);
 }
 
 .secondary-button:hover,
 .ghost-button:hover {
-  border-color: rgba(124, 92, 255, 0.38);
+  background: #f5f5f8;
+  border-color: var(--hairline-strong);
 }
 
 .ghost-button {
@@ -1661,21 +1672,19 @@ kbd {
   fill: currentColor;
 }
 
-/* ---- Toolbar & icon buttons: existing soft-UI treatment (left as-is) ---- */
+/* ---- Toolbar & icon buttons: flat, crisp, hairline-bordered ---- */
 .icon-button,
 .toolbar-icon-button,
 .reset-filter-button,
 .toolbar-clear-button,
 .queue-page-button {
   color: var(--ink-secondary);
-  background: #eae9f1;
-  border: none;
-  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-md);
   font-weight: 600;
-  box-shadow:
-    5px 5px 14px #cbc9d6,
-    -5px -5px 14px rgba(255, 255, 255, 0.85);
-  transition: all 250ms ease-in-out;
+  box-shadow: 0 1px 1px rgba(16, 24, 40, 0.04);
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .icon-button:hover,
@@ -1686,11 +1695,10 @@ kbd {
 .icon-button:focus-visible,
 .toolbar-icon-button:focus-visible {
   color: var(--accent-strong);
-  font-weight: 500;
   transform: none;
-  box-shadow:
-    inset 5px 5px 8px #c3c1d1,
-    inset -5px -5px 8px #ffffff;
+  background: #f4f4f7;
+  border-color: var(--hairline-strong);
+  box-shadow: 0 1px 1px rgba(16, 24, 40, 0.04);
 }
 
 .icon-button:active,
@@ -1698,34 +1706,36 @@ kbd {
 .reset-filter-button:active,
 .queue-page-button:active {
   transform: none;
-  box-shadow:
-    inset 6px 6px 9px #bdbbcc,
-    inset -6px -6px 9px #ffffff;
+  background: #ececf1;
+  box-shadow: inset 0 1px 2px rgba(16, 24, 40, 0.07);
 }
 
 .icon-button,
 .toolbar-icon-button {
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
-/* Primary CTA: same raised → press-in feel, kept in the brand violet */
+/* Primary CTA: crisp solid violet with a tight drop + top inner highlight for
+   a premium, tactile edge (no neumorphic glow). */
 .primary-button {
-  border: none;
-  border-radius: 14px;
+  border: 1px solid var(--accent-strong);
+  border-radius: var(--radius-md);
   box-shadow:
-    6px 6px 16px rgba(124, 92, 255, 0.42),
-    -6px -6px 16px rgba(255, 255, 255, 0.45);
+    0 1px 2px rgba(16, 24, 40, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .primary-button:hover {
   transform: none;
+  background: var(--accent-strong);
+  border-color: var(--accent-deep);
   box-shadow:
-    inset 5px 5px 9px rgba(70, 36, 168, 0.5),
-    inset -5px -5px 9px rgba(176, 152, 255, 0.55);
+    0 2px 5px rgba(74, 35, 184, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 .primary-button:active {
-  box-shadow: inset 6px 6px 11px rgba(60, 28, 150, 0.55);
+  box-shadow: inset 0 1px 2px rgba(16, 24, 40, 0.22);
 }
 
 /* ---- Collapse the right (details) card ---- */
@@ -1738,15 +1748,13 @@ kbd {
   place-items: center;
   width: 34px;
   height: 34px;
-  color: #1c1f21;
-  background: #eae9f1;
-  border: none;
-  border-radius: 10px;
+  color: var(--ink-secondary);
+  background: #ffffff;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  box-shadow:
-    4px 4px 11px #cbc9d6,
-    -4px -4px 11px rgba(255, 255, 255, 0.85);
-  transition: color 200ms ease, box-shadow 200ms ease;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.10);
+  transition: color 200ms ease, background 200ms ease, box-shadow 200ms ease;
 }
 
 .panel-collapse-button svg {
@@ -1758,10 +1766,9 @@ kbd {
 }
 
 .panel-collapse-button:hover {
-  color: #1c1f21;
-  box-shadow:
-    inset 4px 4px 7px #c3c1d1,
-    inset -4px -4px 7px #ffffff;
+  color: var(--accent-strong);
+  background: #f4f4f7;
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.13);
 }
 
 /* collapsed: arrow points left — the direction it will reopen */
@@ -1965,7 +1972,7 @@ kbd {
   display: grid;
   grid-template-columns: 312px minmax(0, 1fr) 344px;
   align-items: stretch;
-  gap: 14px;
+  gap: 0;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -1983,7 +1990,7 @@ kbd {
 
 .detail-screen .ticket-workspace {
   grid-template-columns: minmax(0, 1fr) 292px;
-  gap: 10px;
+  gap: 0;
 }
 
 .queue-screen .conversation-panel,
@@ -2035,10 +2042,10 @@ kbd {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  background: var(--card-fade-bg);
-  border: 1px solid var(--hairline);
-  border-radius: 22px;
-  box-shadow: var(--shadow-neu-card);
+  background: #ffffff;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
 }
@@ -2071,7 +2078,7 @@ body:not(.is-admin) .admin-only {
 
 .table-view-active.queue-screen .ticket-workspace {
   grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 24px;
+  gap: 0;
 }
 
 .context-collapsed .ticket-workspace {
@@ -2089,13 +2096,20 @@ body:not(.is-admin) .admin-only {
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--card-fade-bg);
-  border: 1px solid var(--hairline);
-  border-radius: 22px;
-  box-shadow: var(--shadow-neu-card);
+  background: #ffffff;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   transition: var(--motion-transition-surface);
+}
+
+/* Edge-to-edge: panels meet at hairline dividers, not gaps. */
+.queue-preview,
+.context-panel,
+.conversation-panel {
+  border-left: 1px solid var(--hairline);
 }
 
 .queue-panel {
@@ -2264,11 +2278,12 @@ body:not(.is-admin) .admin-only {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 12px;
-  background: var(--card-fade-bg);
-  border: 1px solid var(--hairline);
-  border-radius: 22px;
-  box-shadow: var(--shadow-neu-card);
+  padding: 16px;
+  background: #ffffff;
+  border: none;
+  border-left: 1px solid var(--hairline);
+  border-radius: 0;
+  box-shadow: none;
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
 }
@@ -3081,7 +3096,9 @@ body:not(.is-admin) .admin-only {
 }
 
 .queue-table {
-  --queue-table-columns: 36px 116px 152px minmax(300px, 1.25fr) minmax(200px, 0.85fr) 104px 158px 120px;
+  /* Spread the flexible width across the three text columns (subject, customer,
+     assignee) so a wide table fills evenly instead of ballooning two columns. */
+  --queue-table-columns: 36px 124px 160px minmax(300px, 1.5fr) minmax(210px, 1fr) 112px minmax(170px, 1fr) 128px;
   width: 100%;
   min-width: 1284px;
   min-height: calc(100% + 1px);
@@ -3092,7 +3109,7 @@ body:not(.is-admin) .admin-only {
    information — drop it and let the remaining columns reclaim the space.
    Priority stays: unlike Status, it varies row-to-row even in the Open view. */
 .queue-view-open .queue-table {
-  --queue-table-columns: 36px 116px 152px minmax(300px, 1.3fr) minmax(200px, 0.95fr) 104px 170px;
+  --queue-table-columns: 36px 124px 160px minmax(300px, 1.5fr) minmax(210px, 1fr) 112px minmax(180px, 1fr);
   min-width: 1164px;
 }
 
@@ -3105,7 +3122,7 @@ body:not(.is-admin) .admin-only {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  background: #f6f5fb;
+  background: #fafafa;
 }
 
 .queue-table-header-row,
@@ -3501,7 +3518,7 @@ body:not(.is-admin) .admin-only {
 
 .table-ticket-id {
   color: var(--tessario-blue);
-  font-weight: 750;
+  font-weight: 500;
 }
 
 .activity-cell {
@@ -3516,7 +3533,7 @@ body:not(.is-admin) .admin-only {
   min-width: 0;
   overflow: hidden;
   color: var(--tessario-text);
-  font-weight: 580;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3660,10 +3677,10 @@ body:not(.is-admin) .admin-only {
   transition: color var(--motion-fast) var(--ease-out);
 }
 
-/* With subjects often repeating, lean weight onto who the ticket is from. */
 .customer-link strong {
-  font-weight: 700;
+  font-weight: 500;
   font-size: 12.5px;
+  color: var(--ink-secondary);
 }
 
 .table-ticket-id,
@@ -3685,8 +3702,13 @@ body:not(.is-admin) .admin-only {
 }
 
 .table-date {
-  color: var(--tessario-text);
-  font-weight: 750;
+  color: var(--ink-tertiary);
+  font-weight: 400;
+}
+
+.assignee-cell {
+  color: var(--ink-secondary);
+  font-weight: 400;
 }
 
 .subject-meta-line {
@@ -3920,10 +3942,10 @@ body:not(.is-admin) .admin-only {
    colour, the pill body stays neutral. Low/Normal read quiet; High and Urgent
    escalate, so the eye lands on what actually needs triage first. */
 .badge.priority {
-  gap: 5px;
+  gap: 6px;
   color: #5b6472;
-  background: #eef0f3;
-  border-color: #e1e5ea;
+  background: transparent;
+  border-color: transparent;
 }
 
 .badge.priority::before {
@@ -3945,14 +3967,14 @@ body:not(.is-admin) .admin-only {
 
 .badge.priority.is-high {
   color: var(--amber);
-  background: rgba(255, 159, 10, 0.13);
-  border-color: rgba(255, 159, 10, 0.26);
+  background: transparent;
+  border-color: transparent;
 }
 
 .badge.priority.is-urgent {
   color: var(--red);
-  background: rgba(229, 62, 62, 0.12);
-  border-color: rgba(229, 62, 62, 0.26);
+  background: rgba(229, 62, 62, 0.09);
+  border-color: transparent;
 }
 
 .chip {
@@ -8956,7 +8978,7 @@ body:not(.is-admin) .admin-only {
 
 /* Production polish layer: shared surface, form, table, modal, and drawer finish. */
 .sidebar {
-  box-shadow: inset -1px 0 0 rgba(124, 92, 255, 0.04), 12px 0 32px rgba(26, 26, 46, 0.06);
+  box-shadow: var(--shadow-neu-card);
 }
 
 .nav-item {
@@ -9026,11 +9048,11 @@ body:not(.is-admin) .admin-only {
 }
 
 .primary-button {
-  background: linear-gradient(180deg, var(--tessario-bright-blue), var(--tessario-blue));
+  background: var(--accent);
 }
 
 .primary-button:hover {
-  background: linear-gradient(180deg, #6b4ee4, var(--tessario-blue));
+  background: var(--accent-strong);
 }
 
 .topbar-action-button,
@@ -11209,9 +11231,9 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
   width: 100%;
   min-height: 34px;
   padding: 0 12px;
-  border-color: rgba(124, 92, 255, 0.64);
+  border-color: transparent;
   border-radius: 8px;
-  box-shadow: 0 8px 18px rgba(124, 92, 255, 0.16);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
   font-size: 12.5px;
   font-weight: 700;
   text-align: center;
@@ -11219,12 +11241,12 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 
 .preview-actions .preview-open-ticket-button:hover,
 .preview-actions .preview-open-ticket-button:focus-visible {
-  box-shadow: 0 11px 24px rgba(124, 92, 255, 0.22);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
   transform: translateY(var(--motion-distance-lift));
 }
 
 .preview-actions .preview-open-ticket-button:active {
-  box-shadow: 0 4px 11px rgba(124, 92, 255, 0.16);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
   transform: translateY(var(--motion-distance-press));
 }
 
@@ -11747,38 +11769,30 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
    =========================================================================== */
 .secondary-button,
 .ghost-button {
-  color: #4d4d4d;
-  background-color: #f3f3f3;
-  border: 2px solid #e4e4e4;
-  border-radius: 50px;
+  color: var(--ink);
+  background-color: #ffffff;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-md);
   font-weight: 600;
-  box-shadow:
-    inset 4px 4px 10px #d8d8d8,
-    inset -4px -4px 10px #ffffff;
-  /* No hover/state animation. */
-  transition: none;
+  box-shadow: 0 1px 1px rgba(16, 24, 40, 0.04);
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
-/* Hover and focus keep the resting look — no animation, no weight/size shift. */
 .secondary-button:hover,
 .ghost-button:hover,
 .secondary-button:focus-visible,
 .ghost-button:focus-visible {
-  color: #4d4d4d;
-  background-color: #f3f3f3;
-  font-weight: 600;
+  color: var(--ink);
+  background-color: #f5f5f8;
   transform: none;
-  box-shadow:
-    inset 4px 4px 10px #d8d8d8,
-    inset -4px -4px 10px #ffffff;
+  box-shadow: 0 1px 1px rgba(16, 24, 40, 0.04);
 }
 
 .secondary-button:active,
 .ghost-button:active {
   transform: none;
-  box-shadow:
-    inset 5px 5px 9px #d0d0d0,
-    inset -5px -5px 9px #ffffff;
+  background-color: #ececf1;
+  box-shadow: inset 0 1px 2px rgba(16, 24, 40, 0.06);
 }
 
 .secondary-button:disabled,
@@ -11787,9 +11801,7 @@ body:not(.sidebar-collapsed) .nav-item[data-tooltip]::after {
 .ghost-button:disabled:hover {
   transform: none;
   opacity: 0.5;
-  box-shadow:
-    inset 4px 4px 10px #d8d8d8,
-    inset -4px -4px 10px #ffffff;
+  box-shadow: 0 1px 1px rgba(16, 24, 40, 0.04);
 }
 
 /* Custom I-beam (text cursor) over text-entry surfaces. */
@@ -11828,26 +11840,28 @@ textarea,
   box-shadow: none;
 }
 
-/* The card. */
+/* The card — borderless, edges defined only by a soft diffuse shadow so the
+   cards read as gently raised rather than hard-outlined boxes. */
 .detail-screen .message-body {
   display: block;
   padding: 0;
   background: #ffffff;
-  border: 1px solid #e2e5ec;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
   overflow: hidden;
 }
 
-/* Colour-coded header strip. */
+/* Colour-coded header strip — no hard divider; the colour shift alone separates
+   it from the body, keeping the card edges soft. */
 .detail-screen .message-head {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
   padding: 8px 14px;
-  background: #eef0f3;
-  border-bottom: 1px solid rgba(16, 24, 40, 0.06);
+  background: #f1f3f6;
+  border-bottom: none;
 }
 
 .detail-screen .message-head strong {
@@ -11878,33 +11892,29 @@ textarea,
   font-size: 9.5px;
 }
 
-/* Agent / team = warm tan header. */
+/* Agent / team = soft warm tan header. */
 .detail-screen .message.rep .message-head {
-  background: #fbe7cd;
-  border-bottom-color: #f0d4a8;
+  background: #f6ecdc;
 }
 
-/* Customer = light blue header. */
+/* Customer = soft light blue header. */
 .detail-screen .message.customer .message-head {
-  background: #d9e7f7;
-  border-bottom-color: #c1d4ec;
+  background: #e4edf8;
 }
 
-/* Internal note = amber header + faint warm body wash. */
+/* Internal note = bright, clean pale-yellow header over a soft cream body, so it
+   reads as a luminous-but-gentle private aside (not a dull or loud highlight). */
 .detail-screen .message.note .message-head {
-  background: #fce7b4;
-  border-bottom-color: #f0d588;
+  background: #fdf4cc;
 }
 
-.detail-screen .message.rep .message-body,
-.detail-screen .message.customer .message-body {
-  background: #ffffff;
-  border-color: #e2e5ec;
+.detail-screen .message.note .message-head strong,
+.detail-screen .message.note .message-role {
+  color: #7a6a2e;
 }
 
 .detail-screen .message.note .message-body {
-  background: #fffdf6;
-  border-color: #efdfb6;
+  background: #fffdf0;
 }
 
 /* White body padding (head provides its own; body content is padded here). */
