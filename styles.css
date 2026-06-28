@@ -273,13 +273,13 @@ body:not(.home-active) .home-screen {
   height: 100vh;
   padding: 64px clamp(32px, 6vw, 84px);
   overflow: auto;
-  background-color: #f1f0f8;
+  background-color: #f5f7fb;
   background-image:
-    radial-gradient(52% 46% at 85% 2%, rgba(124, 92, 255, 0.30) 0%, transparent 58%),
-    radial-gradient(46% 44% at 97% 52%, rgba(139, 110, 255, 0.22) 0%, transparent 60%),
-    radial-gradient(58% 56% at 2% 96%, rgba(99, 52, 224, 0.22) 0%, transparent 62%),
-    radial-gradient(rgba(124, 92, 255, 0.05) 1px, transparent 1.5px),
-    linear-gradient(165deg, #f6f4fd 0%, #edecf8 55%, #f3f0fb 100%);
+    radial-gradient(46% 42% at 90% 0%, rgba(124, 92, 255, 0.24) 0%, transparent 55%),
+    radial-gradient(34% 38% at 100% 44%, rgba(139, 110, 255, 0.12) 0%, transparent 60%),
+    radial-gradient(44% 46% at 0% 100%, rgba(99, 52, 224, 0.10) 0%, transparent 58%),
+    radial-gradient(rgba(124, 92, 255, 0.045) 1px, transparent 1.5px),
+    linear-gradient(165deg, #fbfcff 0%, #f1f5fb 55%, #f6f8fd 100%);
   background-size: auto, auto, auto, 26px 26px, auto;
 }
 
@@ -573,19 +573,21 @@ body:not(.home-active) .home-screen {
 }
 
 .home-login-hint {
-  margin: 13px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0 0;
   color: var(--ink-tertiary);
-  font-size: 0.8rem;
-  text-align: center;
+  font-size: 0.76rem;
 }
 
 .home-login-hint code {
-  padding: 1.5px 6px;
+  padding: 1px 6px;
   border-radius: 5px;
   background: var(--accent-soft);
   color: var(--accent-strong);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
 }
 
 .home-login-button {
