@@ -314,15 +314,15 @@ body:not(.home-active) .home-screen {
 .home-brand {
   display: inline-flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   color: var(--repos-text);
 }
 
 .home-brand-mark {
   display: grid;
   place-items: center;
-  width: 60px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
   flex: none;
   border: 0;
   background: transparent;
@@ -337,7 +337,7 @@ body:not(.home-active) .home-screen {
 .home-brand strong {
   display: block;
   color: var(--repos-text);
-  font-size: 1.52rem;
+  font-size: 1.78rem;
   font-weight: 760;
   line-height: 1;
   letter-spacing: 0;
@@ -349,9 +349,9 @@ body:not(.home-active) .home-screen {
 
 .home-brand small {
   display: block;
-  margin-top: 6px;
+  margin-top: 8px;
   color: var(--ink-tertiary);
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -721,6 +721,24 @@ body:not(.home-active) .home-screen {
   .home-screen {
     gap: 30px;
     padding: 20px;
+  }
+
+  .home-brand {
+    gap: 14px;
+  }
+
+  .home-brand-mark {
+    width: 58px;
+    height: 58px;
+  }
+
+  .home-brand strong {
+    font-size: 1.46rem;
+  }
+
+  .home-brand small {
+    margin-top: 6px;
+    font-size: 0.76rem;
   }
 
   .home-copy h1 {
