@@ -2194,14 +2194,14 @@ function extendedThreadForCase(config) {
     { type: "customer", ageHours: config.ageHours - 48, body: config.resultTwo },
     { type: "timeline", author: "System", ageHours: config.ageHours - 48.2, body: `Attachment received: ${evidenceFile}.` },
     { type: "note", author: rep, ageHours: config.ageHours - 49, body: config.secondNote },
-    { type: "timeline", author: "System", ageHours: config.ageHours - 52, body: `Reassigned from ${rep} to ${specialist} for ${config.reassignReason}.` },
+    { type: "timeline", author: rep, ageHours: config.ageHours - 52, body: `Reassigned from ${rep} to ${specialist} for ${config.reassignReason}.` },
     { type: "rep", author: specialist, ageHours: config.ageHours - 56, body: config.checkThree },
     { type: "customer", ageHours: config.ageHours - 70, body: config.resultThree },
     { type: "timeline", author: specialist, ageHours: config.ageHours - 70.2, body: `Status changed to ${reviewStatus}.` },
     { type: "rep", author: specialist, ageHours: config.ageHours - 76, body: config.checkFour },
     { type: "customer", ageHours: config.ageHours - 92, body: config.resultFour },
     { type: "note", author: lead, ageHours: config.ageHours - 93, body: config.leadNote },
-    { type: "timeline", author: "System", ageHours: config.ageHours - 96, body: config.activityEvent },
+    { type: "timeline", author: /after SLA timer/i.test(config.activityEvent) ? "System" : specialist, ageHours: config.ageHours - 96, body: config.activityEvent },
     { type: "rep", author: specialist, ageHours: config.ageHours - 101, body: config.nextReply },
     { type: "customer", ageHours: config.ageHours - 116, body: config.customerFollowup },
     { type: "timeline", author: specialist, ageHours: config.ageHours - 116.2, body: `Status changed to ${finalStatus}.` },
@@ -2814,12 +2814,12 @@ function generateLongThreadMockTickets() {
         { type: "customer", ageHours: 48, body: "I uploaded the video. It shows F1, then beeps, then goes back to the same warning." },
         { type: "timeline", author: "System", ageHours: 47.8, body: "Attachment received: ro500-display-reset-loop.mov." },
         { type: "note", author: lead, ageHours: 47.4, body: "Video shows reset acknowledged but not completing rinse. Ask for filter label photo before part replacement." },
-        { type: "timeline", author: "System", ageHours: 46, body: "Reassigned from CS14 Robert to CS1 Nick for tankless RO review." },
+        { type: "timeline", author: lead, ageHours: 46, body: "Reassigned from CS14 Robert to CS1 Nick for tankless RO review." },
         { type: "rep", author: "CS1 Nick", ageHours: 44, body: "Thanks Dana. The video helps. Please also send a close-up of the filter labels, especially the small part numbers." },
         { type: "customer", ageHours: 18, body: "The labels say RO500-F1 and RO500-F2. I bought them from Amazon with the system." },
         { type: "rep", author: "CS1 Nick", ageHours: 12, body: "Those labels look right. Please run the rinse cycle for 10 minutes after reset, then power cycle the unit once." },
         { type: "customer", ageHours: 4, body: "I will try tonight. The unit is usable but the beep is driving us crazy." },
-        { type: "timeline", author: "System", ageHours: 3.8, body: "Status changed to Waiting Customer." }
+        { type: "timeline", author: "CS1 Nick", ageHours: 3.8, body: "Status changed to Waiting Customer." }
       ]
     }),
     buildLongThreadTicket({
@@ -2857,7 +2857,7 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS2 Julius", ageHours: 72, body: "Please send inlet pressure before the system, outlet pressure after the system, and a photo of the flow direction arrow." },
         { type: "customer", ageHours: 40, body: "Photos attached. Inlet reads 38 PSI and outlet is around 20 PSI with water running." },
         { type: "timeline", author: "System", ageHours: 39.8, body: "Attachment received: pressure-gauge-before-after.jpg." },
-        { type: "timeline", author: "System", ageHours: 38, body: "Status changed to Escalated." },
+        { type: "timeline", author: "CS2 Julius", ageHours: 38, body: "Status changed to Escalated." },
         { type: "note", author: "CS14 Robert", ageHours: 37.5, body: "Manager review: inlet 38 PSI is already low. Avoid saying filter is defective until fresh sediment stage and inlet pressure are confirmed." },
         { type: "rep", author: "CS2 Julius", ageHours: 34, body: "The outlet drop is meaningful, but the inlet pressure is also low. Please test with a fresh sediment cartridge and no other fixtures running." },
         { type: "customer", ageHours: 10, body: "This is frustrating. We bought the system to improve water, not lose pressure. I need a clear answer today." }
@@ -2898,7 +2898,7 @@ function generateLongThreadMockTickets() {
         { type: "rep", ageHours: 41, body: "Thanks. That confirms the order source, but we still need the item line or invoice view showing RCC7AK." },
         { type: "customer", ageHours: 26, body: "I found a PDF but it has my address. Is that okay to send?" },
         { type: "rep", ageHours: 24, body: "Yes, you can send it here. We only use it to verify purchase source, date, and model for the warranty record." },
-        { type: "timeline", author: "System", ageHours: 22, body: "Status changed to Waiting Customer." }
+        { type: "timeline", author: lead, ageHours: 22, body: "Status changed to Waiting Customer." }
       ]
     }),
     buildLongThreadTicket({
@@ -2937,7 +2937,7 @@ function generateLongThreadMockTickets() {
         { type: "note", author: "CS5 Michelle", ageHours: 60.2, body: "Photos show shipping damage before install. Amazon source. Review exception before promising replacement." },
         { type: "rep", author: "CS5 Michelle", ageHours: 57, body: "Thank you for sending those. Because this was purchased through Amazon and appears shipping-related, we need to review the replacement path carefully." },
         { type: "customer", ageHours: 29, body: "This is unacceptable. I paid for a working system, and I need the broken fitting replaced now." },
-        { type: "timeline", author: "System", ageHours: 28.5, body: "Status changed to Escalated." },
+        { type: "timeline", author: "CS5 Michelle", ageHours: 28.5, body: "Status changed to Escalated." },
         { type: "note", author: lead, ageHours: 27, body: "Escalated for manager review. Offer clear next step, but do not state replacement approval until exception is confirmed." },
         { type: "rep", author: lead, ageHours: 24, body: "I understand the frustration. I am escalating this for exception review and will update you with the approved next step as soon as we confirm it." }
       ]
@@ -2976,7 +2976,7 @@ function generateLongThreadMockTickets() {
         { type: "note", author: lead, ageHours: 82, body: "Home Depot source. Return approval may need seller path. Need water data before defect conclusion." },
         { type: "rep", ageHours: 78, body: "Thanks. To separate product performance from water chemistry, please send current iron, manganese, hardness, pH, and flow rate if available." },
         { type: "customer", ageHours: 39, body: "This is exactly the runaround I was worried about. I installed what you sell and my water still looks bad." },
-        { type: "timeline", author: "System", ageHours: 38.5, body: "Status changed to Overdue." },
+        { type: "timeline", author: lead, ageHours: 38.5, body: "Status changed to Overdue." },
         { type: "note", author: lead, ageHours: 37, body: "Overdue escalation risk. Acknowledge frustration and set expectation; do not approve return without policy/defect review." },
         { type: "rep", ageHours: 34, body: "I hear you. I am not trying to send you in circles. The next useful step is reviewing the current water test so we can determine whether this is a product issue, water chemistry limit, or return-policy path." }
       ]
@@ -3016,7 +3016,7 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS3 Sean", ageHours: 54, body: "Please push the brine line firmly into the fitting until it bottoms out, then start a manual regeneration." },
         { type: "customer", ageHours: 28, body: "After regeneration, I see some water now. It pulled down during the cycle, so I think it is working." },
         { type: "rep", author: "CS3 Sean", ageHours: 26, body: "That behavior sounds correct. Please monitor one more regeneration cycle and tell us if the level fails to change." },
-        { type: "timeline", author: "System", ageHours: 25, body: "Status changed to Open." }
+        { type: "timeline", author: "CS3 Sean", ageHours: 25, body: "Status changed to Open." }
       ]
     }),
     buildLongThreadTicket({
@@ -3054,7 +3054,7 @@ function generateLongThreadMockTickets() {
         { type: "note", author: "CS1 Nick", ageHours: 52, body: "Pins look seated. Ballast label matches UVF55FS. Receipt missing; check warranty before replacement language." },
         { type: "rep", author: "CS1 Nick", ageHours: 49, body: "The connection looks correct. Please send proof of purchase so we can review whether a replacement ballast is covered." },
         { type: "customer", ageHours: 22, body: "I do not have the receipt handy, but this is less than a year old." },
-        { type: "timeline", author: "System", ageHours: 20, body: "Replacement ballast exception approved by CS14 Robert." },
+        { type: "timeline", author: "Morgan Lee", ageHours: 20, body: "Replacement ballast exception approved by Morgan Lee." },
         { type: "timeline", author: "System", ageHours: 19.8, body: "Parts sent and follow-up due after delivery." },
         { type: "rep", author: "CS1 Nick", ageHours: 19, body: "We are sending a replacement ballast as an exception. Please keep the lamp and sleeve installed until the replacement arrives." }
       ]
@@ -3091,11 +3091,11 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS3 Sean", ageHours: 84, body: "Please flush the screen fully and send a close-up photo of the mesh after flushing." },
         { type: "customer", ageHours: 63, body: "Photo attached. The mesh has a bent area that still traps sediment." },
         { type: "note", author: "CS3 Sean", ageHours: 62, body: "Screen mesh appears damaged. Receipt registered; replacement screen is reasonable." },
-        { type: "timeline", author: "System", ageHours: 61.5, body: "Status changed to Pending Parts." },
+        { type: "timeline", author: "CS3 Sean", ageHours: 61.5, body: "Status changed to Pending Parts." },
         { type: "timeline", author: "System", ageHours: 60, body: "Parts sent and follow-up due after delivery." },
         { type: "rep", author: "CS3 Sean", ageHours: 59, body: "We are sending a replacement screen. After installing it, flush until the bowl runs clear." },
         { type: "customer", ageHours: 14, body: "The new screen is installed and flow is back to normal." },
-        { type: "timeline", author: "System", ageHours: 13.5, body: "Status changed to Resolved." }
+        { type: "timeline", author: "CS3 Sean", ageHours: 13.5, body: "Status changed to Resolved." }
       ]
     }),
     buildLongThreadTicket({
@@ -3167,9 +3167,9 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS5 Michelle", ageHours: 88, body: "Please drain the tank, check empty tank pressure, and send a short video showing water from the production line before the tank." },
         { type: "customer", ageHours: 67, body: "Pressure is 8 PSI empty. The video shows water coming from the line, but the tank stays light." },
         { type: "note", author: "CS5 Michelle", ageHours: 66.5, body: "Production flow confirmed and tank pressure corrected. Possible tank valve/bladder fault." },
-        { type: "timeline", author: "System", ageHours: 66, body: "Warranty receipt verified: ispring-receipt-91020.pdf." },
+        { type: "timeline", author: "CS5 Michelle", ageHours: 66, body: "Warranty receipt verified: ispring-receipt-91020.pdf." },
         { type: "rep", author: "CS5 Michelle", ageHours: 62, body: "Thanks. Since production flow is confirmed and tank pressure is correct, we are reviewing the tank under warranty." },
-        { type: "timeline", author: "System", ageHours: 58, body: "Replacement tank approved by CS14 Robert." },
+        { type: "timeline", author: "Morgan Lee", ageHours: 58, body: "Replacement tank approved by Morgan Lee." },
         { type: "timeline", author: "System", ageHours: 57.5, body: "Parts sent and follow-up due after delivery." },
         { type: "rep", author: "CS5 Michelle", ageHours: 56, body: "A replacement tank is being sent. Please keep the current tank installed until the replacement arrives so we can compare behavior." },
         { type: "customer", ageHours: 18, body: "Thank you. I will update once the replacement arrives." }
@@ -3247,7 +3247,7 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS2 Julius", ageHours: 45, body: "The raw test helps. We still need treated manganese numbers after the system to understand how much reduction is happening." },
         { type: "customer", ageHours: 20, body: "The lab can run treated water tomorrow. Should we stop using the system?" },
         { type: "rep", author: "CS2 Julius", ageHours: 18, body: "You can continue using it unless there is a pressure or leak issue. The test will help determine whether pre-treatment or flow adjustment is needed." },
-        { type: "timeline", author: "System", ageHours: 17.5, body: "Status changed to Waiting Customer." }
+        { type: "timeline", author: "CS2 Julius", ageHours: 17.5, body: "Status changed to Waiting Customer." }
       ]
     }),
     buildLongThreadTicket({
@@ -3286,7 +3286,7 @@ function generateLongThreadMockTickets() {
         { type: "timeline", author: "System", ageHours: 60, body: "Parts sent and follow-up due after delivery." },
         { type: "rep", author: "CS5 Michelle", ageHours: 59, body: "We are sending a brushed nickel replacement faucet. You can continue the rest of the installation when it arrives." },
         { type: "customer", ageHours: 16, body: "Replacement arrived and looks good. Thank you." },
-        { type: "timeline", author: "System", ageHours: 15.5, body: "Status changed to Resolved." }
+        { type: "timeline", author: "CS5 Michelle", ageHours: 15.5, body: "Status changed to Resolved." }
       ]
     }),
     buildLongThreadTicket({
@@ -3320,11 +3320,11 @@ function generateLongThreadMockTickets() {
         { type: "timeline", author: "System", ageHours: 119.6, body: "System detected possible purchase source from attachment: Amazon. Needs rep review." },
         { type: "rep", ageHours: 118, body: "I can check. Please confirm the email you want tied to the warranty record." },
         { type: "customer", ageHours: 98, body: "Use this email address. The invoice is attached to the ticket." },
-        { type: "timeline", author: "System", ageHours: 97.8, body: "Receipt verified: amazon-ro500ak-invoice.pdf." },
+        { type: "timeline", author: "Morgan Lee", ageHours: 97.8, body: "Receipt verified: amazon-ro500ak-invoice.pdf." },
         { type: "note", author: lead, ageHours: 97, body: "Receipt shows eligible seller/date/model. Register warranty under customer email." },
-        { type: "timeline", author: "System", ageHours: 96, body: "Warranty registered by CS14 Robert." },
+        { type: "timeline", author: "Morgan Lee", ageHours: 96, body: "Warranty registered by Morgan Lee." },
         { type: "rep", ageHours: 94, body: "Your RO500AK warranty registration is complete under this email address." },
-        { type: "timeline", author: "System", ageHours: 93.8, body: "Status changed to Closed." }
+        { type: "timeline", author: "Morgan Lee", ageHours: 93.8, body: "Status changed to Closed." }
       ]
     })
   ];
