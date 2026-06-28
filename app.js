@@ -1388,8 +1388,7 @@ async function handleHomeLogin(event) {
   setHomeStatus("Signing in...");
 
   if (!window.fetch) {
-    setHomeStatus("Opening local workspace.");
-    enterWorkspace();
+    setHomeStatus("RepOS sign in requires the backend connection. Try again when the server is available.", true);
     return;
   }
 
@@ -1411,6 +1410,7 @@ async function handleHomeLogin(event) {
     if (!response.ok) throw new Error(`Sign in failed: ${response.status}`);
     const payload = await response.json();
     sessionUser = isBackendPlainObject(payload?.user) ? payload.user : sessionUser;
+    await hydrateBackendState();
     if (applySessionUserToWorkspace()) {
       updateProfileButton();
       render({ preserveQueueList: true, suppressQueueRowEnter: true });
@@ -1419,9 +1419,9 @@ async function handleHomeLogin(event) {
     setHomeStatus("Opening RepOS...");
     enterWorkspace();
   } catch (error) {
-    console.warn("RepOS sign in is unavailable; opening local workspace.", error);
-    setHomeStatus("RepOS backend unavailable. Opening local workspace.");
-    enterWorkspace();
+    console.warn("RepOS sign in is unavailable.", error);
+    setHomeStatus("RepOS sign in is unavailable. Check the server connection and try again.", true);
+    el.homePasswordInput?.focus({ preventScroll: true });
   } finally {
     if (submitButton) submitButton.disabled = false;
   }
@@ -1443,6 +1443,42 @@ function showHomeScreen() {
   setHomeStatus("");
   applyUiState();
   window.requestAnimationFrame(() => el.homeEmailInput?.focus({ preventScroll: true }));
+}
+
+function finalizeSignOut(message = "Signed out.") {
+  sessionUser = null;
+  backendAssignmentUsers = [];
+  backendSyncAvailable = false;
+  notificationsOpen = false;
+  closeNotificationsPanel();
+  [el.ticketModal, el.customerHistoryModal, el.workflowConfirmModal, el.profileModal, el.knowledgeFileModal].forEach((dialog) => {
+    if (!dialog) return;
+    if (dialog.open && typeof dialog.close === "function") dialog.close();
+    dialog.hidden = true;
+    dialog.setAttribute("hidden", "");
+  });
+  if (location.hash) history.replaceState(null, "", `${location.pathname}${location.search}`);
+  showHomeScreen();
+  setHomeStatus(message);
+}
+
+async function handleSignOut() {
+  if (!window.fetch) {
+    finalizeSignOut();
+    return;
+  }
+  const signOutButton = document.querySelector("#signOutButton");
+  if (signOutButton) signOutButton.disabled = true;
+  try {
+    const response = await fetch("/api/auth/logout", { method: "POST" });
+    if (!response.ok) throw new Error(`Sign out failed: ${response.status}`);
+    finalizeSignOut();
+  } catch (error) {
+    console.warn("RepOS sign out failed.", error);
+    showToast("Sign out failed. Check the server connection and try again.");
+  } finally {
+    if (signOutButton) signOutButton.disabled = false;
+  }
 }
 
 function init() {
@@ -1568,7 +1604,6 @@ function init() {
   render();
   openTicketFromHash();
   window.addEventListener("hashchange", openTicketFromHash);
-  hydrateBackendState();
 }
 
 // "Copy ticket link" produces a `#<ticket-id>` URL; honor it on load and on
@@ -6658,6 +6693,7 @@ function renderProfileModal() {
         ${renderWorkspaceTab(workload)}
       </div>
       <div class="profile-actions">
+        <button class="secondary-button" id="signOutButton" type="button">Sign out</button>
         <button class="secondary-button" id="cancelProfileButton" type="button">Close</button>
         <button class="primary-button" type="submit">Save settings</button>
       </div>
@@ -6666,6 +6702,7 @@ function renderProfileModal() {
 
   el.profileModal.querySelector("#closeProfileButton").addEventListener("click", closeProfileModal);
   el.profileModal.querySelector("#cancelProfileButton").addEventListener("click", closeProfileModal);
+  el.profileModal.querySelector("#signOutButton").addEventListener("click", handleSignOut);
   el.profileModal.querySelector("#profileForm").addEventListener("submit", handleProfileSave);
   el.profileModal.querySelectorAll("[data-profile-tab]").forEach((button) => {
     button.addEventListener("click", () => {

@@ -26,6 +26,8 @@ const maxUploadBytes = Number(process.env.TESSARIO_MAX_UPLOAD_BYTES || 20 * 1024
 const authMode = process.env.TESSARIO_AUTH_MODE || "development";
 const sessionCookieName = "tessario_session";
 const sessionDays = Number(process.env.TESSARIO_SESSION_DAYS || 7);
+const secureSessionCookies = process.env.REPOS_SECURE_COOKIES === "1" ||
+  (process.env.REPOS_SECURE_COOKIES !== "0" && (process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL)));
 // Demo workspace password. Override in production via REPOS_DEMO_PASSWORD.
 // The default user is lazily seeded with this on first password login.
 const demoPassword = process.env.REPOS_DEMO_PASSWORD || "repos-demo";
@@ -1332,11 +1334,11 @@ function parseCookies(cookieHeader) {
 }
 
 function sessionCookie(token, expiresAt) {
-  return `${sessionCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Expires=${new Date(expiresAt).toUTCString()}`;
+  return `${sessionCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Expires=${new Date(expiresAt).toUTCString()}${secureSessionCookies ? "; Secure" : ""}`;
 }
 
 function expiredSessionCookie() {
-  return `${sessionCookieName}=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  return `${sessionCookieName}=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secureSessionCookies ? "; Secure" : ""}`;
 }
 
 function setCookie(response, cookie) {
