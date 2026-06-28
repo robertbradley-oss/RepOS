@@ -45,7 +45,7 @@ try {
 
   const settingsRead = await fetch(`http://127.0.0.1:${port}/api/settings`);
   const settingsPayload = await settingsRead.json();
-  if (!settingsRead.ok || settingsPayload.settings?.workspaceName !== "iSpring Water Systems" || settingsPayload.settings?.currentUserName !== "CS14 Robert") {
+  if (!settingsRead.ok || settingsPayload.settings?.workspaceName !== "iSpring Water Systems" || settingsPayload.settings?.currentUserName !== "Morgan Lee") {
     throw new Error("Settings read did not return the expected iSpring workspace defaults.");
   }
 
@@ -246,7 +246,7 @@ try {
         id: "SMOKE-CUSTOMEREMAIL",
         subject: "Smoke customerEmail linking",
         status: "Open",
-        assignee: "CS14 Robert",
+        assignee: "Morgan Lee",
         customerEmail: "Smoke@Example.com",
         dueAt: dueSoonAt
       },
@@ -261,7 +261,7 @@ try {
         id: "SMOKE-PENDING",
         subject: "Smoke pending queue",
         status: "Closed, Waiting On Response",
-        assignee: "CS14 Robert",
+        assignee: "Morgan Lee",
         customerEmail: "pending@example.com",
         dueAt: normalDueAt
       }
@@ -497,7 +497,7 @@ try {
   const repLogin = await fetch(`http://127.0.0.1:${port}/api/auth/dev-login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "robbybradley@gmail.com" })
+    body: JSON.stringify({ email: "morgan.lee@demo.repos" })
   });
   if (!repLogin.ok) throw new Error(`Rep dev login failed: ${repLogin.status}`);
   const repCookie = repLogin.headers.get("set-cookie")?.split(";")[0];
@@ -623,7 +623,7 @@ async function runStrictAuthSmoke() {
     const login = await fetch(`http://127.0.0.1:${strictPort}/api/auth/dev-login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "robbybradley@gmail.com" })
+      body: JSON.stringify({ email: "morgan.lee@demo.repos" })
     });
     if (!login.ok) throw new Error(`Strict dev login failed: ${login.status}`);
     const cookie = login.headers.get("set-cookie")?.split(";")[0];

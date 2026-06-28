@@ -1016,9 +1016,9 @@ function defaultWorkspaceSettings() {
     workspaceName: "iSpring Water Systems",
     workspaceLabel: "Workspace: iSpring Water Systems",
     supportEmail: "support@ispringfilters.com",
-    currentUserName: "CS14 Robert",
+    currentUserName: "Morgan Lee",
     currentUserRole: "admin",
-    defaultAssignee: "CS14 Robert",
+    defaultAssignee: "Morgan Lee",
     timezone: "America/New_York",
     demoMode: true,
     defaultSlaHours: 48,
@@ -1296,8 +1296,8 @@ async function createSessionForUser(response, user) {
 function defaultAuthUser(settings = defaultWorkspaceSettings()) {
   const currentSettings = normalizeWorkspaceSettings(settings);
   return {
-    id: "cs14-robert",
-    email: "robbybradley@gmail.com",
+    id: "morgan-lee",
+    email: "morgan.lee@demo.repos",
     displayName: currentSettings.currentUserName,
     repName: currentSettings.currentUserName,
     role: currentSettings.currentUserRole,

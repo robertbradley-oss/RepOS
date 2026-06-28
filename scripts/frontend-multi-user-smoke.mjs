@@ -59,7 +59,7 @@ function createHarness(fetchPayload = null, options = {}) {
   let persistTicketCalls = 0;
   let reassignTicketCalls = 0;
   const context = {
-    CURRENT_USER: "CS14 Robert",
+    CURRENT_USER: "Morgan Lee",
     MIN_TICKET_NUMBER: 1000,
     STORAGE_KEY: "tickets",
     USERS_STORAGE_KEY: "users",
@@ -77,18 +77,18 @@ function createHarness(fetchPayload = null, options = {}) {
     backendAssignmentUsers: [],
     userRoles: ["admin", "manager", "rep"],
     workspaceSettings: {
-      currentUserName: "CS14 Robert",
+      currentUserName: "Morgan Lee",
       currentUserRole: "admin",
-      defaultAssignee: "CS14 Robert"
+      defaultAssignee: "Morgan Lee"
     },
-    profile: { displayName: "CS14 Robert", role: "Admin" },
+    profile: { displayName: "Morgan Lee", role: "Workspace Admin" },
     users: [
-      { id: "cs14-robert", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
+      { id: "morgan-lee", name: "Morgan Lee", role: "admin", assignmentEligible: true, removed: false },
       { id: "cs1-nick", name: "CS1 Nick", role: "rep", assignmentEligible: true, removed: false }
     ],
     tickets: [
       { id: "NICK-1", assignee: "CS1 Nick" },
-      { id: "ROBERT-1", assignee: "CS14 Robert" }
+      { id: "MORGAN-1", assignee: "Morgan Lee" }
     ],
     notifications: [],
     knowledgeDocs: [],
@@ -165,11 +165,11 @@ function createHarness(fetchPayload = null, options = {}) {
     },
     normalizeWorkspaceSettings(value = {}) {
       return {
-        currentUserName: context.normalizeRepName(value.currentUserName) || "CS14 Robert",
+        currentUserName: context.normalizeRepName(value.currentUserName) || "Morgan Lee",
         currentUserRole: ["admin", "manager", "rep", "owner"].includes(String(value.currentUserRole || "").toLowerCase())
           ? String(value.currentUserRole).toLowerCase()
           : "rep",
-        defaultAssignee: context.normalizeRepName(value.defaultAssignee || value.currentUserName) || "CS14 Robert"
+        defaultAssignee: context.normalizeRepName(value.defaultAssignee || value.currentUserName) || "Morgan Lee"
       };
     },
     applyWorkspaceSettings() {},
@@ -251,9 +251,9 @@ async function flushBackendAssignmentHydration() {
     },
     state: {
       settings: {
-        currentUserName: "CS14 Robert",
+        currentUserName: "Morgan Lee",
         currentUserRole: "admin",
-        defaultAssignee: "CS14 Robert"
+        defaultAssignee: "Morgan Lee"
       }
     }
   };

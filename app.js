@@ -19,7 +19,7 @@ const LEGACY_KNOWLEDGE_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.knowledge
 const LEGACY_PRODUCT_LINK_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.productLinkLibrary.v1`;
 const LEGACY_CUSTOMER_ACCOUNTS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.customerAccounts.v1`;
 const LEGACY_NOTIFICATIONS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.notifications.v1`;
-const CURRENT_USER = "CS14 Robert";
+const CURRENT_USER = "Morgan Lee";
 const MIN_TICKET_NUMBER = 100000;
 const verifiedPurchaseSources = ["Amazon", "iSpring direct", "Home Depot", "Lowe's", "Walmart", "eBay"];
 const legacyRepNameMap = {
@@ -54,9 +54,9 @@ const workspaceConfig = {
     workspaceName: "iSpring Water Systems",
     workspaceLabel: "Workspace: iSpring Water Systems",
     supportEmail: "support@ispringfilters.com",
-    currentUserName: "CS14 Robert",
+    currentUserName: "Morgan Lee",
     currentUserRole: "admin",
-    defaultAssignee: "CS14 Robert",
+    defaultAssignee: "Morgan Lee",
     timezone: "America/New_York",
     demoMode: true,
     allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
@@ -213,15 +213,15 @@ const workspaceConfig = {
     confirms: "Customer provides enough detail for a workflow decision."
   },
   defaultProfile: {
-    firstName: "Robert",
-    lastName: "",
-    displayName: "CS14 Robert",
-    email: "cs14.ispring@hotmail.com",
+    firstName: "Morgan",
+    lastName: "Lee",
+    displayName: "Morgan Lee",
+    email: "morgan.lee@demo.repos",
     phone: "678-555-0144",
     mobile: "",
-    extension: "CS14",
-    username: "cs14",
-    role: "Admin",
+    extension: "DEMO",
+    username: "morgan.lee",
+    role: "Workspace Admin",
     twoFactorEnabled: true,
     defaultLandingView: "open",
     defaultQueueView: "table",
@@ -234,7 +234,7 @@ const workspaceConfig = {
     ticketDensity: "Comfortable",
     defaultSort: "Last Updated",
     autoOpenFirstTicket: false,
-    mySignature: "Thanks,\nRobert",
+    mySignature: "Thanks,\nMorgan",
     departmentSignature: "Customer Service Department\niSpring Water Systems",
     defaultSignature: "My Signature",
     insertSignature: true,
@@ -254,6 +254,7 @@ const workspaceConfig = {
     quietHoursEnd: "08:00"
   },
   reps: [
+    { id: "morgan-lee", name: "Morgan Lee", role: "admin", assignmentEligible: true, removed: false },
     { id: "robert-bradley", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
     { id: "nick-lawrence", name: "CS1 Nick", role: "rep", assignmentEligible: true, removed: false },
     { id: "julius-francis", name: "CS2 Julius", role: "rep", assignmentEligible: true, removed: false },
@@ -4625,9 +4626,9 @@ function applyWorkspaceSettings() {
 function normalizeProfile(sourceProfile) {
   const normalized = { ...sourceProfile };
   normalized.displayName = normalizeRepName(normalized.displayName) || currentDemoUserName();
-  normalized.firstName = normalized.firstName || "Robert";
-  normalized.lastName = "";
-  normalized.mySignature = normalized.mySignature || "Thanks,\nRobert";
+  normalized.firstName = normalized.firstName || "Morgan";
+  normalized.lastName = normalized.lastName || "Lee";
+  normalized.mySignature = normalized.mySignature || "Thanks,\nMorgan";
   return normalized;
 }
 
@@ -5797,7 +5798,7 @@ function sourceTicketForReceipt(receipt, candidates = tickets) {
 
 function reconcileReceiptUploadersForAccount(account, history = tickets) {
   if (!account || !Array.isArray(account.receipts)) return false;
-  const defaultUploaderNames = new Set([CURRENT_USER, currentDemoUserName(), profileDisplayName(), "Robert"].map(normalizeRepName).filter(Boolean));
+  const defaultUploaderNames = new Set([CURRENT_USER, currentDemoUserName(), profileDisplayName(), "Morgan"].map(normalizeRepName).filter(Boolean));
   let changed = false;
   account.receipts.forEach((receipt) => {
     const sourceTicket = sourceTicketForReceipt(receipt, history);
@@ -13969,7 +13970,7 @@ function replacementPartFor(ticket) {
 }
 
 function macroRepName() {
-  return profileDisplayName().split(" ")[0] || profile.firstName || "Robert";
+  return profileDisplayName().split(" ")[0] || profile.firstName || "Morgan";
 }
 
 function reviewLinkFor(ticket) {

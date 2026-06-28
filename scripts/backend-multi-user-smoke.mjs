@@ -25,11 +25,11 @@ try {
 
   const session = await getJson(port, "/api/session");
   assert(session.response.ok && session.payload.user?.role === "admin", "Development session did not resolve the default admin user.");
-  assert(session.payload.user?.assignmentName === "CS14 Robert", "Session user did not include the expected assignment name.");
+  assert(session.payload.user?.assignmentName === "Morgan Lee", "Session user did not include the expected assignment name.");
 
   const current = await getJson(port, "/api/users/current");
   assert(current.response.ok, `Current user endpoint failed: ${current.response.status}`);
-  assert(current.payload.user?.email === "robbybradley@gmail.com", "Current user endpoint did not return the session user.");
+  assert(current.payload.user?.email === "morgan.lee@demo.repos", "Current user endpoint did not return the session user.");
   assert(!("token" in current.payload.user), "Current user endpoint leaked a token field.");
 
   const directory = await getJson(port, "/api/users");
@@ -39,7 +39,7 @@ try {
   assert(!directory.payload.users.some((user) => user.repName === "CS9 Inactive"), "Users endpoint included an inactive user.");
   assert(directory.payload.users.every((user) => !("token" in user) && !("password" in user)), "Users endpoint leaked sensitive fields.");
 
-  const adminCookie = await login(port, "robbybradley@gmail.com");
+  const adminCookie = await login(port, "morgan.lee@demo.repos");
   const ownerCookie = await login(port, "owner@example.com");
   const managerCookie = await login(port, "manager@example.com");
   const repCookie = await login(port, "nick@example.com");
@@ -167,9 +167,9 @@ async function writeSeedState(targetFile) {
       workspaceName: "iSpring Water Systems",
       workspaceLabel: "Workspace: iSpring Water Systems",
       supportEmail: "support@ispringfilters.com",
-      currentUserName: "CS14 Robert",
+      currentUserName: "Morgan Lee",
       currentUserRole: "admin",
-      defaultAssignee: "CS14 Robert",
+      defaultAssignee: "Morgan Lee",
       timezone: "America/New_York",
       demoMode: true,
       defaultSlaHours: 48,
@@ -177,7 +177,7 @@ async function writeSeedState(targetFile) {
       allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
     },
     authUsers: [
-      authUser("cs14-robert", "robbybradley@gmail.com", "CS14 Robert", "admin", now),
+      authUser("morgan-lee", "morgan.lee@demo.repos", "Morgan Lee", "admin", now),
       authUser("owner-olivia", "owner@example.com", "Owner Olivia", "owner", now),
       authUser("manager-maya", "manager@example.com", "Manager Maya", "manager", now),
       authUser("cs1-nick", "nick@example.com", "CS1 Nick", "rep", now),
