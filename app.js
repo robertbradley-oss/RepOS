@@ -1266,6 +1266,9 @@ let pendingReceiptUpload = {
 };
 
 const el = {
+  homeScreen: document.querySelector("#homeScreen"),
+  homeLoginForm: document.querySelector("#homeLoginForm"),
+  homeLoginError: document.querySelector("#homeLoginError"),
   appShell: document.querySelector(".app-shell"),
   workspace: document.querySelector(".workspace"),
   ticketWorkspace: document.querySelector(".ticket-workspace"),
@@ -1350,6 +1353,7 @@ function animateDialogClose(dialog, afterFn) {
 
 function init() {
   closeTicketModal();
+  setupPublicHome();
   applyWorkspaceBranding();
   renderToolbarSelectOptions();
   setupCustomSelects();
@@ -1469,6 +1473,90 @@ function init() {
   openTicketFromHash();
   window.addEventListener("hashchange", openTicketFromHash);
   hydrateBackendState();
+}
+
+function setupPublicHome() {
+  if (!el.homeScreen || !el.homeLoginForm) return;
+  el.homeLoginForm.addEventListener("submit", handlePublicHomeLogin);
+
+  const emailInput = el.homeLoginForm.querySelector("#homeLoginEmail");
+  const passwordInput = el.homeLoginForm.querySelector("#homeLoginPassword");
+  const pwToggle = el.homeLoginForm.querySelector("#homePwToggle");
+  const ssoButton = el.homeLoginForm.querySelector("#homeSsoButton");
+
+  pwToggle?.addEventListener("click", () => {
+    if (!passwordInput) return;
+    const reveal = passwordInput.type === "password";
+    passwordInput.type = reveal ? "text" : "password";
+    pwToggle.classList.toggle("is-revealed", reveal);
+    pwToggle.setAttribute("aria-pressed", String(reveal));
+    pwToggle.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
+    passwordInput.focus({ preventScroll: true });
+  });
+
+  // Demo accounts: the dev workspace has a single seeded demo login, so every
+  // pill prefills those working credentials and leaves the user ready to sign in.
+  el.homeLoginForm.querySelectorAll(".home-demo-pill").forEach((pill) => {
+    pill.addEventListener("click", () => {
+      if (emailInput) emailInput.value = "robbybradley@gmail.com";
+      if (passwordInput) passwordInput.value = "repos-demo";
+      if (el.homeLoginError) el.homeLoginError.hidden = true;
+      el.homeLoginForm.querySelector("button[type='submit']")?.focus({ preventScroll: true });
+    });
+  });
+
+  ssoButton?.addEventListener("click", () => {
+    showPublicHomeError("Single sign-on isn't configured for the demo. Use a demo account above to sign in.");
+  });
+}
+
+async function handlePublicHomeLogin(event) {
+  event.preventDefault();
+  if (!window.fetch) {
+    showPublicHomeError("Sign-in requires a local RepOS server. Start the app server and try again.");
+    return;
+  }
+
+  const form = new FormData(el.homeLoginForm);
+  const email = String(form.get("email") || "").trim();
+  const submitButton = el.homeLoginForm.querySelector("button[type='submit']");
+  if (el.homeLoginError) el.homeLoginError.hidden = true;
+  if (submitButton) submitButton.disabled = true;
+
+  try {
+    const response = await fetch("/api/auth/dev-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(email ? { email } : {})
+    });
+    if (!response.ok) throw new Error(`RepOS sign-in failed: ${response.status}`);
+    const payload = await response.json().catch(() => ({}));
+    sessionUser = isBackendPlainObject(payload?.user) ? payload.user : sessionUser;
+    enterRepOSWorkspace();
+    hydrateBackendState();
+  } catch (error) {
+    console.warn("RepOS sign-in failed.", error);
+    showPublicHomeError("We could not sign you in. Check that the RepOS server is running, then try again.");
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
+}
+
+function showPublicHomeError(message) {
+  if (!el.homeLoginError) return;
+  el.homeLoginError.textContent = message;
+  el.homeLoginError.hidden = false;
+}
+
+function enterRepOSWorkspace() {
+  el.homeScreen.hidden = true;
+  el.appShell.hidden = false;
+  document.body.classList.remove("public-home");
+  document.body.classList.add("workspace-authenticated");
+  requestAnimationFrame(() => {
+    applyUiState();
+    syncSidebarActiveIndicator();
+  });
 }
 
 // "Copy ticket link" produces a `#<ticket-id>` URL; honor it on load and on
