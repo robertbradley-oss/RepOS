@@ -6120,13 +6120,14 @@ function setTicketPurchaseSource(ticket, source, actor = "System", manual = fals
   ticket.purchaseSource = nextSource;
   ticket.purchaseSourceMode = "manual";
   ticket.detectedPurchaseSource = "";
+  const actorName = actor || currentDemoUserName();
   const account = accountForTicket(ticket);
   if (isVerifiedPurchaseSource(nextSource)) account.purchaseSource = nextSource;
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
-    body: `Purchase source updated to ${nextSource} by ${actor}.`
+    body: `Purchase source updated to ${nextSource} by ${actorName}.`
   });
   persistCustomerAccounts();
   persistTickets();
@@ -6184,7 +6185,7 @@ function saveTicketReceiptToAccount(ticket) {
   }
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: uploadedBy,
     timestamp: new Date().toISOString(),
     body: added
       ? `Receipt saved to customer account by ${uploadedBy}.`
@@ -6224,7 +6225,7 @@ function saveUploadedReceiptToAccount(ticket, file) {
   const added = addReceiptToAccount(account, ticket, `Uploaded from Customer History for ${ticketDisplayId(ticket)} by ${uploadedBy}`, fileMeta);
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: uploadedBy,
     timestamp: uploadedAt,
     body: added
       ? `Receipt ${file.name} uploaded by ${uploadedBy} and saved to customer history.`
@@ -6251,13 +6252,14 @@ function registerTicketWarranty(ticket) {
   ticket.warranty = "Registered";
   ticket.warrantyReviewStatus = "";
   const receipt = receiptRecordFor(ticket);
-  const added = addWarrantyToAccount(account, ticket, `Registered from ${ticketDisplayId(ticket)} by ${profileDisplayName()}`, receipt);
+  const actorName = currentDemoUserName();
+  const added = addWarrantyToAccount(account, ticket, `Registered from ${ticketDisplayId(ticket)} by ${actorName}`, receipt);
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
     body: added
-      ? `Warranty registered by ${profileDisplayName()}${receipt?.fileName ? ` for receipt ${receipt.fileName}` : ""}.`
+      ? `Warranty registered by ${actorName}${receipt?.fileName ? ` for receipt ${receipt.fileName}` : ""}.`
       : `Warranty registration already on file.`
   });
   persistCustomerAccounts();
@@ -6276,17 +6278,18 @@ function registerWarrantyForReceipt(ticket, receiptId) {
   const account = accountForTicket(ticket);
   const receipt = account.receipts.find((record) => record.id === receiptId);
   if (!receipt) return;
-  const added = addWarrantyToAccount(account, ticket, `Registered from Customer History by ${profileDisplayName()}`, receipt);
+  const actorName = currentDemoUserName();
+  const added = addWarrantyToAccount(account, ticket, `Registered from Customer History by ${actorName}`, receipt);
   if (recordMatchesTicket(receipt, ticket)) {
     ticket.warranty = "Registered";
     ticket.warrantyReviewStatus = "";
   }
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
     body: added
-      ? `Warranty registered by ${profileDisplayName()} for receipt ${receipt.fileName}.`
+      ? `Warranty registered by ${actorName} for receipt ${receipt.fileName}.`
       : `Warranty registration already on file for receipt ${receipt.fileName}.`
   });
   persistCustomerAccounts();
@@ -6336,13 +6339,14 @@ function openUnregisterWarrantyConfirmModal(ticketId, warrantyId) {
   bindWorkflowCloseButtons();
   el.workflowConfirmModal.querySelector("#unregisterWarrantyConfirmForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    const removed = unregisterWarrantyRecord(account, warranty, ticket, `Registration removed by ${profileDisplayName()}`);
+    const actorName = currentDemoUserName();
+    const removed = unregisterWarrantyRecord(account, warranty, ticket, `Registration removed by ${actorName}`);
     if (removed) {
       ticket.conversation.push({
         type: "timeline",
-        author: "System",
+        author: actorName,
         timestamp: new Date().toISOString(),
-        body: `Warranty registration removed by ${profileDisplayName()}${warranty.receiptFileName ? ` for receipt ${warranty.receiptFileName}` : ""}.`
+        body: `Warranty registration removed by ${actorName}${warranty.receiptFileName ? ` for receipt ${warranty.receiptFileName}` : ""}.`
       });
     }
     persistCustomerAccounts();
@@ -12043,6 +12047,7 @@ function handleComposerAttachmentSelection(event) {
   if (!ticket) return;
   const fileNames = files.map((file) => file.name).join(", ");
   const uploadedAt = new Date().toISOString();
+  const actorName = currentDemoUserName();
   const newAttachments = files.map((file) => ({
     type: composerAttachmentType(file),
     file: file.name,
@@ -12051,15 +12056,15 @@ function handleComposerAttachmentSelection(event) {
     sizeBytes: file.size || 0,
     uploaded: dateTimeLabel(uploadedAt),
     uploadedAt,
-    uploadedBy: profileDisplayName(),
+    uploadedBy: actorName,
     status: "Attached by rep"
   }));
   ticket.attachments = [...(ticket.attachments || []), ...newAttachments];
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: uploadedAt,
-    body: `${profileDisplayName()} attached ${fileNames}.`
+    body: `${actorName} attached ${fileNames}.`
   });
   const proofAttachments = newAttachments.filter(attachmentLooksLikeOrderProof);
   if (proofAttachments.length) {
@@ -12316,11 +12321,12 @@ function escalateTicket(ticketId) {
     return;
   }
   ticket.escalated = true;
+  const actorName = currentDemoUserName();
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
-    body: `${profileDisplayName()} escalated this ticket.`
+    body: `${actorName} escalated this ticket.`
   });
   persistTickets();
   render();
@@ -12329,7 +12335,7 @@ function escalateTicket(ticketId) {
 
 function addTimeline(body) {
   const ticket = selectedTicket();
-  ticket.conversation.push({ type: "timeline", author: "System", timestamp: new Date().toISOString(), body });
+  ticket.conversation.push({ type: "timeline", author: currentDemoUserName(), timestamp: new Date().toISOString(), body });
   persistTickets();
   renderConversation(ticket);
 }
@@ -12692,7 +12698,7 @@ function reassignTicket(ticketId, nextAssignee, timelineBody, shouldRender = tru
   ticket.assignee = nextAssignee;
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
     body: timelineBody || `${actorName} reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`
   });
@@ -12727,7 +12733,7 @@ function bulkReassignTickets(ticketIds, nextAssignee, internalNote = "") {
     ticket.assignee = nextAssignee;
     ticket.conversation.push({
       type: "timeline",
-      author: "System",
+      author: actorName,
       timestamp: new Date().toISOString(),
       body: previousAssignee === nextAssignee
         ? `${actorName} bulk confirmed assignment to ${nextAssignee}.`
@@ -12827,7 +12833,7 @@ function mergeSelectedTicketsLocally(ticketIds, primaryTicketId, internalNote = 
   // Record the merge on the primary ticket and flag it for the queue badge.
   primaryTicket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: mergedAt,
     body: `${actorName} merged ${relatedLabels.join(", ")} into this ticket.`
   });
@@ -12839,7 +12845,7 @@ function mergeSelectedTicketsLocally(ticketIds, primaryTicketId, internalNote = 
   relatedTickets.forEach((ticket) => {
     ticket.conversation.push({
       type: "timeline",
-      author: "System",
+      author: actorName,
       timestamp: mergedAt,
       body: `${actorName} merged this ticket into ${ticketDisplayId(primaryTicket)}.`
     });
@@ -13754,11 +13760,12 @@ function applyReceiptToCurrentTicket(ticketId, receiptId) {
     ticket.warranty = "Registered";
     ticket.warrantyReviewStatus = "";
   }
+  const actorName = currentDemoUserName();
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
-    body: `${profileDisplayName()} applied receipt ${receipt.fileName || "metadata"} to this ticket.`
+    body: `${actorName} applied receipt ${receipt.fileName || "metadata"} to this ticket.`
   });
   persistCustomerAccounts();
   persistTickets();
@@ -13779,11 +13786,12 @@ function applyWarrantyToCurrentTicket(ticketId, warrantyId) {
   ticket.purchaseSourceMode = isVerifiedPurchaseSource(warranty.source) ? "manual" : ticket.purchaseSourceMode || "";
   ticket.warranty = isRegisteredWarrantyRecord(warranty) ? "Registered" : "Not registered";
   ticket.warrantyReviewStatus = "";
+  const actorName = currentDemoUserName();
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
-    body: `${profileDisplayName()} applied warranty record ${warranty.receiptFileName || warranty.id} to this ticket.`
+    body: `${actorName} applied warranty record ${warranty.receiptFileName || warranty.id} to this ticket.`
   });
   persistCustomerAccounts();
   persistTickets();
@@ -14176,7 +14184,7 @@ function handleCreateTicket(event) {
   ticket.conversation = [
     {
       type: "timeline",
-      author: "System",
+      author: createdBy,
       timestamp: createdAt,
       body: `${createdBy} created this ticket manually.`
     },
@@ -14195,14 +14203,14 @@ function handleCreateTicket(event) {
     },
     {
       type: "timeline",
-      author: "System",
+      author: createdBy,
       timestamp: createdAt,
       body: "Customer notification email generated."
     }
   ];
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: assignment.source === "manual-create" ? createdBy : "System",
     timestamp: createdAt,
     body: assignment.note
   });
