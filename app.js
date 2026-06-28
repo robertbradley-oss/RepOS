@@ -42,6 +42,8 @@ const workspaceConfig = {
   workspaceName: "iSpring Water Systems",
   workspaceShortName: "iSpring",
   workspaceLabel: "Workspace: iSpring Water Systems",
+  workspaceLogoSrc: "./assets/ispring-logo.png",
+  workspaceInitials: "iS",
   tagline: "Ticketing made clear.",
   workspaceNote: "iSpring Water Systems is the active workspace in this RepOS session.",
   ticketPrefix: "ISP",
@@ -1280,6 +1282,9 @@ const el = {
   viewNav: document.querySelector("#viewNav"),
   queueSearch: document.querySelector("#queueSearch"),
   brandTagline: document.querySelector("#brandTagline"),
+  sidebarWorkspaceSwitcher: document.querySelector("#sidebarWorkspaceSwitcher"),
+  sidebarWorkspaceLogo: document.querySelector("#sidebarWorkspaceLogo"),
+  sidebarWorkspaceInitials: document.querySelector("#sidebarWorkspaceInitials"),
   sidebarWorkspaceLabel: document.querySelector("#sidebarWorkspaceLabel"),
   topbarWorkspaceLabel: document.querySelector("#topbarWorkspaceLabel"),
   homeNavButton: document.querySelector("#homeNavButton"),
@@ -1619,6 +1624,13 @@ function openTicketFromHash() {
 function applyWorkspaceBranding() {
   if (el.brandTagline) el.brandTagline.textContent = workspaceConfig.tagline;
   if (el.sidebarWorkspaceLabel) el.sidebarWorkspaceLabel.textContent = workspaceConfig.workspaceShortName;
+  if (el.sidebarWorkspaceSwitcher) el.sidebarWorkspaceSwitcher.title = workspaceConfig.workspaceLabel;
+  if (el.sidebarWorkspaceInitials) el.sidebarWorkspaceInitials.textContent = workspaceConfig.workspaceInitials || workspaceConfig.workspaceShortName.slice(0, 2);
+  if (el.sidebarWorkspaceLogo && workspaceConfig.workspaceLogoSrc) {
+    el.sidebarWorkspaceLogo.src = workspaceConfig.workspaceLogoSrc;
+    el.sidebarWorkspaceLogo.hidden = false;
+    if (el.sidebarWorkspaceInitials) el.sidebarWorkspaceInitials.hidden = true;
+  }
   if (el.topbarWorkspaceLabel) el.topbarWorkspaceLabel.textContent = workspaceConfig.workspaceLabel;
 }
 

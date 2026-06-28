@@ -133,14 +133,14 @@
         <nav class="nav-list" id="viewNav" aria-label="Ticket views" hidden></nav>
 
         <div class="sidebar-footer">
-          <div class="workspace-switcher" title="Workspace: iSpring">
+          <div class="workspace-switcher" id="sidebarWorkspaceSwitcher" title="Workspace">
             <span class="workspace-logo" aria-hidden="true">
-              <img src="./assets/ispring-logo.png" alt="" onerror="this.hidden=true; this.nextElementSibling.hidden=false">
-              <span hidden>iS</span>
+              <img id="sidebarWorkspaceLogo" alt="" hidden onerror="this.hidden=true; this.nextElementSibling.hidden=false">
+              <span id="sidebarWorkspaceInitials">W</span>
             </span>
             <div>
               <small>Workspace</small>
-              <strong id="sidebarWorkspaceLabel">iSpring</strong>
+              <strong id="sidebarWorkspaceLabel">Workspace</strong>
             </div>
           </div>
           <button class="sidebar-collapse-button" id="toggleSidebarButton" type="button" title="Collapse sidebar" aria-label="Collapse sidebar" aria-expanded="true">
@@ -184,8 +184,8 @@
                 <button class="user-profile" id="profileButton" type="button" title="Profile and settings" aria-label="Open profile settings">
                   <span id="profileInitials" class="profile-avatar-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6C16 8.20914 14.2091 10 12 10C9.79086 10 8 8.20914 8 6C8 3.79086 9.79086 2 12 2C14.2091 2 16 3.79086 16 6Z" stroke="currentColor" stroke-width="2" fill="none"></path><path d="M21 21.0001V16.3096C15.4029 13.2001 8.59712 13.2001 3 16.3096V21.0001H21Z" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"></path></svg></span>
                   <div>
-                    <strong id="profileButtonName">Morgan Lee</strong>
-                    <small id="profileButtonRole">Admin</small>
+                    <strong id="profileButtonName">Demo user</strong>
+                    <small id="profileButtonRole">Support rep</small>
                   </div>
                 </button>
               </div>
