@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { buildAnalyticsSummary } from "./lib/activity-analytics.mjs";
 import { createJsonStore, normalizeEmail } from "./lib/json-store.mjs";
 import {
@@ -26,6 +26,31 @@ const maxUploadBytes = Number(process.env.TESSARIO_MAX_UPLOAD_BYTES || 20 * 1024
 const authMode = process.env.TESSARIO_AUTH_MODE || "development";
 const sessionCookieName = "tessario_session";
 const sessionDays = Number(process.env.TESSARIO_SESSION_DAYS || 7);
+// Demo workspace password. Override in production via REPOS_DEMO_PASSWORD.
+// The default user is lazily seeded with this on first password login.
+const demoPassword = process.env.REPOS_DEMO_PASSWORD || "repos-demo";
+
+// Password hashing: scrypt with a per-user random salt, stored as
+// "scrypt$<saltHex>$<hashHex>". Verification is constant-time.
+function hashPassword(password) {
+  const salt = randomBytes(16);
+  const derived = scryptSync(String(password), salt, 64);
+  return `scrypt$${salt.toString("hex")}$${derived.toString("hex")}`;
+}
+
+function verifyPassword(password, stored) {
+  if (typeof stored !== "string") return false;
+  const [scheme, saltHex, hashHex] = stored.split("$");
+  if (scheme !== "scrypt" || !saltHex || !hashHex) return false;
+  const expected = Buffer.from(hashHex, "hex");
+  let derived;
+  try {
+    derived = scryptSync(String(password), Buffer.from(saltHex, "hex"), expected.length);
+  } catch {
+    return false;
+  }
+  return expected.length === derived.length && timingSafeEqual(expected, derived);
+}
 const allowedUploadTypes = new Map([
   [".pdf", "application/pdf"],
   [".png", "image/png"],
@@ -147,6 +172,31 @@ async function handleApi(request, response, url) {
     const input = await readJsonBody(request);
     const email = isPlainObject(input) && input.email ? String(input.email) : defaultAuthUser().email;
     const user = await store.findAuthUserByEmail(email) || await store.ensureAuthUser(defaultAuthUser());
+    const session = await createSessionForUser(response, user);
+    sendJson(response, 200, { authenticated: true, user: publicUser(user), expiresAt: session.expiresAt });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/auth/login") {
+    const input = await readJsonBody(request);
+    const email = normalizeEmail(isPlainObject(input) ? input.email : "");
+    const password = isPlainObject(input) && input.password != null ? String(input.password) : "";
+    if (!email || !password) {
+      sendJson(response, 400, { error: "missing_credentials" });
+      return;
+    }
+    const fallback = defaultAuthUser();
+    let user = (await store.listAuthUsers()).find((item) => normalizeEmail(item.email) === email) || null;
+    // Lazily seed the default demo user with the demo password on first login.
+    if (!user && email === normalizeEmail(fallback.email)) {
+      user = await store.ensureAuthUser({ ...fallback, passwordHash: hashPassword(demoPassword) });
+    } else if (user && !user.passwordHash && normalizeEmail(user.email) === normalizeEmail(fallback.email)) {
+      user = await store.ensureAuthUser({ ...user, passwordHash: hashPassword(demoPassword) });
+    }
+    if (!user || user.active === false || !verifyPassword(password, user.passwordHash)) {
+      sendJson(response, 401, { error: "invalid_credentials" });
+      return;
+    }
     const session = await createSessionForUser(response, user);
     sendJson(response, 200, { authenticated: true, user: publicUser(user), expiresAt: session.expiresAt });
     return;

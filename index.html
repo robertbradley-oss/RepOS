@@ -12,11 +12,118 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap">
     <link rel="stylesheet" href="./styles.css">
   </head>
-  <body class="queue-screen table-view-active metrics-collapsed filters-collapsed preview-collapsed">
+  <body class="home-active queue-screen table-view-active metrics-collapsed filters-collapsed preview-collapsed">
+    <main class="home-screen" id="homeScreen" aria-labelledby="homeTitle">
+      <section class="home-intro" aria-label="RepOS overview">
+        <header class="home-brand">
+          <span class="home-brand-mark" aria-hidden="true">
+            <img src="./assets/repos-mark.png" alt="">
+          </span>
+          <span>
+            <strong>Rep<span>OS</span></strong>
+            <small>Support. Resolve. Deliver.</small>
+          </span>
+        </header>
+
+        <div class="home-copy">
+          <p class="home-eyebrow">REP OPERATING SYSTEM</p>
+          <h1 id="homeTitle">Support work starts here.</h1>
+          <p>RepOS gives support teams a clean operating system for queues, customer context, assignments, notes, and knowledge — with each customer workspace kept separate.</p>
+        </div>
+
+        <div class="home-feature-list" aria-label="RepOS product areas">
+          <div>
+            <strong>Queue</strong>
+            <span>Manage open, assigned, and closed support work in one place.</span>
+          </div>
+          <div>
+            <strong>Context</strong>
+            <span>Keep customer history, order details, notes, attachments, and timelines close.</span>
+          </div>
+          <div>
+            <strong>Control</strong>
+            <span>Configure assignments, sources, macros, admin tools, and workspace settings.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-access" aria-label="Sign in to RepOS">
+        <form class="home-access-card home-login-card" id="homeLoginForm" novalidate>
+          <div class="home-access-header">
+            <p class="home-eyebrow">WORKSPACE ACCESS</p>
+            <h2>Sign in to RepOS</h2>
+            <p>Sign in to open the iSpring Water Systems workspace.</p>
+          </div>
+
+          <div class="home-workspace-list" aria-label="Active workspace">
+            <article class="home-workspace-card">
+              <span class="home-workspace-logo" aria-hidden="true">
+                <img src="./assets/ispring-logo.png" alt="" onerror="this.hidden=true; this.nextElementSibling.hidden=false">
+                <span hidden>iS</span>
+              </span>
+              <div>
+                <small>Active demo workspace</small>
+                <strong>iSpring Water Systems</strong>
+                <p>Support queue, customer history, admin tools, and workspace knowledge.</p>
+                <div class="home-workspace-meta" aria-label="Workspace details">
+                  <span>Demo workspace</span>
+                  <span>Admin tools enabled</span>
+                  <span>Queue ready</span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="home-field">
+            <label for="homeEmailInput">Email</label>
+            <div class="home-field-control">
+              <svg class="home-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                <path d="m4 7 8 6 8-6"></path>
+              </svg>
+              <input id="homeEmailInput" name="email" type="email" autocomplete="username" placeholder="you@company.com" value="robbybradley@gmail.com" spellcheck="false" required>
+            </div>
+          </div>
+
+          <div class="home-field">
+            <label for="homePasswordInput">Password</label>
+            <div class="home-field-control">
+              <svg class="home-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+                <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+              </svg>
+              <input id="homePasswordInput" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+              <button type="button" class="home-password-toggle" id="homePasswordToggle" aria-label="Show password" aria-pressed="false">
+                <svg class="home-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="home-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 3l18 18"></path>
+                  <path d="M10.6 6.1A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a16.2 16.2 0 0 1-2.3 3M6.5 7.6A15.7 15.7 0 0 0 2.5 12S6 18 12 18a9.4 9.4 0 0 0 3.4-.6"></path>
+                  <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button class="primary-button home-login-button" type="submit">Sign In</button>
+          <p class="home-status" id="homeStatus" role="status" aria-live="polite"></p>
+          <p class="home-login-hint">Demo workspace — sign in with password <code>repos-demo</code>.</p>
+        </form>
+
+        <p class="home-system-note">RepOS is the product layer. iSpring Water Systems is the active demo workspace.</p>
+      </section>
+    </main>
+
     <div class="app-shell">
       <aside class="sidebar" aria-label="Primary navigation">
         <nav class="nav-list sidebar-main-nav" aria-label="Main navigation">
           <span class="sidebar-nav-indicator motion-tab-indicator" aria-hidden="true"></span>
+          <button class="nav-item" id="homeNavButton" type="button" title="RepOS Home" aria-label="RepOS Home" data-tooltip="RepOS Home">
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"></path><path d="M6.5 10.5V20h11v-9.5"></path><path d="M9.5 20v-5h5v5"></path></svg></span>
+            <span class="nav-label">Home</span>
+          </button>
           <button class="nav-item" id="dashboardNavButton" type="button" title="Dashboard" aria-label="Dashboard" data-tooltip="Dashboard">
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24px" height="24px" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" ry="1" fill="none" stroke="#1c1f21" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2"></rect><rect x="3" y="14" width="7" height="7" rx="1" ry="1" fill="none" stroke="#1c1f21" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" data-color="color-2"></rect><rect x="14" y="3" width="7" height="7" rx="1" ry="1" fill="none" stroke="#1c1f21" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" data-color="color-2"></rect><rect x="14" y="14" width="7" height="7" rx="1" ry="1" fill="none" stroke="#1c1f21" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2"></rect></svg></span>
             <span class="nav-label">Dashboard</span>

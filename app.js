@@ -1198,6 +1198,7 @@ let customSelectObserver = null;
 let customSelectRefreshFrame = 0;
 let editableFieldObserver = null;
 let activeCustomSelect = null;
+let workspaceEntered = false;
 let sidebarLabelsHidden = false;
 let sidebarLayoutCollapsed = false;
 let sidebarMotioning = false;
@@ -1266,6 +1267,12 @@ let pendingReceiptUpload = {
 };
 
 const el = {
+  homeScreen: document.querySelector("#homeScreen"),
+  homeLoginForm: document.querySelector("#homeLoginForm"),
+  homeEmailInput: document.querySelector("#homeEmailInput"),
+  homePasswordInput: document.querySelector("#homePasswordInput"),
+  homePasswordToggle: document.querySelector("#homePasswordToggle"),
+  homeStatus: document.querySelector("#homeStatus"),
   appShell: document.querySelector(".app-shell"),
   workspace: document.querySelector(".workspace"),
   ticketWorkspace: document.querySelector(".ticket-workspace"),
@@ -1274,6 +1281,7 @@ const el = {
   brandTagline: document.querySelector("#brandTagline"),
   sidebarWorkspaceLabel: document.querySelector("#sidebarWorkspaceLabel"),
   topbarWorkspaceLabel: document.querySelector("#topbarWorkspaceLabel"),
+  homeNavButton: document.querySelector("#homeNavButton"),
   dashboardNavButton: document.querySelector("#dashboardNavButton"),
   ticketsNavButton: document.querySelector("#ticketsNavButton"),
   ticketNavCount: document.querySelector("#ticketNavCount"),
@@ -1348,6 +1356,95 @@ function animateDialogClose(dialog, afterFn) {
   }, cssDurationMs("--motion-fast", 140) + 20);
 }
 
+function setHomeStatus(message, isError = false) {
+  if (!el.homeStatus) return;
+  el.homeStatus.textContent = message || "";
+  el.homeStatus.classList.toggle("is-error", Boolean(isError));
+}
+
+function toggleHomePassword() {
+  const input = el.homePasswordInput;
+  const toggle = el.homePasswordToggle;
+  if (!input || !toggle) return;
+  const reveal = input.type === "password";
+  input.type = reveal ? "text" : "password";
+  toggle.setAttribute("aria-pressed", String(reveal));
+  toggle.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
+  toggle.classList.toggle("is-revealed", reveal);
+  input.focus({ preventScroll: true });
+}
+
+async function handleHomeLogin(event) {
+  event.preventDefault();
+  const email = String(el.homeEmailInput?.value || "").trim();
+  const password = String(el.homePasswordInput?.value || "");
+
+  if (!email || !password) {
+    setHomeStatus("Enter your email and password.", true);
+    (email ? el.homePasswordInput : el.homeEmailInput)?.focus({ preventScroll: true });
+    return;
+  }
+
+  setHomeStatus("Signing in...");
+
+  if (!window.fetch) {
+    setHomeStatus("Opening local workspace.");
+    enterWorkspace();
+    return;
+  }
+
+  const submitButton = el.homeLoginForm?.querySelector("button[type='submit']");
+  if (submitButton) submitButton.disabled = true;
+
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (response.status === 401) {
+      setHomeStatus("That email and password don't match. Try again.", true);
+      el.homePasswordInput?.focus({ preventScroll: true });
+      el.homePasswordInput?.select?.();
+      return;
+    }
+    if (!response.ok) throw new Error(`Sign in failed: ${response.status}`);
+    const payload = await response.json();
+    sessionUser = isBackendPlainObject(payload?.user) ? payload.user : sessionUser;
+    if (applySessionUserToWorkspace()) {
+      updateProfileButton();
+      render({ preserveQueueList: true, suppressQueueRowEnter: true });
+    }
+    if (el.homePasswordInput) el.homePasswordInput.value = "";
+    setHomeStatus("Opening RepOS...");
+    enterWorkspace();
+  } catch (error) {
+    console.warn("RepOS sign in is unavailable; opening local workspace.", error);
+    setHomeStatus("RepOS backend unavailable. Opening local workspace.");
+    enterWorkspace();
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
+}
+
+function enterWorkspace() {
+  workspaceEntered = true;
+  document.title = "RepOS Workspace";
+  applyUiState();
+  window.requestAnimationFrame(() => {
+    openTicketFromHash();
+    if (!location.hash) el.queueSearch?.focus({ preventScroll: true });
+  });
+}
+
+function showHomeScreen() {
+  workspaceEntered = false;
+  document.title = "RepOS";
+  setHomeStatus("");
+  applyUiState();
+  window.requestAnimationFrame(() => el.homeEmailInput?.focus({ preventScroll: true }));
+}
+
 function init() {
   closeTicketModal();
   applyWorkspaceBranding();
@@ -1356,6 +1453,9 @@ function init() {
   setupEditableFieldHardeners();
   applyProfilePreferences({ initialize: true });
 
+  el.homeLoginForm?.addEventListener("submit", handleHomeLogin);
+  el.homePasswordToggle?.addEventListener("click", toggleHomePassword);
+  el.homeNavButton?.addEventListener("click", showHomeScreen);
   el.dashboardNavButton.addEventListener("click", showDashboardScreen);
   el.ticketsNavButton?.addEventListener("click", showQueueScreen);
   el.viewNav.addEventListener("click", handleViewClick);
@@ -7002,6 +7102,17 @@ function showToast(message) {
   }, 2200);
 }
 
+function copyTextToClipboard(text, successMessage) {
+  if (!navigator.clipboard?.writeText) {
+    showToast("Clipboard access is not available in this browser.");
+    return;
+  }
+
+  navigator.clipboard.writeText(text)
+    .then(() => showToast(successMessage))
+    .catch(() => showToast("Clipboard permission blocked the copy action."));
+}
+
 function rawStatusValue(value) {
   return String(typeof value === "object" && value ? value.status : value || "").trim();
 }
@@ -11699,6 +11810,8 @@ function finishWorkspaceSidebarGlide() {
 
 function applyUiState() {
   const profileSettingsOpen = isProfileSettingsOpen();
+  document.body.classList.toggle("home-active", !workspaceEntered);
+  document.body.classList.toggle("workspace-active", workspaceEntered);
   document.body.classList.toggle("sidebar-layout-collapsed", sidebarLayoutCollapsed);
   document.body.classList.toggle("sidebar-collapsed", uiState.sidebarCollapsed);
   document.body.classList.toggle("sidebar-motioning", sidebarMotioning);
@@ -11730,6 +11843,7 @@ function applyUiState() {
   el.toggleContextButton?.setAttribute("aria-expanded", String(!uiState.contextCollapsed));
   el.adminNavButton?.classList.toggle("active", !profileSettingsOpen && uiState.activeScreen === "admin");
   el.settingsNavButton.classList.toggle("active", profileSettingsOpen);
+  el.homeNavButton?.classList.toggle("active", !workspaceEntered);
   el.knowledgeVaultNavButton?.classList.toggle("active", uiState.activeScreen === "knowledge");
   el.dashboardNavButton.classList.toggle("active", !profileSettingsOpen && uiState.activeScreen === "dashboard");
   el.ticketsNavButton?.classList.toggle("active", !profileSettingsOpen && (uiState.activeScreen === "queue" || uiState.activeScreen === "detail"));
@@ -12157,8 +12271,7 @@ function copyMacro(macroId) {
   const ticket = selectedTicket();
   const macro = macroLibrary.find((item) => item.id === macroId);
   if (!macro) return;
-  navigator.clipboard?.writeText(applyVariables(macro.body, ticket));
-  showToast("Macro copied.");
+  copyTextToClipboard(applyVariables(macro.body, ticket), "Macro copied.");
 }
 
 function insertProductLink(ticket) {
@@ -12186,15 +12299,13 @@ function insertProductLink(ticket) {
 function copyProductLink(ticket) {
   const link = suggestedProductLink(ticket);
   if (!link) return;
-  navigator.clipboard?.writeText(link.url);
-  showToast("Product link copied.");
+  copyTextToClipboard(link.url, "Product link copied.");
 }
 
 function copyReviewLink(linkId) {
   const link = productLinks.find((item) => item.id === linkId && item.active);
   if (!link) return;
-  navigator.clipboard?.writeText(link.url);
-  showToast(`${link.label} copied.`);
+  copyTextToClipboard(link.url, `${link.label} copied.`);
 }
 
 function escalateTicket(ticketId) {
@@ -12750,8 +12861,10 @@ function copyQueueTicketLink() {
     return;
   }
   const urls = linkTickets.map((ticket) => `${location.origin}${location.pathname}#${ticket.id}`);
-  navigator.clipboard?.writeText(urls.join("\n")).catch(() => {});
-  showToast(linkTickets.length === 1 ? `Copied link for ${ticketDisplayId(linkTickets[0])}.` : `Copied ${linkTickets.length} ticket links.`);
+  copyTextToClipboard(
+    urls.join("\n"),
+    linkTickets.length === 1 ? `Copied link for ${ticketDisplayId(linkTickets[0])}.` : `Copied ${linkTickets.length} ticket links.`
+  );
 }
 
 function refreshQueueFromToolbar() {
@@ -12940,8 +13053,7 @@ function openMockReceiptFile(details) {
 }
 
 function copyReceiptInfo(details) {
-  navigator.clipboard?.writeText(receiptInfoText(details)).catch(() => {});
-  showToast("Receipt info copied.");
+  copyTextToClipboard(receiptInfoText(details), "Receipt info copied.");
 }
 
 function openReceiptPreviewModal(ticketId, receiptIdOrFileName) {
@@ -13045,8 +13157,7 @@ function openAttachmentPreview(ticketId, fileName) {
 function copyTicketLink() {
   const ticket = selectedTicket();
   const url = `${location.origin}${location.pathname}#${ticket.id}`;
-  navigator.clipboard?.writeText(url).catch(() => {});
-  showToast(`Copied link for ${ticketDisplayId(ticket)}.`);
+  copyTextToClipboard(url, `Copied link for ${ticketDisplayId(ticket)}.`);
 }
 
 function openCustomerHistory(ticketId, _section = "", editMode = false) {
