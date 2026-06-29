@@ -1,0 +1,314 @@
+<!doctype html>
+<!-- RepOS homepage artboard: fixed 1920x1080; export at 2x device-scale for a 3840x2160 PNG. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=block">
+    <style>
+      :root {
+        --accent: #7c5cff;
+        --accent-strong: #6034e0;
+        --ink: #16131f;
+        --ink-2: #4a4658;
+        --ink-3: #7d7890;
+        --line: rgba(78, 70, 132, 0.14);
+        --cyan: #22d3ee;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { width: 1920px; height: 1080px; }
+      body {
+        position: relative;
+        overflow: hidden;
+        font-family: "Inter", -apple-system, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(760px 520px at 80% 6%, rgba(124, 92, 255, 0.14), transparent 62%),
+          radial-gradient(620px 440px at 6% 14%, rgba(34, 211, 238, 0.10), transparent 58%),
+          linear-gradient(180deg, #fbfbff 0%, #f6f7ff 52%, #ffffff 100%);
+      }
+      body::before {
+        content: "";
+        position: absolute; inset: 0; z-index: 0; pointer-events: none;
+        background-image: radial-gradient(circle at 1px 1px, rgba(76, 58, 161, 0.10) 1px, transparent 0);
+        background-size: 26px 26px;
+        -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.7), transparent 80%);
+        mask-image: linear-gradient(180deg, rgba(0,0,0,0.7), transparent 80%);
+      }
+      .artboard { position: relative; z-index: 1; width: 1920px; height: 1080px; padding: 52px 64px; }
+
+      /* ---- Top bar ---- */
+      .top { display: flex; align-items: flex-start; justify-content: space-between; }
+      .brand { display: flex; align-items: center; gap: 16px; }
+      .brand-mark {
+        width: 70px; height: 70px; display: grid; place-items: center;
+        border: 1px solid rgba(124, 92, 255, 0.2); border-radius: 18px; background: #fff;
+        box-shadow: 0 18px 38px rgba(76, 58, 161, 0.16), 0 0 0 5px rgba(124, 92, 255, 0.05);
+      }
+      .brand-mark img { width: 50px; height: 50px; object-fit: contain; }
+      .brand-name { font-size: 34px; font-weight: 800; letter-spacing: -0.01em; line-height: 1; }
+      .brand-name span { color: var(--accent); }
+      .brand-tag { margin-top: 7px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.16em; color: var(--ink-3); }
+
+      .proof {
+        display: flex; align-items: center; gap: 14px; padding: 16px 22px;
+        border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,0.78);
+        box-shadow: 0 16px 40px rgba(52, 47, 100, 0.08);
+      }
+      .proof-ico { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: rgba(124,92,255,0.1); color: var(--accent); }
+      .proof-ico svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+      .proof strong { display: block; font-size: 16px; font-weight: 800; }
+      .proof small { display: block; font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+
+      /* ---- Main 3-column ---- */
+      .main { display: grid; grid-template-columns: 470px 1fr 412px; gap: 36px; align-items: start; margin-top: 40px; }
+
+      /* hero */
+      .eyebrow { font-size: 14px; font-weight: 800; letter-spacing: 0.14em; color: var(--accent-strong); }
+      .hero h1 { margin-top: 16px; font-size: 66px; font-weight: 800; line-height: 1.02; letter-spacing: -0.022em; }
+      .hero h1 span { background: linear-gradient(92deg, #4f6bff, #9a5cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .hero-body { margin-top: 22px; max-width: 430px; font-size: 18px; line-height: 1.6; color: var(--ink-2); }
+      .features { margin-top: 34px; }
+      .feature { display: grid; grid-template-columns: 56px 1fr 18px; align-items: center; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+      .feature:first-child { border-top: 1px solid var(--line); }
+      .f-ico { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 16px; color: var(--accent); border: 1px solid rgba(124,92,255,0.16);
+        background: radial-gradient(circle at 50% 24%, rgba(124,92,255,0.16), transparent 60%), rgba(255,255,255,0.7); box-shadow: 0 12px 26px rgba(52,47,100,0.07); }
+      .f-ico svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.85; stroke-linecap: round; stroke-linejoin: round; }
+      .feature h3 { font-size: 20px; font-weight: 750; }
+      .feature p { margin-top: 3px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+      .chev { color: var(--ink-3); font-size: 20px; }
+
+      /* center dashboard */
+      .stage { position: relative; display: flex; align-items: center; justify-content: center; min-height: 700px; perspective: 1900px; }
+      .platform { position: absolute; left: 50%; bottom: 6px; width: 540px; height: 150px; transform: translateX(-50%); }
+      .platform .glow { position: absolute; left: 50%; bottom: 4px; width: 118%; height: 120px; transform: translateX(-50%); border-radius: 50%;
+        background: radial-gradient(ellipse at 50% 50%, rgba(124,92,255,0.5), rgba(34,211,238,0.26) 48%, transparent 72%); filter: blur(34px); }
+      .platform .ring { position: absolute; left: 50%; bottom: 40px; width: 100%; height: 60px; transform: translateX(-50%); border-radius: 50%;
+        background: linear-gradient(90deg, #22d3ee, #7c5cff 50%, #a855f7); filter: blur(5px);
+        box-shadow: 0 0 34px rgba(34,211,238,0.6), 0 0 70px rgba(124,92,255,0.65); }
+      .platform .disc { position: absolute; left: 50%; bottom: 44px; width: 96%; height: 52px; transform: translateX(-50%); border-radius: 50%;
+        background: radial-gradient(ellipse at 50% 40%, #fff, #ecebf8 70%);
+        box-shadow: 0 0 0 2px rgba(124,92,255,0.55), 0 0 18px rgba(34,211,238,0.6), 0 0 40px rgba(124,92,255,0.6); }
+      .panel {
+        position: relative; z-index: 2; width: 660px; margin-bottom: 40px;
+        display: grid; grid-template-columns: 150px 1fr; overflow: hidden;
+        border: 1px solid rgba(124,92,255,0.14); border-radius: 20px;
+        background: linear-gradient(135deg, #ffffff, #fbfcff);
+        box-shadow: 0 2px 4px rgba(40,30,90,0.05), 0 50px 90px -34px rgba(60,40,130,0.36);
+        transform: none;
+      }
+      .pl-side { padding: 18px 14px; border-right: 1px solid var(--line); background: linear-gradient(180deg, #faf9ff, #f5f6ff); display: flex; flex-direction: column; gap: 5px; }
+      .pl-logo { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 800; margin-bottom: 12px; padding: 0 6px; }
+      .pl-logo img { width: 20px; height: 20px; }
+      .pl-logo span { color: var(--accent); }
+      .pl-side a { display: flex; align-items: center; gap: 9px; padding: 8px 10px; font-size: 12px; font-weight: 650; color: #5a5570; border-radius: 9px; text-decoration: none; }
+      .pl-side a svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: 0.8; }
+      .pl-side a.on { color: var(--accent-strong); background: rgba(124,92,255,0.1); }
+      .pl-prof { margin-top: auto; display: flex; align-items: center; gap: 9px; padding-top: 12px; border-top: 1px solid var(--line); }
+      .pl-prof .av { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(135deg,#7c5cff,#6034e0); color: #fff; font-size: 11px; font-weight: 800; }
+      .pl-prof b { display: block; font-size: 11.5px; }
+      .pl-prof i { font-style: normal; display: flex; align-items: center; gap: 4px; font-size: 10.5px; color: var(--ink-3); }
+      .pl-prof i::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #06b6d4; }
+
+      .pl-main { padding: 18px 18px 20px; }
+      .pl-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+      .pl-top h4 { font-size: 18px; font-weight: 750; }
+      .pl-tools { display: flex; align-items: center; gap: 9px; font-size: 11px; color: var(--ink-3); }
+      .pl-sort { padding: 4px 9px; border: 1px solid var(--line); border-radius: 8px; color: #4d4860; font-weight: 600; }
+      .pl-tabs { display: flex; gap: 7px; margin-bottom: 12px; }
+      .pl-tabs span { padding: 6px 12px; font-size: 12px; font-weight: 650; color: #5a5570; border-radius: 9px; }
+      .pl-tabs span.on { color: var(--accent-strong); background: rgba(124,92,255,0.1); }
+      .pl-q { border: 1px solid var(--line); border-radius: 14px; padding: 5px; background: rgba(255,255,255,0.7); }
+      .row { display: grid; grid-template-columns: 20px 46px 1fr auto 52px; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; }
+      .row .lk { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 6px; background: rgba(124,92,255,0.1); color: var(--accent-strong); }
+      .row .lk svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+      .row .num { font-size: 11.5px; font-weight: 700; color: var(--ink-3); }
+      .row .subj { font-size: 13px; font-weight: 650; color: #201d2c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .row .cust { font-size: 12px; color: #6c667a; white-space: nowrap; }
+      .row .tm { font-size: 11.5px; color: var(--ink-3); text-align: right; }
+      .pl-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 13px; }
+      .pl-card { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: rgba(255,255,255,0.72); }
+      .pl-card > b { display: block; font-size: 12.5px; margin-bottom: 11px; }
+      .ctx-c { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+      .ctx-c .av { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: rgba(124,92,255,0.12); color: var(--accent-strong); font-size: 11px; font-weight: 800; }
+      .ctx-c b { display: block; font-size: 12.5px; }
+      .ctx-c small { font-size: 11px; color: var(--ink-3); }
+      .ctx-line { display: flex; align-items: center; gap: 7px; margin: 9px 0; font-size: 12px; color: #514c61; }
+      .ctx-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; margin-bottom: 11px; }
+      .ctx-grid span { font-size: 11.5px; color: var(--ink-3); }
+      .ctx-grid b { font-size: 11.5px; font-weight: 650; text-align: right; }
+      .ctx-link { font-size: 11.5px; font-weight: 650; color: var(--accent-strong); }
+      .act { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; font-size: 12px; color: #514c61; }
+      .act:last-child { margin-bottom: 0; }
+      .act .ai { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 7px; background: rgba(124,92,255,0.1); color: var(--accent-strong); }
+      .act .ai svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+      .act em { margin-left: auto; font-style: normal; font-size: 11px; color: var(--ink-3); }
+
+      /* sign-in card */
+      .signin { position: relative; padding: 34px; border: 1px solid var(--line); border-radius: 22px; overflow: hidden;
+        background: linear-gradient(180deg, #ffffff, #fbfaff); box-shadow: 0 2px 8px rgba(40,30,90,0.05), 0 40px 80px -34px rgba(60,40,130,0.34); }
+      .signin::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: linear-gradient(90deg, var(--accent), var(--cyan)); }
+      .si-ico { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 16px; background: rgba(124,92,255,0.1); color: var(--accent); margin-bottom: 22px; }
+      .si-ico svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; }
+      .si-eyebrow { font-size: 12.5px; font-weight: 800; letter-spacing: 0.13em; color: var(--accent-strong); }
+      .signin h2 { margin-top: 8px; font-size: 32px; font-weight: 800; letter-spacing: -0.01em; }
+      .signin > p { margin-top: 8px; font-size: 16px; color: var(--ink-2); }
+      .fld { margin-top: 18px; }
+      .fld label { display: block; font-size: 14px; font-weight: 700; color: #312d3f; margin-bottom: 8px; }
+      .fld .inp { position: relative; display: flex; align-items: center; height: 50px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 8px 22px rgba(52,47,100,0.05); }
+      .fld .inp svg { width: 18px; height: 18px; margin: 0 12px; fill: none; stroke: #8b86a0; stroke-width: 1.8; }
+      .fld .inp .ph { color: var(--ink-3); font-size: 15px; }
+      .fld .inp .eye { margin-left: auto; }
+      .demo { margin-top: 18px; font-size: 14px; color: var(--ink-2); }
+      .pills { display: flex; gap: 8px; margin-top: 10px; }
+      .pills span { padding: 6px 14px; border: 1px solid rgba(124,92,255,0.22); border-radius: 999px; background: rgba(124,92,255,0.08); color: var(--accent-strong); font-size: 13px; font-weight: 700; }
+      .si-btn { height: 52px; margin-top: 20px; display: grid; place-items: center; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 800;
+        background: linear-gradient(135deg, #425dff, #7c5cff 54%, #8b22ff); box-shadow: 0 18px 38px rgba(124,92,255,0.3); }
+      .si-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--ink-3); font-size: 13px; }
+      .si-or::before, .si-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+      .sso { height: 50px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 15px; font-weight: 700; color: #3e385a; }
+      .sso svg { width: 18px; height: 18px; fill: none; stroke: var(--accent); stroke-width: 1.8; }
+      .si-help { margin-top: 16px; text-align: center; font-size: 13px; color: var(--ink-3); }
+
+      /* benefits */
+      .benefits { position: absolute; left: 64px; right: 64px; bottom: 46px; z-index: 1;
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; padding: 26px 34px;
+        border: 1px solid var(--line); border-radius: 22px; background: rgba(255,255,255,0.72); box-shadow: 0 20px 54px rgba(52,47,100,0.09); }
+      .ben { display: grid; grid-template-columns: 50px 1fr; gap: 14px; align-items: start; }
+      .ben .bi { width: 50px; height: 50px; display: grid; place-items: center; border-radius: 15px; color: #fff; }
+      .ben .bi.v { background: linear-gradient(135deg, #7c5cff, #a855f7); }
+      .ben .bi.c { background: linear-gradient(135deg, #06b6d4, #22d3ee); }
+      .ben .bi.b { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+      .ben .bi.p { background: linear-gradient(135deg, #db2777, #f472b6); }
+      .ben .bi svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+      .ben h4 { font-size: 17px; font-weight: 800; }
+      .ben p { margin-top: 5px; font-size: 14px; line-height: 1.4; color: var(--ink-2); }
+    </style>
+  </head>
+  <body>
+    <div class="artboard">
+      <!-- top -->
+      <div class="top">
+        <div class="brand">
+          <span class="brand-mark"><img src="../assets/repos-mark.png" alt=""></span>
+          <span>
+            <span class="brand-name">Rep<span>OS</span></span>
+            <div class="brand-tag">SUPPORT. RESOLVE. DELIVER.</div>
+          </span>
+        </div>
+        <div class="proof">
+          <span class="proof-ico"><svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.6-2.8 8.4-7 10-4.2-1.6-7-5.4-7-10V6l7-3Z"></path><path d="m8.8 12.2 2.1 2.1 4.4-5"></path></svg></span>
+          <span><strong>Built for support teams.</strong><small>Loved by customers.</small></span>
+        </div>
+      </div>
+
+      <!-- main -->
+      <div class="main">
+        <!-- hero -->
+        <section class="hero">
+          <p class="eyebrow">REP OPERATING SYSTEM</p>
+          <h1>Support work starts <span>here.</span></h1>
+          <p class="hero-body">RepOS gives support teams a clean operating system for queues, customer context, assignments, notes, and knowledge. Ticketing made clear.</p>
+          <div class="features">
+            <div class="feature">
+              <span class="f-ico"><svg viewBox="0 0 24 24"><path d="M12 3 21 7.5 12 12 3 7.5 12 3Z"></path><path d="M3 12.5 12 17l9-4.5"></path><path d="M3 16.5 12 21l9-4.5"></path></svg></span>
+              <div><h3>Queue</h3><p>Manage open, assigned, and closed support work in one place.</p></div>
+              <span class="chev">›</span>
+            </div>
+            <div class="feature">
+              <span class="f-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path></svg></span>
+              <div><h3>Context</h3><p>Keep customer history, details, notes, attachments, and timelines close.</p></div>
+              <span class="chev">›</span>
+            </div>
+            <div class="feature">
+              <span class="f-ico"><svg viewBox="0 0 24 24"><path d="M4 7h9"></path><path d="M19 7h1"></path><circle cx="16" cy="7" r="2.4"></circle><path d="M4 17h2"></path><path d="M11 17h9"></path><circle cx="8" cy="17" r="2.4"></circle></svg></span>
+              <div><h3>Control</h3><p>Configure assignments, sources, macros, admin tools, and workspace settings.</p></div>
+              <span class="chev">›</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- center dashboard -->
+        <section class="stage">
+          <div class="platform"><span class="glow"></span><span class="ring"></span><span class="disc"></span></div>
+          <div class="panel">
+            <div class="pl-side">
+              <div class="pl-logo"><img src="../assets/repos-mark.png" alt="">Rep<span>OS</span></div>
+              <a class="on"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"></path><path d="M6.5 10.5V20h11v-9.5"></path></svg>Home</a>
+              <a><svg viewBox="0 0 24 24"><path d="M5 5h11l3 3v11H5z"></path><path d="M9 11h6M9 15h4"></path></svg>Tickets</a>
+              <a><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"></circle><path d="M3.5 19a5.5 5.5 0 0 1 11 0"></path><path d="M16 7a3 3 0 0 1 0 6"></path></svg>Customers</a>
+              <a><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"></rect><rect x="14" y="4" width="6" height="6" rx="1"></rect><rect x="4" y="14" width="6" height="6" rx="1"></rect><rect x="14" y="14" width="6" height="6" rx="1"></rect></svg>Dashboard</a>
+              <a><svg viewBox="0 0 24 24"><path d="M5 4h13v16H5z"></path><path d="M5 8h13"></path></svg>Knowledge Vault</a>
+              <a><svg viewBox="0 0 24 24"><path d="m9 6-5 6 5 6"></path><path d="m15 6 5 6-5 6"></path></svg>Macros</a>
+              <a><svg viewBox="0 0 24 24"><path d="M9.5 14.5 14.5 9.5"></path><path d="M11 6.5 12.5 5a4 4 0 0 1 5.7 5.7L16.5 12.5"></path><path d="M13 17.5 11.5 19a4 4 0 0 1-5.7-5.7L7.5 11.5"></path></svg>Product Links</a>
+              <a><svg viewBox="0 0 24 24"><path d="M5 19V5M5 19h14M9 15v-4M13 15V8M17 15v-6"></path></svg>Reports</a>
+              <a><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"></circle><path d="M5.5 19a6.5 6.5 0 0 1 13 0"></path></svg>Admin</a>
+              <div class="pl-prof"><span class="av">A</span><span><b>Administrator</b><i>Online</i></span></div>
+            </div>
+            <div class="pl-main">
+              <div class="pl-top">
+                <h4>Open Tickets</h4>
+                <div class="pl-tools"><span>42 open</span><span class="pl-sort">Newest ▾</span></div>
+              </div>
+              <div class="pl-tabs"><span class="on">Open</span><span>Assigned To Me</span><span>Closed</span></div>
+              <div class="pl-q">
+                <div class="row"><span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span><span class="num">100046</span><span class="subj">Cannot access account</span><span class="cust">Alex Morgan</span><span class="tm">2m ago</span></div>
+                <div class="row"><span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span><span class="num">100045</span><span class="subj">Billing question</span><span class="cust">Taylor Reed</span><span class="tm">15m ago</span></div>
+                <div class="row"><span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span><span class="num">100044</span><span class="subj">Feature request: reports</span><span class="cust">Jordan Lee</span><span class="tm">32m ago</span></div>
+                <div class="row"><span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span><span class="num">100043</span><span class="subj">API integration issue</span><span class="cust">Casey Brown</span><span class="tm">1h ago</span></div>
+                <div class="row"><span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span><span class="num">100042</span><span class="subj">Data export not working</span><span class="cust">Jamie Wilson</span><span class="tm">2h ago</span></div>
+              </div>
+              <div class="pl-cards">
+                <div class="pl-card">
+                  <b>Customer Context</b>
+                  <div class="ctx-c"><span class="av">AM</span><span><b>Alex Morgan</b><small>alex.morgan@example.com</small></span></div>
+                  <div class="ctx-line"><svg viewBox="0 0 24 24" width="14" height="14" fill="#7d7890"><path d="M6 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A15 15 0 0 1 4.5 6.6 1.5 1.5 0 0 1 6 4Z"></path></svg>(555) 123-9876</div>
+                  <div class="ctx-grid"><span>Plan</span><b>Pro Plan</b><span>Customer Since</span><b>May 12, 2024</b><span>Lifetime Tickets</span><b>24</b></div>
+                  <div class="ctx-link">View full history →</div>
+                </div>
+                <div class="pl-card">
+                  <b>Recent Activity</b>
+                  <div class="act"><span class="ai"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"></path></svg></span>Note added by Taylor R.<em>2m</em></div>
+                  <div class="act"><span class="ai"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="m9 12 2 2 4-4"></path></svg></span>Status changed to Open<em>15m</em></div>
+                  <div class="act"><span class="ai"><svg viewBox="0 0 24 24"><path d="M18 8 9.5 16.5a3 3 0 0 1-4-4L13 5a2 2 0 0 1 3 3l-7 7"></path></svg></span>Attachment added<em>1h</em></div>
+                  <div class="act"><span class="ai"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H7l-2 2z"></path></svg></span>Customer replied<em>2h</em></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- sign-in -->
+        <aside class="signin">
+          <div class="si-ico"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"></path><rect x="5" y="11" width="14" height="10" rx="2"></rect></svg></div>
+          <p class="si-eyebrow">WORKSPACE ACCESS</p>
+          <h2>Sign in to RepOS</h2>
+          <p>Access your support workspace.</p>
+          <div class="fld">
+            <label>Email</label>
+            <div class="inp"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m4 7 8 6 8-6"></path></svg><span class="ph">you@example.com</span></div>
+          </div>
+          <div class="fld">
+            <label>Password</label>
+            <div class="inp"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span class="ph">Enter your password</span><svg class="eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg></div>
+          </div>
+          <div class="demo">Demo accounts:</div>
+          <div class="pills"><span>admin</span><span>manager</span><span>rep</span></div>
+          <div class="si-btn">Sign In</div>
+          <div class="si-or">or</div>
+          <div class="sso"><svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.6-2.8 8.4-7 10-4.2-1.6-7-5.4-7-10V6l7-3Z"></path></svg>Sign in with SSO</div>
+          <p class="si-help">Need help? Contact your workspace admin.</p>
+        </aside>
+      </div>
+
+      <!-- benefits -->
+      <div class="benefits">
+        <div class="ben"><span class="bi v"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"></path></svg></span><div><h4>Work Smarter</h4><p>Everything your team needs, right when you need it.</p></div></div>
+        <div class="ben"><span class="bi c"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19a5.5 5.5 0 0 1 11 0"></path><path d="M16 6.2a3 3 0 0 1 0 5.6"></path><path d="M17.5 19a5.5 5.5 0 0 0-3-4.9"></path></svg></span><div><h4>Know Every Customer</h4><p>History, notes, and details in one clean view.</p></div></div>
+        <div class="ben"><span class="bi b"><svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.6-2.8 8.4-7 10-4.2-1.6-7-5.4-7-10V6l7-3Z"></path><path d="m8.8 12.2 2.1 2.1 4.4-5"></path></svg></span><div><h4>Stay in Control</h4><p>Queues, assignments, and tools that keep work moving.</p></div></div>
+        <div class="ben"><span class="bi p"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-9.5A3.8 3.8 0 0 1 12 7a3.8 3.8 0 0 1 7-2.5C19 10.5 12 20 12 20Z"></path></svg></span><div><h4>Deliver Better Support</h4><p>Clearer workflows for stronger customer outcomes.</p></div></div>
+      </div>
+    </div>
+  </body>
+</html>
