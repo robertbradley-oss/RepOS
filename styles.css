@@ -2298,8 +2298,8 @@ body.public-home::before {
   mix-blend-mode: normal;
   opacity: 1;
   transform: translateZ(0);
-  -webkit-mask-image: radial-gradient(ellipse 76% 69% at 51% 53%, #000 0%, #000 80%, rgba(0, 0, 0, 0.92) 88%, rgba(0, 0, 0, 0.45) 96%, transparent 100%);
-  mask-image: radial-gradient(ellipse 76% 69% at 51% 53%, #000 0%, #000 80%, rgba(0, 0, 0, 0.92) 88%, rgba(0, 0, 0, 0.45) 96%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 98% 97% at 50% 50%, #000 0%, #000 90%, rgba(0, 0, 0, 0.5) 97%, transparent 100%);
+  mask-image: radial-gradient(ellipse 98% 97% at 50% 50%, #000 0%, #000 90%, rgba(0, 0, 0, 0.5) 97%, transparent 100%);
   filter:
     contrast(1.07)
     saturate(1.08)
