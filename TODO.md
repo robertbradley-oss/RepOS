@@ -2,6 +2,9 @@
 
 ## Completed Items
 
+- Reworked the homepage hero "dotted 3D wave" into a canvas-rendered perspective dot mesh, and rebuilt the "At a Glance" mini chart on canvas with markers, axis labels, a highlighted day, a value badge, and a draw-in animation.
+- Added a light, clean RepOS Home entry screen so the app opens on a product-level main page with sign-in/continue behavior and an iSpring Water Systems workspace card instead of dropping straight into the workspace.
+- Fixed clipboard copy feedback so macro copy, product/review links, ticket links, queue bulk ticket links, and receipt info copy actions report success only after the browser accepts the copy, with clear fallback toasts for unavailable clipboard access or blocked permission.
 - Fixed Profile Settings modal sizing so Account, Preferences, Signature, Notifications, Assist, and Workspace tabs keep the same bounded dialog width/height, with header, tabs, and Save/Close footer stable while only the tab content pane scrolls when needed.
 - Added a persistent smooth sliding active-tab bubble to Profile Settings using Tessario's shared motion variables, with first-render positioning that avoids a corner-origin jump and reduced-motion fallback through the existing motion safety rules.
 - Fixed Admin, Dashboard, and Knowledge Vault scrolling by making the reusable full-page panels stretch to the app shell's available content height and own their vertical overflow.
@@ -584,7 +587,6 @@
 
 ## Bugs To Fix
 
-- Clipboard actions may fail silently depending on browser permission.
 - Attachment previews now render in the ticket thread and modal, but real file storage/download still needs a backend.
 - `localStorage` is schema-validated, but future data-model changes should still bump `STORAGE_KEY`.
 - Customer account receipt/warranty history is still localStorage-only and will need backend persistence before real multi-rep use.
