@@ -21,7 +21,7 @@ const LEGACY_CUSTOMER_ACCOUNTS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.c
 const LEGACY_NOTIFICATIONS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.notifications.v1`;
 const DEMO_WORKSPACE_STORAGE_KEY = "repos.activeDemoWorkspace.v1";
 const GENERIC_DEMO_SEED_VERSION_STORAGE_KEY = "repos.genericDemoSeedVersion.v1";
-const GENERIC_DEMO_SEED_VERSION = "generic-demo-100-v1";
+const GENERIC_DEMO_SEED_VERSION = "generic-demo-100-threads-v1";
 const ISPRING_DEMO_ID = "ispring";
 const GENERIC_DEMO_ID = "generic";
 const demoWorkspaceIds = new Set([ISPRING_DEMO_ID, GENERIC_DEMO_ID]);
@@ -2188,7 +2188,7 @@ function buildTicket(config) {
       firstTest: config.firstTest,
       confirms: config.confirms
     },
-    conversation: buildConversation(config, createdAt, lastCustomerAt, lastRepAt),
+    conversation: Array.isArray(config.conversation) ? config.conversation : buildConversation(config, createdAt, lastCustomerAt, lastRepAt),
     checklist: checklistFor(config),
     guardrails: guardrailsFor(config),
     similar: similarFor(config),
@@ -4556,6 +4556,7 @@ function genericDemoTicketSeed() {
     const closed = status === "Closed";
     const waiting = status === "Closed, Waiting On Response";
     const ageHours = 4 + index * 3;
+    const messageCount = (index % 20) + 1;
     return {
       id: `NST-${ticketNumber}`,
       subject: template.subject,
@@ -4573,7 +4574,18 @@ function genericDemoTicketSeed() {
       order: template.tag === "account" ? "" : `NS-${48200 + index}`,
       customerMessage: template.message,
       repReply: template.reply,
-      internalNote: template.note
+      internalNote: template.note,
+      conversation: genericDemoConversation({
+        index,
+        messageCount,
+        customer,
+        assignee: assignees[index % assignees.length],
+        status,
+        ageHours,
+        customerMessage: template.message,
+        repReply: template.reply,
+        internalNote: template.note
+      })
     };
   });
 
@@ -4592,6 +4604,74 @@ function genericDemoTicketSeed() {
     confirms: "Customer has the next step or the case is resolved.",
     ...item
   }));
+}
+
+function genericDemoConversation(config) {
+  const messages = [];
+  const count = Math.max(1, Math.min(20, Number(config.messageCount) || 1));
+  const stepHours = Math.max(0.45, config.ageHours / Math.max(1, count));
+  const timestampFor = (position) => hoursAgo(Math.max(0.2, config.ageHours - position * stepHours));
+  const customerFollowUps = [
+    "Thanks for the quick reply. I can send the details you need.",
+    "I uploaded the requested information and wanted to confirm it came through.",
+    "Please let me know if anything else is needed from me.",
+    "I am checking in because this is holding up my next step.",
+    "That makes sense. I will wait for the update."
+  ];
+  const repFollowUps = [
+    "Thanks, I received it and am reviewing the case details now.",
+    "I added the update to the ticket and will keep the next step clear.",
+    "I am checking the order record and will follow up with the result.",
+    "The information helps. I am confirming the safest next action.",
+    "I appreciate the patience. I will update this thread as soon as it is confirmed."
+  ];
+  const notes = [
+    config.internalNote,
+    "Keep the response concise and avoid asking for details already provided.",
+    "Customer has a clear next-step expectation. Preserve that context in the reply.",
+    "No escalation needed yet; monitor for the next customer response.",
+    "If the customer replies again, summarize the known facts before asking a new question."
+  ];
+  let position = 0;
+
+  const push = (type, author, body) => {
+    if (messages.length >= count) return;
+    messages.push({
+      type,
+      author,
+      timestamp: timestampFor(position),
+      body
+    });
+    position += 1;
+  };
+
+  push("customer", config.customer, config.customerMessage);
+  if (count === 1) return messages;
+  push("timeline", "System", `Assigned to ${config.assignee}.`);
+  if (count === 2) return messages;
+  push("rep", config.assignee, config.repReply);
+  if (count === 3) return messages;
+  push("note", config.assignee, config.internalNote);
+
+  while (messages.length < count) {
+    const remaining = count - messages.length;
+    const cycle = messages.length % 5;
+    if (remaining === 1 && config.status !== "Open") {
+      push("timeline", config.assignee, `Status changed to ${config.status}.`);
+    } else if (cycle === 0) {
+      push("customer", config.customer, customerFollowUps[(config.index + messages.length) % customerFollowUps.length]);
+    } else if (cycle === 1) {
+      push("rep", config.assignee, repFollowUps[(config.index + messages.length) % repFollowUps.length]);
+    } else if (cycle === 2) {
+      push("note", config.assignee, notes[(config.index + messages.length) % notes.length]);
+    } else if (cycle === 3) {
+      push("timeline", "System", "Customer update recorded.");
+    } else {
+      push("rep", config.assignee, "I am keeping this ticket open while we confirm the remaining detail.");
+    }
+  }
+
+  return messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
 function reopenClosedWaitingTicketsWithCustomerReply() {
