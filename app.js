@@ -1283,6 +1283,8 @@ const el = {
   homeScreen: document.querySelector("#homeScreen"),
   homeLoginForm: document.querySelector("#homeLoginForm"),
   homeLoginButton: document.querySelector("#homeLoginButton"),
+  homeSignInButton: document.querySelector("#homeSignInButton"),
+  homePrimaryCta: document.querySelector("#homePrimaryCta"),
   homeDemoButtons: document.querySelectorAll("[data-demo-workspace]"),
   homeEmailInput: document.querySelector("#homeEmailInput"),
   homePasswordInput: document.querySelector("#homePasswordInput"),
@@ -1393,7 +1395,7 @@ function toggleHomePassword() {
 }
 
 function setHomeLoginControlsDisabled(disabled) {
-  document.querySelectorAll("#homeLoginButton, [form='homeLoginForm'][type='submit'], [data-demo-workspace]").forEach((button) => {
+  document.querySelectorAll("#homeLoginButton, #homeSignInButton, #homePrimaryCta, [data-demo-workspace]").forEach((button) => {
     button.disabled = disabled;
   });
 }
@@ -1584,6 +1586,8 @@ function init() {
 
   el.homeLoginForm?.addEventListener("submit", handleHomeLogin);
   el.homeLoginButton?.addEventListener("click", handleHomeLoginButtonClick);
+  el.homeSignInButton?.addEventListener("click", handleHomeLoginButtonClick);
+  el.homePrimaryCta?.addEventListener("click", handleHomeLoginButtonClick);
   el.homeDemoButtons?.forEach((button) => button.addEventListener("click", handleHomeDemoChoice));
   setHomeDemoChoice(selectedHomeDemoId);
   el.homePasswordToggle?.addEventListener("click", toggleHomePassword);
