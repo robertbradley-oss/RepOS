@@ -20,6 +20,8 @@ const LEGACY_PRODUCT_LINK_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.produc
 const LEGACY_CUSTOMER_ACCOUNTS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.customerAccounts.v1`;
 const LEGACY_NOTIFICATIONS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.notifications.v1`;
 const DEMO_WORKSPACE_STORAGE_KEY = "repos.activeDemoWorkspace.v1";
+const GENERIC_DEMO_SEED_VERSION_STORAGE_KEY = "repos.genericDemoSeedVersion.v1";
+const GENERIC_DEMO_SEED_VERSION = "generic-demo-100-v1";
 const ISPRING_DEMO_ID = "ispring";
 const GENERIC_DEMO_ID = "generic";
 const demoWorkspaceIds = new Set([ISPRING_DEMO_ID, GENERIC_DEMO_ID]);
@@ -4455,122 +4457,125 @@ function genericSessionUser() {
 }
 
 function genericDemoTicketSeed() {
-  const cases = [
+  const firstNames = ["Casey", "Riley", "Taylor", "Jamie", "Alex", "Sam", "Drew", "Ari", "Cameron", "Morgan", "Quinn", "Reese", "Parker", "Avery", "Jordan", "Rowan", "Dakota", "Skyler", "Emerson", "Hayden"];
+  const lastNames = ["Morgan", "Patel", "Brooks", "Rivera", "Kim", "Torres", "Nguyen", "Carter", "Lewis", "Bennett", "Reed", "Parker", "Stone", "Chen", "Blake", "Diaz", "Foster", "Gray", "Hale", "Morris"];
+  const sources = ["Email", "Web Form", "Phone", "Chat"];
+  const assignees = ["Morgan Lee", "Avery Chen", "Jordan Blake"];
+  const priorities = ["High", "Normal", "Normal", "Low"];
+  const statuses = ["Open", "Open", "Open", "Closed, Waiting On Response", "Closed"];
+  const issueTemplates = [
     {
-      id: "NST-100001",
       subject: "Damaged shipment replacement request",
-      customer: "Casey Morgan",
-      email: "casey.morgan@example.com",
-      phone: "555-0101",
-      source: "Email",
-      assignee: "Morgan Lee",
-      status: "Open",
-      priority: "High",
-      ageHours: 6,
-      dueInHours: 18,
-      tags: ["shipment", "replacement"],
+      tag: "shipment",
       missing: ["Needs Photos"],
-      order: "NS-48210",
-      customerMessage: "My order arrived with the outer box crushed and one item cracked. Can you help with a replacement?",
-      repReply: "Thanks for reaching out. Please send a photo of the damaged item and the packing slip so we can confirm the replacement details.",
-      internalNote: "Customer included order number but no photos yet. Keep the next step simple and confirm shipping address after photos arrive."
+      message: "My order arrived with the outer box crushed and one item cracked. Can you help with a replacement?",
+      reply: "Thanks for reaching out. Please send a photo of the damaged item and the packing slip so we can confirm the replacement details.",
+      note: "Customer included order number but no photos yet. Keep the next step simple and confirm shipping address after photos arrive."
     },
     {
-      id: "NST-100002",
       subject: "Billing question on recent order",
-      customer: "Riley Patel",
-      email: "riley.patel@example.com",
-      phone: "555-0102",
-      source: "Web Form",
-      assignee: "Avery Chen",
-      status: "Open",
-      priority: "Normal",
-      ageHours: 14,
-      dueInHours: 28,
-      tags: ["billing", "invoice"],
+      tag: "billing",
       missing: [],
-      order: "NS-48233",
-      customerMessage: "I see two pending charges for the same order. Is this a duplicate billing issue?",
-      repReply: "I checked the order activity and one charge appears to be an authorization hold. We are confirming with billing and will update you today.",
-      internalNote: "Likely pending authorization. Ask billing to verify before saying it will fall off."
+      message: "I see two pending charges for the same order. Is this a duplicate billing issue?",
+      reply: "I checked the order activity and one charge appears to be an authorization hold. We are confirming with billing and will update you today.",
+      note: "Likely pending authorization. Ask billing to verify before saying it will fall off."
     },
     {
-      id: "NST-100003",
       subject: "Missing part from delivery",
-      customer: "Taylor Brooks",
-      email: "taylor.brooks@example.com",
-      phone: "555-0103",
-      source: "Email",
-      assignee: "Morgan Lee",
-      status: "Open",
-      priority: "High",
-      ageHours: 23,
-      dueInHours: 9,
-      tags: ["missing-part", "delivery"],
+      tag: "missing-part",
       missing: ["Needs Packing Slip"],
-      order: "NS-48255",
-      customerMessage: "The delivery arrived today but the mounting bracket was not in the box.",
-      repReply: "Sorry about that. Please send a photo of the packing slip and everything received, and we will confirm the missing part for replacement.",
-      internalNote: "Assigned to Morgan because customer is waiting on setup. No return needed if part is confirmed missing."
+      message: "The delivery arrived today but one part listed in the guide was not in the box.",
+      reply: "Sorry about that. Please send a photo of the packing slip and everything received, and we will confirm the missing part for replacement.",
+      note: "No return needed if the part is confirmed missing. Confirm customer shipping address after document review."
     },
     {
-      id: "NST-100004",
       subject: "Setup help needed",
-      customer: "Jamie Rivera",
-      email: "jamie.rivera@example.com",
-      phone: "555-0104",
-      source: "Chat",
-      assignee: "Jordan Blake",
-      status: "Closed, Waiting On Response",
-      priority: "Normal",
-      ageHours: 36,
-      dueInHours: 20,
-      tags: ["setup", "how-to"],
+      tag: "setup",
       missing: ["Waiting Customer"],
-      order: "NS-48261",
-      customerMessage: "I am stuck on the setup step where the app asks for a verification code.",
-      repReply: "Please try the code again from the latest email and let us know whether it expires before you can submit it.",
-      internalNote: "Likely stale verification email. Waiting on customer result before escalating."
+      message: "I am stuck on the setup step where the app asks for a verification code.",
+      reply: "Please try the code again from the latest email and let us know whether it expires before you can submit it.",
+      note: "Likely stale verification email. Waiting on customer result before escalating."
     },
     {
-      id: "NST-100005",
       subject: "Return request follow-up",
-      customer: "Alex Kim",
-      email: "alex.kim@example.com",
-      phone: "555-0105",
-      source: "Web Form",
-      assignee: "Avery Chen",
-      status: "Closed",
-      priority: "Low",
-      ageHours: 58,
-      dueInHours: 0,
-      tags: ["return", "follow-up"],
+      tag: "return",
       missing: [],
-      order: "NS-48190",
-      customerMessage: "I submitted a return request last week and wanted to confirm the next step.",
-      repReply: "Your return request has been approved. The return label was sent to your email, and the case is closed unless you need anything else.",
-      internalNote: "Return label issued. No further action unless customer replies."
+      message: "I submitted a return request last week and wanted to confirm the next step.",
+      reply: "Your return request has been approved. The return label was sent to your email, and the case is closed unless you need anything else.",
+      note: "Return label issued. No further action unless customer replies."
     },
     {
-      id: "NST-100006",
       subject: "Account access issue",
-      customer: "Sam Torres",
-      email: "sam.torres@example.com",
-      phone: "555-0106",
-      source: "Phone",
-      assignee: "Morgan Lee",
-      status: "Closed",
-      priority: "Normal",
-      ageHours: 74,
-      dueInHours: 0,
-      tags: ["account", "login"],
+      tag: "account",
       missing: [],
-      order: "",
-      customerMessage: "I cannot access my account after resetting my password.",
-      repReply: "We confirmed the reset link worked after clearing the old session. Your account access is restored.",
-      internalNote: "Resolved after session reset. Customer confirmed they could log in."
+      message: "I cannot access my account after resetting my password.",
+      reply: "We confirmed the reset link worked after clearing the old session. Your account access is restored.",
+      note: "Resolved after session reset. Customer confirmed they could log in."
+    },
+    {
+      subject: "Address change before shipment",
+      tag: "address-change",
+      missing: ["Needs Confirmation"],
+      message: "I entered the wrong shipping address and need to update it before the order goes out.",
+      reply: "Please confirm the full corrected shipping address. We will check whether the order can still be updated before fulfillment.",
+      note: "Time sensitive. Do not promise the carrier can be changed until fulfillment confirms status."
+    },
+    {
+      subject: "Subscription renewal question",
+      tag: "subscription",
+      missing: [],
+      message: "I received a renewal notice and want to understand what is included before it renews.",
+      reply: "I can help clarify the renewal. The notice covers the upcoming service period; I am checking the account terms now.",
+      note: "Customer is not asking to cancel yet. Explain renewal plainly and offer options."
+    },
+    {
+      subject: "Order status check",
+      tag: "order-status",
+      missing: [],
+      message: "Can you tell me whether my order has shipped? I have not received tracking yet.",
+      reply: "I found the order and it is queued for fulfillment. We will send tracking as soon as the carrier scan is available.",
+      note: "Simple status request. No escalation unless tracking remains missing after next business day."
+    },
+    {
+      subject: "Exchange request for wrong item",
+      tag: "exchange",
+      missing: ["Needs Item Photo"],
+      message: "I ordered one item but received a different version. I would like to exchange it.",
+      reply: "Please send a photo of the item received and the packing slip so we can compare it with the order record.",
+      note: "Potential warehouse pick issue. Gather photo evidence before approving exchange."
     }
   ];
+
+  const cases = Array.from({ length: 100 }, (_, index) => {
+    const template = issueTemplates[index % issueTemplates.length];
+    const firstName = firstNames[index % firstNames.length];
+    const lastName = lastNames[(index * 7) % lastNames.length];
+    const customer = `${firstName} ${lastName}`;
+    const ticketNumber = 100001 + index;
+    const status = statuses[index % statuses.length];
+    const closed = status === "Closed";
+    const waiting = status === "Closed, Waiting On Response";
+    const ageHours = 4 + index * 3;
+    return {
+      id: `NST-${ticketNumber}`,
+      subject: template.subject,
+      customer,
+      email: `${firstName}.${lastName}.${index + 1}@example.com`.toLowerCase(),
+      phone: `555-${String(1000 + index).slice(-4)}`,
+      source: sources[index % sources.length],
+      assignee: assignees[index % assignees.length],
+      status,
+      priority: priorities[index % priorities.length],
+      ageHours,
+      dueInHours: closed ? 0 : waiting ? 24 + (index % 18) : 6 + (index % 42),
+      tags: [template.tag, status === "Open" ? "active" : closed ? "closed" : "waiting"],
+      missing: waiting ? ["Waiting Customer"] : template.missing,
+      order: template.tag === "account" ? "" : `NS-${48200 + index}`,
+      customerMessage: template.message,
+      repReply: template.reply,
+      internalNote: template.note
+    };
+  });
 
   return cases.map((item) => buildTicket({
     model: "General Support",
@@ -4617,6 +4622,7 @@ function resetTicketDataFromSeed() {
   selectedTicketId = "";
   queueDebugState.recoveredTickets = true;
   setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
+  if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
   lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 }
 
@@ -4812,10 +4818,19 @@ function nextTicketNumber() {
 }
 
 function loadTickets() {
+  if (isGenericDemoWorkspace() && localStorage.getItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY) !== GENERIC_DEMO_SEED_VERSION) {
+    const seeded = demoTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
+    localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    return seeded;
+  }
+
   const stored = storedValue(STORAGE_KEY, LEGACY_STORAGE_KEY);
   if (!stored) {
-    setStoredValue(STORAGE_KEY, JSON.stringify(demoTicketSeed()));
-    return demoTicketSeed();
+    const seeded = demoTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
+    if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    return seeded;
   }
 
   try {
@@ -4824,11 +4839,15 @@ function loadTickets() {
       const normalized = normalizeTickets(parsed);
       if (normalized.some(isOpen)) return normalized;
     }
-    setStoredValue(STORAGE_KEY, JSON.stringify(demoTicketSeed()));
-    return demoTicketSeed();
+    const seeded = demoTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
+    if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    return seeded;
   } catch {
-    setStoredValue(STORAGE_KEY, JSON.stringify(demoTicketSeed()));
-    return demoTicketSeed();
+    const seeded = demoTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
+    if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    return seeded;
   }
 }
 
@@ -12376,6 +12395,7 @@ function resetDemoData() {
   knowledgeDocs = JSON.parse(JSON.stringify(demoKnowledgeSeed()));
   productLinks = JSON.parse(JSON.stringify(demoProductLinkSeed()));
   notifications = seedNotifications(tickets);
+  if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
   activeView = "open";
   uiState.activeScreen = "queue";
   uiState.activeQuickControl = "open";
