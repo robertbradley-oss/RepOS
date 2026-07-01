@@ -1464,6 +1464,20 @@ function handleHomeDemoChoice(event) {
   setHomeDemoChoice(button.dataset.demoWorkspace);
 }
 
+function enterStaticDemoWorkspace() {
+  sessionUser = isGenericDemoWorkspace() ? genericSessionUser() : null;
+  backendSyncReady = true;
+  backendSyncAvailable = false;
+  backendAssignmentUsers = [];
+  if (applySessionUserToWorkspace()) {
+    updateProfileButton();
+    render({ preserveQueueList: true, suppressQueueRowEnter: true });
+  }
+  if (el.homePasswordInput) el.homePasswordInput.value = "";
+  setHomeStatus("Opening RepOS demo...");
+  enterWorkspace();
+}
+
 async function handleHomeLogin(event) {
   event.preventDefault();
   activateDemoWorkspace(selectedHomeDemoId);
@@ -1497,6 +1511,10 @@ async function handleHomeLogin(event) {
       el.homePasswordInput?.select?.();
       return;
     }
+    if (response.status === 404 || response.status === 405) {
+      enterStaticDemoWorkspace();
+      return;
+    }
     if (!response.ok) throw new Error(`Sign in failed: ${response.status}`);
     const payload = await response.json();
     sessionUser = isGenericDemoWorkspace() ? genericSessionUser() : isBackendPlainObject(payload?.user) ? payload.user : sessionUser;
@@ -1509,6 +1527,10 @@ async function handleHomeLogin(event) {
     setHomeStatus("Opening RepOS...");
     enterWorkspace();
   } catch (error) {
+    if (error instanceof TypeError) {
+      enterStaticDemoWorkspace();
+      return;
+    }
     console.warn("RepOS sign in is unavailable.", error);
     setHomeStatus("RepOS sign in is unavailable. Check the server connection and try again.", true);
     el.homePasswordInput?.focus({ preventScroll: true });
