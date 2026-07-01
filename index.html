@@ -43,7 +43,11 @@
           <button type="button">About</button>
         </div>
         <div class="home-nav-actions">
-          <button class="home-login-link" type="submit" form="homeLoginForm">Log in</button>
+          <div class="home-demo-switch" aria-label="Choose demo workspace">
+            <button class="active" id="homeIspringDemoButton" type="button" data-demo-workspace="ispring">iSpring Demo</button>
+            <button id="homeGenericDemoButton" type="button" data-demo-workspace="generic">Generic Demo</button>
+          </div>
+          <button class="home-login-link" id="homeLoginButton" type="button">Log in</button>
           <button class="home-signin-button" type="submit" form="homeLoginForm">Sign in to RepOS <span aria-hidden="true">→</span></button>
         </div>
       </nav>

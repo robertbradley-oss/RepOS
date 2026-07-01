@@ -344,7 +344,7 @@ body:not(.home-active) .home-screen {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 310px;
+  grid-template-columns: 240px minmax(0, 1fr) minmax(430px, auto);
   align-items: center;
   gap: 28px;
   max-width: 1510px;
@@ -424,7 +424,34 @@ body:not(.home-active) .home-screen {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 24px;
+  gap: 18px;
+}
+
+.home-demo-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid rgba(30, 32, 40, .1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .66);
+}
+
+.home-demo-switch button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  color: #5f6473;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.home-demo-switch button.active {
+  color: #6d3ef1;
+  background: rgba(124, 92, 255, .12);
 }
 
 .home-signin-button,
@@ -1483,6 +1510,11 @@ body:not(.home-active) .home-screen {
 
   .home-nav-links {
     gap: 22px;
+  }
+
+  .home-nav-actions {
+    flex-wrap: wrap;
+    gap: 12px;
   }
 
   .home-hero {

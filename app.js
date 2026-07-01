@@ -19,6 +19,12 @@ const LEGACY_KNOWLEDGE_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.knowledge
 const LEGACY_PRODUCT_LINK_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.productLinkLibrary.v1`;
 const LEGACY_CUSTOMER_ACCOUNTS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.customerAccounts.v1`;
 const LEGACY_NOTIFICATIONS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.notifications.v1`;
+const DEMO_WORKSPACE_STORAGE_KEY = "repos.activeDemoWorkspace.v1";
+const ISPRING_DEMO_ID = "ispring";
+const GENERIC_DEMO_ID = "generic";
+const demoWorkspaceIds = new Set([ISPRING_DEMO_ID, GENERIC_DEMO_ID]);
+let activeDemoWorkspaceId = safeDemoWorkspaceId(localStorage.getItem(DEMO_WORKSPACE_STORAGE_KEY));
+let selectedHomeDemoId = activeDemoWorkspaceId;
 const CURRENT_USER = "Morgan Lee";
 const MIN_TICKET_NUMBER = 100000;
 const verifiedPurchaseSources = ["Amazon", "iSpring direct", "Home Depot", "Lowe's", "Walmart", "eBay"];
@@ -386,13 +392,17 @@ const toolbarStatusActions = [
 ];
 const closedDateRangeOptions = ["Today", "Yesterday", "This Week", "This Month", "This Quarter"];
 const seedPriorities = ["Urgent", "High", "Normal", "Low"];
-const productFamilies = workspaceConfig.productFamilies;
-const issueTypes = workspaceConfig.ticketCategories;
+const ispringProductFamilies = workspaceConfig.productFamilies.slice();
+const ispringIssueTypes = workspaceConfig.ticketCategories.slice();
+let productFamilies = ispringProductFamilies.slice();
+let issueTypes = ispringIssueTypes.slice();
 const activeWorkloadStatuses = workspaceConfig.activeWorkloadStatuses;
 const userRoles = ["admin", "manager", "rep"];
 const seedUsers = workspaceConfig.reps;
-const macroCategories = workspaceConfig.macroCategories;
-const macroLibrary = workspaceConfig.macros;
+const ispringMacroCategories = workspaceConfig.macroCategories.slice();
+const ispringMacroLibrary = workspaceConfig.macros.slice();
+let macroCategories = ispringMacroCategories.slice();
+let macroLibrary = ispringMacroLibrary.slice();
 const knowledgeCategories = workspaceConfig.knowledgeVaultCategories;
 const knowledgeStatuses = workspaceConfig.knowledgeVaultStatuses;
 const closedQueueStatuses = ["Closed", "Resolved"];
@@ -1168,7 +1178,7 @@ let workspaceSettings = normalizeWorkspaceSettings(loadWorkspaceSettings());
 applyWorkspaceSettings();
 let tickets = normalizeTickets(loadTickets());
 rebaselineOpenTicketSla(tickets);
-if (ensureReceiptTestTickets(tickets)) localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+if (!isGenericDemoWorkspace() && ensureReceiptTestTickets(tickets)) setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
 let backendSyncReady = false;
 let backendSyncTimer = 0;
 let backendSyncAvailable = false;
@@ -1178,8 +1188,8 @@ let backendAssignmentUsers = [];
 let lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 let profile = loadProfile();
 let customerAccounts = loadCustomerAccounts(tickets);
-let customerAccountReceiptDataChanged = ensureReceiptTestCustomerAccounts(tickets);
-customerAccountReceiptDataChanged = ensureMockReceiptRecordsForTickets(tickets) || customerAccountReceiptDataChanged;
+let customerAccountReceiptDataChanged = !isGenericDemoWorkspace() && ensureReceiptTestCustomerAccounts(tickets);
+customerAccountReceiptDataChanged = (!isGenericDemoWorkspace() && ensureMockReceiptRecordsForTickets(tickets)) || customerAccountReceiptDataChanged;
 if (customerAccountReceiptDataChanged) persistCustomerAccounts();
 if (tickets.some((ticket) => applyCustomerAccountToTicket(ticket))) persistTickets();
 let users = loadUsers();
@@ -1272,6 +1282,8 @@ let pendingReceiptUpload = {
 const el = {
   homeScreen: document.querySelector("#homeScreen"),
   homeLoginForm: document.querySelector("#homeLoginForm"),
+  homeLoginButton: document.querySelector("#homeLoginButton"),
+  homeDemoButtons: document.querySelectorAll("[data-demo-workspace]"),
   homeEmailInput: document.querySelector("#homeEmailInput"),
   homePasswordInput: document.querySelector("#homePasswordInput"),
   homePasswordToggle: document.querySelector("#homePasswordToggle"),
@@ -1380,8 +1392,79 @@ function toggleHomePassword() {
   input.focus({ preventScroll: true });
 }
 
+function setHomeLoginControlsDisabled(disabled) {
+  document.querySelectorAll("#homeLoginButton, [form='homeLoginForm'][type='submit'], [data-demo-workspace]").forEach((button) => {
+    button.disabled = disabled;
+  });
+}
+
+function setHomeDemoChoice(demoId) {
+  selectedHomeDemoId = safeDemoWorkspaceId(demoId);
+  el.homeDemoButtons?.forEach((button) => {
+    const active = button.dataset.demoWorkspace === selectedHomeDemoId;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function activateDemoWorkspace(demoId) {
+  const nextDemoId = safeDemoWorkspaceId(demoId);
+  if (activeDemoWorkspaceId === nextDemoId) {
+    setHomeDemoChoice(nextDemoId);
+    return;
+  }
+
+  activeDemoWorkspaceId = nextDemoId;
+  selectedHomeDemoId = nextDemoId;
+  localStorage.setItem(DEMO_WORKSPACE_STORAGE_KEY, activeDemoWorkspaceId);
+  backendSyncQueue.clear();
+  backendSyncAvailable = false;
+  backendSyncReady = isGenericDemoWorkspace();
+  backendAssignmentUsers = [];
+  sessionUser = isGenericDemoWorkspace() ? genericSessionUser() : null;
+
+  workspaceSettings = normalizeWorkspaceSettings(loadWorkspaceSettings());
+  applyWorkspaceSettings();
+  applyWorkspaceBranding();
+  tickets = normalizeTickets(loadTickets());
+  rebaselineOpenTicketSla(tickets);
+  if (!isGenericDemoWorkspace() && ensureReceiptTestTickets(tickets)) setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
+  lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
+  profile = loadProfile();
+  customerAccounts = loadCustomerAccounts(tickets);
+  if (!isGenericDemoWorkspace() && ensureReceiptTestCustomerAccounts(tickets)) persistCustomerAccounts();
+  users = loadUsers();
+  knowledgeDocs = loadKnowledgeDocs();
+  productLinks = loadProductLinks();
+  notifications = loadNotifications(tickets);
+
+  selectedTicketId = "";
+  selectedTicketIds.clear();
+  closingTicketIds.clear();
+  pendingStatusChanges.clear();
+  notificationsOpen = false;
+  activeView = "open";
+  uiState.activeScreen = "queue";
+  uiState.activeQuickControl = "open";
+  queuePage = 1;
+  filters.queue = "";
+  filters.table = {};
+  setHomeDemoChoice(nextDemoId);
+  renderToolbarSelectOptions();
+  applyProfilePreferences({ initialize: true });
+  updateProfileButton();
+  render({ preserveQueueList: false, suppressQueueRowEnter: true });
+}
+
+function handleHomeDemoChoice(event) {
+  const button = event.target.closest("[data-demo-workspace]");
+  if (!button) return;
+  setHomeDemoChoice(button.dataset.demoWorkspace);
+}
+
 async function handleHomeLogin(event) {
   event.preventDefault();
+  activateDemoWorkspace(selectedHomeDemoId);
   const email = String(el.homeEmailInput?.value || "").trim();
   const password = String(el.homePasswordInput?.value || "");
 
@@ -1398,8 +1481,7 @@ async function handleHomeLogin(event) {
     return;
   }
 
-  const submitButton = el.homeLoginForm?.querySelector("button[type='submit']");
-  if (submitButton) submitButton.disabled = true;
+  setHomeLoginControlsDisabled(true);
 
   try {
     const response = await fetch("/api/auth/login", {
@@ -1415,7 +1497,7 @@ async function handleHomeLogin(event) {
     }
     if (!response.ok) throw new Error(`Sign in failed: ${response.status}`);
     const payload = await response.json();
-    sessionUser = isBackendPlainObject(payload?.user) ? payload.user : sessionUser;
+    sessionUser = isGenericDemoWorkspace() ? genericSessionUser() : isBackendPlainObject(payload?.user) ? payload.user : sessionUser;
     await hydrateBackendState();
     if (applySessionUserToWorkspace()) {
       updateProfileButton();
@@ -1429,8 +1511,13 @@ async function handleHomeLogin(event) {
     setHomeStatus("RepOS sign in is unavailable. Check the server connection and try again.", true);
     el.homePasswordInput?.focus({ preventScroll: true });
   } finally {
-    if (submitButton) submitButton.disabled = false;
+    setHomeLoginControlsDisabled(false);
   }
+}
+
+function handleHomeLoginButtonClick(event) {
+  event.preventDefault();
+  handleHomeLogin(event);
 }
 
 function enterWorkspace() {
@@ -1496,6 +1583,9 @@ function init() {
   applyProfilePreferences({ initialize: true });
 
   el.homeLoginForm?.addEventListener("submit", handleHomeLogin);
+  el.homeLoginButton?.addEventListener("click", handleHomeLoginButtonClick);
+  el.homeDemoButtons?.forEach((button) => button.addEventListener("click", handleHomeDemoChoice));
+  setHomeDemoChoice(selectedHomeDemoId);
   el.homePasswordToggle?.addEventListener("click", toggleHomePassword);
   el.homeNavButton?.addEventListener("click", showHomeScreen);
   el.dashboardNavButton.addEventListener("click", showDashboardScreen);
@@ -4262,12 +4352,215 @@ function normalizeTickets(sourceTickets, options = {}) {
     changed = normalizeTicketStatusTimelineOwnership(ticket) || changed;
     return ticket;
   });
-  if (changed && options.persist !== false) localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+  if (changed && options.persist !== false) setStoredValue(STORAGE_KEY, JSON.stringify(normalized));
   return normalized;
 }
 
 function defaultTicketSeed() {
   return JSON.parse(JSON.stringify(workspaceConfig.tickets));
+}
+
+function demoTicketSeed() {
+  return isGenericDemoWorkspace() ? genericDemoTicketSeed() : defaultTicketSeed();
+}
+
+function demoUserSeed() {
+  return isGenericDemoWorkspace()
+    ? [
+        { id: "morgan-lee", name: "Morgan Lee", role: "rep", assignmentEligible: true, removed: false },
+        { id: "avery-chen", name: "Avery Chen", role: "rep", assignmentEligible: true, removed: false },
+        { id: "jordan-blake", name: "Jordan Blake", role: "rep", assignmentEligible: true, removed: false }
+      ]
+    : JSON.parse(JSON.stringify(seedUsers));
+}
+
+function demoProfileSeed() {
+  if (!isGenericDemoWorkspace()) return { ...seedProfile };
+  return {
+    ...seedProfile,
+    firstName: "Morgan",
+    lastName: "Lee",
+    displayName: "Morgan Lee",
+    email: "morgan.lee@northstar.example",
+    phone: "555-0144",
+    extension: "100",
+    username: "morgan.lee",
+    role: "Support Rep",
+    twoFactorEnabled: false,
+    mySignature: "Thanks,\nMorgan",
+    departmentSignature: "Northstar Support\nCustomer Care",
+    notifyReceiptsWarranty: false
+  };
+}
+
+function demoWorkspaceSettingsSeed() {
+  if (!isGenericDemoWorkspace()) return { ...seedWorkspaceSettings };
+  return {
+    ...seedWorkspaceSettings,
+    workspaceName: "Northstar Support",
+    workspaceLabel: "Workspace: Northstar Support",
+    supportEmail: "support@northstar.example",
+    currentUserName: "Morgan Lee",
+    currentUserRole: "rep",
+    defaultAssignee: "Morgan Lee",
+    allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
+  };
+}
+
+function demoKnowledgeSeed() {
+  return isGenericDemoWorkspace() ? [] : JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
+}
+
+function demoProductLinkSeed() {
+  return isGenericDemoWorkspace() ? [] : JSON.parse(JSON.stringify(seedProductLinks));
+}
+
+function genericSessionUser() {
+  return {
+    id: "generic-demo-morgan-lee",
+    email: "morgan.lee@northstar.example",
+    name: "Morgan Lee",
+    displayName: "Morgan Lee",
+    repName: "Morgan Lee",
+    assignmentName: "Morgan Lee",
+    role: "rep",
+    active: true
+  };
+}
+
+function genericDemoTicketSeed() {
+  const cases = [
+    {
+      id: "NST-100001",
+      subject: "Damaged shipment replacement request",
+      customer: "Casey Morgan",
+      email: "casey.morgan@example.com",
+      phone: "555-0101",
+      source: "Email",
+      assignee: "Morgan Lee",
+      status: "Open",
+      priority: "High",
+      ageHours: 6,
+      dueInHours: 18,
+      tags: ["shipment", "replacement"],
+      missing: ["Needs Photos"],
+      order: "NS-48210",
+      customerMessage: "My order arrived with the outer box crushed and one item cracked. Can you help with a replacement?",
+      repReply: "Thanks for reaching out. Please send a photo of the damaged item and the packing slip so we can confirm the replacement details.",
+      internalNote: "Customer included order number but no photos yet. Keep the next step simple and confirm shipping address after photos arrive."
+    },
+    {
+      id: "NST-100002",
+      subject: "Billing question on recent order",
+      customer: "Riley Patel",
+      email: "riley.patel@example.com",
+      phone: "555-0102",
+      source: "Web Form",
+      assignee: "Avery Chen",
+      status: "Open",
+      priority: "Normal",
+      ageHours: 14,
+      dueInHours: 28,
+      tags: ["billing", "invoice"],
+      missing: [],
+      order: "NS-48233",
+      customerMessage: "I see two pending charges for the same order. Is this a duplicate billing issue?",
+      repReply: "I checked the order activity and one charge appears to be an authorization hold. We are confirming with billing and will update you today.",
+      internalNote: "Likely pending authorization. Ask billing to verify before saying it will fall off."
+    },
+    {
+      id: "NST-100003",
+      subject: "Missing part from delivery",
+      customer: "Taylor Brooks",
+      email: "taylor.brooks@example.com",
+      phone: "555-0103",
+      source: "Email",
+      assignee: "Morgan Lee",
+      status: "Open",
+      priority: "High",
+      ageHours: 23,
+      dueInHours: 9,
+      tags: ["missing-part", "delivery"],
+      missing: ["Needs Packing Slip"],
+      order: "NS-48255",
+      customerMessage: "The delivery arrived today but the mounting bracket was not in the box.",
+      repReply: "Sorry about that. Please send a photo of the packing slip and everything received, and we will confirm the missing part for replacement.",
+      internalNote: "Assigned to Morgan because customer is waiting on setup. No return needed if part is confirmed missing."
+    },
+    {
+      id: "NST-100004",
+      subject: "Setup help needed",
+      customer: "Jamie Rivera",
+      email: "jamie.rivera@example.com",
+      phone: "555-0104",
+      source: "Chat",
+      assignee: "Jordan Blake",
+      status: "Closed, Waiting On Response",
+      priority: "Normal",
+      ageHours: 36,
+      dueInHours: 20,
+      tags: ["setup", "how-to"],
+      missing: ["Waiting Customer"],
+      order: "NS-48261",
+      customerMessage: "I am stuck on the setup step where the app asks for a verification code.",
+      repReply: "Please try the code again from the latest email and let us know whether it expires before you can submit it.",
+      internalNote: "Likely stale verification email. Waiting on customer result before escalating."
+    },
+    {
+      id: "NST-100005",
+      subject: "Return request follow-up",
+      customer: "Alex Kim",
+      email: "alex.kim@example.com",
+      phone: "555-0105",
+      source: "Web Form",
+      assignee: "Avery Chen",
+      status: "Closed",
+      priority: "Low",
+      ageHours: 58,
+      dueInHours: 0,
+      tags: ["return", "follow-up"],
+      missing: [],
+      order: "NS-48190",
+      customerMessage: "I submitted a return request last week and wanted to confirm the next step.",
+      repReply: "Your return request has been approved. The return label was sent to your email, and the case is closed unless you need anything else.",
+      internalNote: "Return label issued. No further action unless customer replies."
+    },
+    {
+      id: "NST-100006",
+      subject: "Account access issue",
+      customer: "Sam Torres",
+      email: "sam.torres@example.com",
+      phone: "555-0106",
+      source: "Phone",
+      assignee: "Morgan Lee",
+      status: "Closed",
+      priority: "Normal",
+      ageHours: 74,
+      dueInHours: 0,
+      tags: ["account", "login"],
+      missing: [],
+      order: "",
+      customerMessage: "I cannot access my account after resetting my password.",
+      repReply: "We confirmed the reset link worked after clearing the old session. Your account access is restored.",
+      internalNote: "Resolved after session reset. Customer confirmed they could log in."
+    }
+  ];
+
+  return cases.map((item) => buildTicket({
+    model: "General Support",
+    family: "Customer Support",
+    purchaseSource: "Unknown",
+    purchaseSourceMode: "",
+    detectedPurchaseSource: "",
+    receipt: false,
+    warranty: "Not applicable",
+    previousTickets: [],
+    attachments: [],
+    issue: "General support request",
+    firstTest: "Confirm the customer goal, current blocker, and next needed artifact.",
+    confirms: "Customer has the next step or the case is resolved.",
+    ...item
+  }));
 }
 
 function reopenClosedWaitingTicketsWithCustomerReply() {
@@ -4291,13 +4584,13 @@ function reopenClosedWaitingTicketsWithCustomerReply() {
 }
 
 function resetTicketDataFromSeed() {
-  tickets = normalizeTickets(defaultTicketSeed());
+  tickets = normalizeTickets(demoTicketSeed());
   selectedTicketIds.clear();
   closingTicketIds.clear();
   pendingStatusChanges.clear();
   selectedTicketId = "";
   queueDebugState.recoveredTickets = true;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
   lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 }
 
@@ -4433,19 +4726,38 @@ function highestExistingTicketNumber(sourceTickets = tickets) {
   return sourceTickets.reduce((highest, ticket) => Math.max(highest, ticketNumberFromId(ticket)), 0);
 }
 
+function safeDemoWorkspaceId(value) {
+  const id = String(value || "").trim().toLowerCase();
+  return demoWorkspaceIds.has(id) ? id : ISPRING_DEMO_ID;
+}
+
+function isGenericDemoWorkspace() {
+  return activeDemoWorkspaceId === GENERIC_DEMO_ID;
+}
+
+function scopedStorageKey(primaryKey) {
+  return isGenericDemoWorkspace() ? `${primaryKey}.generic` : primaryKey;
+}
+
+function setStoredValue(primaryKey, value) {
+  localStorage.setItem(scopedStorageKey(primaryKey), value);
+}
+
 function storedValue(primaryKey, legacyKey = "") {
-  const primary = localStorage.getItem(primaryKey);
-  if (primary !== null || !legacyKey) return primary;
+  const scopedKey = scopedStorageKey(primaryKey);
+  const primary = localStorage.getItem(scopedKey);
+  if (primary !== null || !legacyKey || isGenericDemoWorkspace()) return primary;
   const legacy = localStorage.getItem(legacyKey);
-  if (legacy !== null) localStorage.setItem(primaryKey, legacy);
+  if (legacy !== null) localStorage.setItem(scopedKey, legacy);
   return legacy;
 }
 
 function storedTicketState() {
-  if (localStorage.getItem(STORAGE_KEY) !== null) {
-    return { key: STORAGE_KEY, found: true };
+  const scopedTicketKey = scopedStorageKey(STORAGE_KEY);
+  if (localStorage.getItem(scopedTicketKey) !== null) {
+    return { key: scopedTicketKey, found: true };
   }
-  if (localStorage.getItem(LEGACY_STORAGE_KEY) !== null) {
+  if (!isGenericDemoWorkspace() && localStorage.getItem(LEGACY_STORAGE_KEY) !== null) {
     return { key: LEGACY_STORAGE_KEY, found: true };
   }
   return { key: "none", found: false };
@@ -4460,7 +4772,7 @@ function loadLastUsedTicketNumber(sourceTickets) {
 }
 
 function persistLastUsedTicketNumber(value) {
-  localStorage.setItem(TICKET_COUNTER_STORAGE_KEY, String(value));
+  setStoredValue(TICKET_COUNTER_STORAGE_KEY, String(value));
   scheduleBackendSync("lastTicketNumber", value);
 }
 
@@ -4476,8 +4788,8 @@ function nextTicketNumber() {
 function loadTickets() {
   const stored = storedValue(STORAGE_KEY, LEGACY_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceConfig.tickets));
-    return defaultTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(demoTicketSeed()));
+    return demoTicketSeed();
   }
 
   try {
@@ -4486,19 +4798,19 @@ function loadTickets() {
       const normalized = normalizeTickets(parsed);
       if (normalized.some(isOpen)) return normalized;
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceConfig.tickets));
-    return defaultTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(demoTicketSeed()));
+    return demoTicketSeed();
   } catch {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceConfig.tickets));
-    return defaultTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(demoTicketSeed()));
+    return demoTicketSeed();
   }
 }
 
 function loadUsers() {
   const stored = storedValue(USERS_STORAGE_KEY, LEGACY_USERS_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(seedUsers));
-    return JSON.parse(JSON.stringify(seedUsers));
+    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(demoUserSeed()));
+    return JSON.parse(JSON.stringify(demoUserSeed()));
   }
 
   try {
@@ -4506,15 +4818,15 @@ function loadUsers() {
     if (Array.isArray(parsed)) {
       const normalized = parsed.map((user) => ({ ...user, name: normalizeRepName(user.name) || user.name }));
       if (hasValidUserData(normalized)) {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(normalized));
+        setStoredValue(USERS_STORAGE_KEY, JSON.stringify(normalized));
         return normalized;
       }
     }
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(seedUsers));
-    return JSON.parse(JSON.stringify(seedUsers));
+    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(demoUserSeed()));
+    return JSON.parse(JSON.stringify(demoUserSeed()));
   } catch {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(seedUsers));
-    return JSON.parse(JSON.stringify(seedUsers));
+    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(demoUserSeed()));
+    return JSON.parse(JSON.stringify(demoUserSeed()));
   }
 }
 
@@ -4523,85 +4835,85 @@ function loadKnowledgeDocs() {
 
   const stored = storedValue(KNOWLEDGE_STORAGE_KEY, LEGACY_KNOWLEDGE_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(workspaceConfig.knowledgeVault));
-    return JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
+    setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(demoKnowledgeSeed()));
+    return JSON.parse(JSON.stringify(demoKnowledgeSeed()));
   }
 
   try {
     const parsed = JSON.parse(stored);
     const normalized = normalizeKnowledgeDocs(parsed);
     if (normalized) {
-      localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(normalized));
+      setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(normalized));
       return normalized;
     }
-    localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(workspaceConfig.knowledgeVault));
-    return JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
+    setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(demoKnowledgeSeed()));
+    return JSON.parse(JSON.stringify(demoKnowledgeSeed()));
   } catch {
-    localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(workspaceConfig.knowledgeVault));
-    return JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
+    setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(demoKnowledgeSeed()));
+    return JSON.parse(JSON.stringify(demoKnowledgeSeed()));
   }
 }
 
 function loadProductLinks() {
   const stored = storedValue(PRODUCT_LINK_STORAGE_KEY, LEGACY_PRODUCT_LINK_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(seedProductLinks));
-    return JSON.parse(JSON.stringify(seedProductLinks));
+    setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(demoProductLinkSeed()));
+    return JSON.parse(JSON.stringify(demoProductLinkSeed()));
   }
 
   try {
     const parsed = JSON.parse(stored);
     const normalized = normalizeProductLinks(parsed);
-    if (normalized?.length) {
-      localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(normalized));
+    if (normalized && (normalized.length || isGenericDemoWorkspace())) {
+      setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(normalized || []));
       return normalized;
     }
-    localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(seedProductLinks));
-    return JSON.parse(JSON.stringify(seedProductLinks));
+    setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(demoProductLinkSeed()));
+    return JSON.parse(JSON.stringify(demoProductLinkSeed()));
   } catch {
-    localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(seedProductLinks));
-    return JSON.parse(JSON.stringify(seedProductLinks));
+    setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(demoProductLinkSeed()));
+    return JSON.parse(JSON.stringify(demoProductLinkSeed()));
   }
 }
 
 function loadProfile() {
   const stored = storedValue(PROFILE_STORAGE_KEY, LEGACY_PROFILE_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(seedProfile));
-    return { ...seedProfile };
+    setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(demoProfileSeed()));
+    return { ...demoProfileSeed() };
   }
 
   try {
     const parsed = JSON.parse(stored);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(seedProfile));
-      return { ...seedProfile };
+      setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(demoProfileSeed()));
+      return { ...demoProfileSeed() };
     }
-    return normalizeProfile({ ...seedProfile, ...parsed });
+    return normalizeProfile({ ...demoProfileSeed(), ...parsed });
   } catch {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(seedProfile));
-    return { ...seedProfile };
+    setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(demoProfileSeed()));
+    return { ...demoProfileSeed() };
   }
 }
 
 function loadWorkspaceSettings() {
   const stored = storedValue(SETTINGS_STORAGE_KEY, LEGACY_SETTINGS_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(seedWorkspaceSettings));
-    return { ...seedWorkspaceSettings };
+    setStoredValue(SETTINGS_STORAGE_KEY, JSON.stringify(demoWorkspaceSettingsSeed()));
+    return { ...demoWorkspaceSettingsSeed() };
   }
 
   try {
     const parsed = JSON.parse(stored);
     return normalizeWorkspaceSettings(parsed);
   } catch {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(seedWorkspaceSettings));
-    return { ...seedWorkspaceSettings };
+    setStoredValue(SETTINGS_STORAGE_KEY, JSON.stringify(demoWorkspaceSettingsSeed()));
+    return { ...demoWorkspaceSettingsSeed() };
   }
 }
 
 function normalizeWorkspaceSettings(source = {}) {
-  const defaults = seedWorkspaceSettings;
+  const defaults = demoWorkspaceSettingsSeed();
   const value = source && typeof source === "object" && !Array.isArray(source) ? source : {};
   const role = String(value.currentUserRole || "").trim().toLowerCase();
   const supportedStatuses = new Set(defaults.allowedStatuses);
@@ -4629,10 +4941,46 @@ function cleanWorkspaceSetting(value, fallback) {
 }
 
 function applyWorkspaceSettings() {
+  applyDemoWorkspaceMetadata();
   workspaceConfig.workspaceName = workspaceSettings.workspaceName;
   workspaceConfig.workspaceLabel = workspaceSettings.workspaceLabel;
   workspaceConfig.supportMailbox = workspaceSettings.supportEmail;
   if (workspaceSettings.allowedStatuses?.length) workspaceConfig.statuses = workspaceSettings.allowedStatuses;
+}
+
+function applyDemoWorkspaceMetadata() {
+  if (isGenericDemoWorkspace()) {
+    workspaceConfig.workspaceShortName = "Northstar";
+    workspaceConfig.workspaceLogoSrc = "./assets/repos-mark.png";
+    workspaceConfig.workspaceInitials = "NS";
+    workspaceConfig.supportMailboxLabel = "Northstar Support";
+    workspaceConfig.ticketPrefix = "NST";
+    workspaceConfig.tagline = "Support made clear.";
+    workspaceConfig.workspaceNote = "Northstar Support is the active public demo workspace in this RepOS session.";
+    workspaceConfig.sourceChannels = ["Email", "Phone", "Web Form", "Chat"];
+    workspaceConfig.orderPlaceholder = "Order number";
+    workspaceConfig.modelPlaceholder = "General support item";
+    productFamilies = ["Customer Support", "Orders", "Billing", "Delivery", "Returns", "Account"];
+    issueTypes = ["Shipment", "Billing", "Missing Part", "Setup Help", "Return", "Account Access"];
+    macroCategories = [];
+    macroLibrary = [];
+    return;
+  }
+
+  workspaceConfig.workspaceShortName = "iSpring";
+  workspaceConfig.workspaceLogoSrc = "./assets/ispring-logo.png";
+  workspaceConfig.workspaceInitials = "iS";
+  workspaceConfig.supportMailboxLabel = "iSpring Support";
+  workspaceConfig.ticketPrefix = "ISP";
+  workspaceConfig.tagline = "Ticketing made clear.";
+  workspaceConfig.workspaceNote = "iSpring Water Systems is the active workspace in this RepOS session.";
+  workspaceConfig.sourceChannels = ["Email", "Phone", "Web Form", "Amazon", "Home Depot"];
+  workspaceConfig.orderPlaceholder = "Amazon or iSpring order";
+  workspaceConfig.modelPlaceholder = "RCC7P-AK, RO500AK, WGB32B";
+  productFamilies = ispringProductFamilies.slice();
+  issueTypes = ispringIssueTypes.slice();
+  macroCategories = ispringMacroCategories.slice();
+  macroLibrary = ispringMacroLibrary.slice();
 }
 
 function normalizeProfile(sourceProfile) {
@@ -4648,7 +4996,7 @@ function loadNotifications(sourceTickets) {
   const stored = storedValue(NOTIFICATIONS_STORAGE_KEY, LEGACY_NOTIFICATIONS_STORAGE_KEY);
   if (!stored) {
     const seeded = seedNotifications(sourceTickets);
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
+    setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
     return seeded;
   }
 
@@ -4657,11 +5005,11 @@ function loadNotifications(sourceTickets) {
     const normalized = normalizeNotifications(parsed);
     if (normalized) return normalized;
     const seeded = seedNotifications(sourceTickets);
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
+    setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
     return seeded;
   } catch {
     const seeded = seedNotifications(sourceTickets);
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
+    setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
     return seeded;
   }
 }
@@ -4683,6 +5031,8 @@ function normalizeNotifications(value) {
 }
 
 function seedNotifications(sourceTickets) {
+  if (isGenericDemoWorkspace()) return [];
+
   const ticketById = (id) => sourceTickets.find((ticket) => ticket.id === id || ticketDisplayId(ticket) === id) || sourceTickets.find(assignedToCurrentDemoUser) || sourceTickets[0];
   const examples = [
     { category: "assigned", ticket: ticketById("ISP-28501"), title: "Ticket assigned to you", description: "RCC7P-AK tank not filling was routed to your queue.", hours: 0.4, read: false },
@@ -4711,7 +5061,7 @@ function loadCustomerAccounts(sourceTickets) {
   const stored = storedValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, LEGACY_CUSTOMER_ACCOUNTS_STORAGE_KEY);
   if (!stored) {
     const derived = safeDeriveCustomerAccounts(sourceTickets);
-    localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
+    setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
     return derived;
   }
 
@@ -4720,12 +5070,12 @@ function loadCustomerAccounts(sourceTickets) {
     const normalized = normalizeCustomerAccounts(parsed);
     if (normalized) return normalized;
     const derived = safeDeriveCustomerAccounts(sourceTickets);
-    localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
+    setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
     return derived;
   } catch (error) {
     console.warn("Customer account data could not be loaded. Continuing with ticket rendering.", error);
     const derived = safeDeriveCustomerAccounts(sourceTickets);
-    localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
+    setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
     return derived;
   }
 }
@@ -5051,7 +5401,7 @@ function productLinkPlatformFromSource(source) {
 }
 
 function persistTickets(options = {}) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
   if (options.skipBackendSync) return;
   scheduleBackendSync("tickets", tickets);
 }
@@ -5061,36 +5411,44 @@ function persistTicketsLocalOnly() {
 }
 
 function persistUsers() {
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  setStoredValue(USERS_STORAGE_KEY, JSON.stringify(users));
   scheduleBackendSync("users", users);
 }
 
 function persistProfile() {
-  localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+  setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(profile));
   scheduleBackendSync("profile", profile);
 }
 
 function persistNotifications() {
-  localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+  setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
   scheduleBackendSync("notifications", notifications);
 }
 
 function persistKnowledgeDocs() {
-  localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(knowledgeDocs));
+  setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(knowledgeDocs));
   scheduleBackendSync("knowledgeDocs", knowledgeDocs);
 }
 
 function persistProductLinks() {
-  localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(productLinks));
+  setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(productLinks));
   scheduleBackendSync("productLinks", productLinks);
 }
 
 function persistCustomerAccounts() {
-  localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(customerAccounts));
+  setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(customerAccounts));
   scheduleBackendSync("customerAccounts", customerAccounts);
 }
 
 async function hydrateBackendState() {
+  if (isGenericDemoWorkspace()) {
+    sessionUser = genericSessionUser();
+    backendSyncReady = true;
+    backendSyncAvailable = false;
+    backendAssignmentUsers = [];
+    return;
+  }
+
   if (!window.fetch) {
     backendSyncReady = true;
     backendSyncAvailable = false;
@@ -5109,49 +5467,49 @@ async function hydrateBackendState() {
     if (hasValidTicketData(state.tickets)) {
       tickets = normalizeTickets(state.tickets);
       rebaselineOpenTicketSla(tickets);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+      setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
       hydrated = true;
     }
     if (Array.isArray(state.users)) {
       users = state.users.map((user) => ({ ...user, name: normalizeRepName(user.name) || user.name }));
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      setStoredValue(USERS_STORAGE_KEY, JSON.stringify(users));
       hydrated = true;
     }
     if (isBackendPlainObject(state.profile)) {
       profile = state.profile;
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(profile));
       hydrated = true;
     }
     if (isBackendPlainObject(state.settings)) {
       workspaceSettings = normalizeWorkspaceSettings(state.settings);
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(workspaceSettings));
+      setStoredValue(SETTINGS_STORAGE_KEY, JSON.stringify(workspaceSettings));
       applyWorkspaceSettings();
       applyWorkspaceBranding();
       hydrated = true;
     }
     if (Array.isArray(state.notifications)) {
       notifications = state.notifications;
-      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+      setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
       hydrated = true;
     }
     if (Array.isArray(state.knowledgeDocs)) {
       knowledgeDocs = state.knowledgeDocs;
-      localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(knowledgeDocs));
+      setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(knowledgeDocs));
       hydrated = true;
     }
     if (Array.isArray(state.productLinks)) {
       productLinks = state.productLinks;
-      localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(productLinks));
+      setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(productLinks));
       hydrated = true;
     }
     if (isBackendPlainObject(state.customerAccounts)) {
       customerAccounts = normalizeCustomerAccounts(state.customerAccounts) || {};
-      localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(customerAccounts));
+      setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(customerAccounts));
       hydrated = true;
     }
     if (Number.isInteger(state.lastTicketNumber)) {
       lastUsedTicketNumber = Math.max(state.lastTicketNumber, highestExistingTicketNumber(tickets), MIN_TICKET_NUMBER);
-      localStorage.setItem(TICKET_COUNTER_STORAGE_KEY, String(lastUsedTicketNumber));
+      setStoredValue(TICKET_COUNTER_STORAGE_KEY, String(lastUsedTicketNumber));
       hydrated = true;
     }
     if (applySessionUserToWorkspace()) {
@@ -5208,6 +5566,7 @@ function syncBackendSnapshot() {
 }
 
 function scheduleBackendSync(resource, value) {
+  if (isGenericDemoWorkspace()) return;
   if (!backendSyncReady || !window.fetch) return;
   backendSyncQueue.set(resource, value);
   window.clearTimeout(backendSyncTimer);
@@ -5340,7 +5699,7 @@ function replaceLocalTicketFromBackend(serverTicket, options = {}) {
   } else {
     tickets[index] = normalized;
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
   return normalized;
 }
 
@@ -5470,7 +5829,7 @@ function applyBackendMergeResponse(primaryTicketId, secondaryTicketIds, payload)
 
   selectedTicketIds.clear();
   selectedTicketId = primaryTicket.id;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
   render();
   showToast(`Merged ${secondaryTicketIds.length + 1} tickets into ${ticketDisplayId(primaryTicket)}.`);
   return true;
@@ -11980,15 +12339,16 @@ function approvedKnowledgeSources() {
 }
 
 function resetDemoData() {
-  const confirmed = window.confirm("Restore seeded iSpring demo data? This overwrites tickets, assignment pool, profile preferences, Knowledge Vault metadata, product links, customer accounts, and notifications saved in this local demo state. Uploaded files are not deleted.");
+  const demoName = isGenericDemoWorkspace() ? "Northstar Support" : "iSpring";
+  const confirmed = window.confirm(`Restore seeded ${demoName} demo data? This overwrites tickets, assignment pool, profile preferences, Knowledge Vault metadata, product links, customer accounts, and notifications saved in this local demo state. Uploaded files are not deleted.`);
   if (!confirmed) return false;
-  tickets = normalizeTickets(JSON.parse(JSON.stringify(workspaceConfig.tickets)));
+  tickets = normalizeTickets(demoTicketSeed());
   lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
-  profile = JSON.parse(JSON.stringify(seedProfile));
+  profile = JSON.parse(JSON.stringify(demoProfileSeed()));
   customerAccounts = deriveCustomerAccounts(tickets);
-  users = JSON.parse(JSON.stringify(seedUsers));
-  knowledgeDocs = JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
-  productLinks = JSON.parse(JSON.stringify(seedProductLinks));
+  users = JSON.parse(JSON.stringify(demoUserSeed()));
+  knowledgeDocs = JSON.parse(JSON.stringify(demoKnowledgeSeed()));
+  productLinks = JSON.parse(JSON.stringify(demoProductLinkSeed()));
   notifications = seedNotifications(tickets);
   activeView = "open";
   uiState.activeScreen = "queue";
