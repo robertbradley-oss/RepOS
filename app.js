@@ -409,40 +409,118 @@ const knowledgeCategories = workspaceConfig.knowledgeVaultCategories;
 const knowledgeStatuses = workspaceConfig.knowledgeVaultStatuses;
 const closedQueueStatuses = ["Closed", "Resolved"];
 const waitingQueueStatuses = ["Closed, Waiting On Response", "Waiting On Response", "Waiting Customer"];
-const productLinkPlatforms = ["Amazon", "Home Depot", "Google Review", "Trustpilot", "Other"];
+const productLinkPlatforms = ["Amazon", "Home Depot", "Lowe's", "Google Review", "Trustpilot", "Other"];
+const productLinkSeedCategoryByModel = {
+  RCC7: "Reverse Osmosis Systems",
+  RCC7P: "Reverse Osmosis Systems",
+  RCC7AK: "Reverse Osmosis Systems",
+  "RCC7P-AK": "Reverse Osmosis Systems",
+  "RCC1UP-AK": "Reverse Osmosis Systems",
+  RCC1D: "Reverse Osmosis Systems",
+  "RCC7AK-UV": "Reverse Osmosis Systems",
+  RCC2AK: "Reverse Osmosis Systems",
+  RCB3P: "Commercial RO Systems",
+  RCS5T: "Commercial RO Systems",
+  RO500: "Tankless RO Systems",
+  RO500AK: "Tankless RO Systems",
+  RO5004F: "Tankless RO Systems",
+  RO600: "Tankless RO Systems",
+  RO800: "Tankless RO Systems",
+  RO1000: "Tankless RO Systems",
+  PH100: "Under Sink / Countertop Systems",
+  "US31-NC": "Under Sink / Countertop Systems",
+  "CU-A4": "Under Sink / Countertop Systems",
+  US31: "Under Sink / Countertop Systems",
+  "US31-PF": "Under Sink / Countertop Systems",
+  "WCB32C-KS": "Whole House Filter Systems",
+  WGB21B: "Whole House Filter Systems",
+  WGB32B: "Whole House Filter Systems",
+  "WGB21B-PFKS": "Whole House Filter Systems",
+  WGB21BM: "Whole House Filter Systems",
+  WGB22B: "Whole House Filter Systems",
+  "WGB31B-PFKDS": "Whole House Filter Systems",
+  "WGB32B-PFKDS": "Whole House Filter Systems",
+  WGB32BM: "Whole House Filter Systems",
+  "WGB32B-KS": "Whole House Filter Systems",
+  "WGB32B-KDS": "Whole House Filter Systems",
+  WGB22BD: "Whole House Filter Systems",
+  "WGB22BD-BP": "Whole House Filter Systems",
+  RCD100: "Whole House Filter Systems",
+  "WSP-50": "Spin-Down / Sediment Filters",
+  WSPARJ: "Spin-Down / Sediment Filters",
+  "WSP50ARJ-BP": "Spin-Down / Sediment Filters",
+  WSP50ARB: "Spin-Down / Sediment Filters",
+  WF150K: "Spin-Down / Sediment Filters",
+  WCFM500K: "Softeners / Conditioners",
+  WCS45KG: "Softeners / Conditioners",
+  ED2000: "Softeners / Conditioners",
+  EDV2: "Softeners / Conditioners",
+  UVF55FS: "UV Systems",
+  UVF20: "UV Systems",
+  T32M: "Replacement Filters",
+  T20M: "Replacement Filters",
+  T55M: "Replacement Filters",
+  T11M: "Replacement Filters"
+};
 const seedProductLinks = [
   productLinkSeedEntry("RCC7", "Amazon", "https://www.amazon.com/dp/B003XELTTG"),
   productLinkSeedEntry("RCC7P", "Amazon", "https://www.amazon.com/dp/B003ZZUBHE"),
   productLinkSeedEntry("RCC7AK", "Amazon", "https://www.amazon.com/dp/B005LJ8EXU"),
   productLinkSeedEntry("RCC7P-AK", "Amazon", "https://www.amazon.com/dp/B005LKKMYS"),
   productLinkSeedEntry("RCC1UP-AK", "Amazon", "https://www.amazon.com/dp/B006X3YJKK"),
+  productLinkSeedEntry("RCC1D", "Amazon", "https://www.amazon.com/dp/B0CP7QSX9Y"),
   productLinkSeedEntry("RCC7AK-UV", "Amazon", "https://www.amazon.com/dp/B006T3HYQ0"),
+  productLinkSeedEntry("RCC2AK", "Amazon", "https://www.amazon.com/dp/B0FK6YWS2G"),
   productLinkSeedEntry("RCB3P", "Amazon", "https://www.amazon.com/dp/B007K1FDJA"),
   productLinkSeedEntry("RO500", "Amazon", "https://www.amazon.com/dp/B07WK457JX"),
   productLinkSeedEntry("RO500AK", "Amazon", "https://www.amazon.com/dp/B09CHBC9CP"),
   productLinkSeedEntry("RO5004F", "Amazon", "https://www.amazon.com/dp/B0DWZ6P9SK"),
+  productLinkSeedEntry("RO600", "Amazon", "https://www.amazon.com/dp/B0BGSXCQ6G"),
   productLinkSeedEntry("RO800", "Amazon", "https://www.amazon.com/dp/B09RQ7ZJPJ"),
   productLinkSeedEntry("RO1000", "Amazon", "https://www.amazon.com/dp/B0CP9YXVY5"),
   productLinkSeedEntry("PH100", "Amazon", "https://www.amazon.com/dp/B0844HF76N"),
+  productLinkSeedEntry("US31-NC", "Amazon", "https://www.amazon.com/dp/B0DGVC65KT"),
+  productLinkSeedEntry("CU-A4", "Amazon", "https://www.amazon.com/dp/B009AEJWZG"),
+  productLinkSeedEntry("RCS5T", "Amazon", "https://www.amazon.com/dp/B00PCRSD7I"),
+  productLinkSeedEntry("WCB32C-KS", "Amazon", "https://www.amazon.com/dp/B0DNV7LKC8"),
+  productLinkSeedEntry("WGB21B", "Amazon", "https://www.amazon.com/dp/B01F9A4UVU"),
   productLinkSeedEntry("WGB32B", "Amazon", "https://www.amazon.com/dp/B008GNRMYK"),
+  productLinkSeedEntry("WGB21B-PFKS", "Amazon", "https://www.amazon.com/dp/B0F6RSJW5M"),
+  productLinkSeedEntry("WGB21BM", "Amazon", "https://www.amazon.com/dp/B088C1T9ZR"),
+  productLinkSeedEntry("WGB22B", "Amazon", "https://www.amazon.com/dp/B00LBHIW8S"),
+  productLinkSeedEntry("WGB31B-PFKDS", "Amazon", "https://www.amazon.com/dp/B0F6SRY5TB"),
+  productLinkSeedEntry("WGB32B-PFKDS", "Amazon", "https://www.amazon.com/dp/B0FMGVQ5RD"),
   productLinkSeedEntry("WGB32BM", "Amazon", "https://www.amazon.com/dp/B01FI3BLYM"),
   productLinkSeedEntry("WGB32B-KS", "Amazon", "https://www.amazon.com/dp/B08HNJ9R62"),
+  productLinkSeedEntry("WGB32B-KDS", "Amazon", "https://www.amazon.com/dp/B0BGYH7DVZ"),
+  productLinkSeedEntry("WGB22BD", "Amazon", "https://www.amazon.com/dp/B0BPDY84DQ"),
+  productLinkSeedEntry("WGB22BD-BP", "Amazon", "https://www.amazon.com/dp/B0CRMNHS7P"),
+  productLinkSeedEntry("RCD100", "Amazon", "https://www.amazon.com/dp/B0C3RX6F82"),
   productLinkSeedEntry("WSP-50", "Amazon", "https://www.amazon.com/dp/B072YVNRZN"),
   productLinkSeedEntry("WSPARJ", "Amazon", "https://www.amazon.com/dp/B0BGQKS4GB"),
+  productLinkSeedEntry("WSP50ARJ-BP", "Amazon", "https://www.amazon.com/dp/B0C382RK23"),
   productLinkSeedEntry("WSP50ARB", "Amazon", "https://www.amazon.com/dp/B07XLP2T2Y"),
   productLinkSeedEntry("WF150K", "Amazon", "https://www.amazon.com/dp/B08428Y5HV"),
   productLinkSeedEntry("WCFM500K", "Amazon", "https://www.amazon.com/dp/B08TMZYYQY"),
+  productLinkSeedEntry("WCS45KG", "Amazon", "https://www.amazon.com/dp/B08XW4NXDP"),
   productLinkSeedEntry("UVF55FS", "Amazon", "https://www.amazon.com/dp/B08HW1VRJC"),
+  productLinkSeedEntry("UVF20", "Amazon", "https://www.amazon.com/dp/B0GS1F5831"),
+  productLinkSeedEntry("US31", "Amazon", "https://www.amazon.com/dp/B07CHXVRS5"),
+  productLinkSeedEntry("US31-PF", "Amazon", "https://www.amazon.com/dp/B0DSJX6WR4"),
   productLinkSeedEntry("T32M", "Amazon", "https://www.amazon.com/dp/B00439MYYE"),
+  productLinkSeedEntry("T20M", "Amazon", "https://www.amazon.com/dp/B00439I86C"),
   productLinkSeedEntry("T55M", "Amazon", "https://www.amazon.com/dp/B01CES39N0"),
   productLinkSeedEntry("T11M", "Amazon", "https://www.amazon.com/dp/B0043BKSMM"),
   productLinkSeedEntry("ED2000", "Amazon", "https://www.amazon.com/dp/B0744TC3PW"),
-  productLinkSeedEntry("RCD100", "Amazon", "https://www.amazon.com/dp/B0C3RX6F82"),
-  productLinkSeedEntry("", "Google Review", "https://www.google.com/search?sca_esv=8526ead1974f28d5&sxsrf=ANbL-n43LVGg0ICnAz2EoWiZEsaEYDRe3g:1777386206959&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOVZY_oDm8oNpKUZA1_NJWo_O2v5qtK7MspPrGnFuCqVayvcjVd-pAdPotN9nhsNyXnI9XRSixqigJlIEeJIXaAyzS4PWGmLYfPwshkxBSutLBif_qQ%3D%3D&q=iSpring+Water+Systems+Reviews&sa=X&ved=2ahUKEwiD-_nL35CUAxWb1skDHbhGCJUQ0bkNegQIJRAH&biw=1920&bih=911&dpr=1", "Google Review"),
+  productLinkSeedEntry("EDV2", "Amazon", "https://www.amazon.com/dp/B0D3615GLJ"),
+  productLinkSeedEntry("", "Google Review", "https://www.google.com/search?sca_esv=8526ead1974f28d5&sxsrf=ANbL-n43LVGg0ICnAz2EoWiZEsaEYDRe3g:1777386206959&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOVZY_oDm8oNpKUZA1_NJWo_O2v5qtK7MspPrGnFuCqVayvcjVd-pAdPotN9nhsNyXnI9XRSixqigJlIEeJIXaAyzS4PWGmLYfPwshkxBSutLBif_qQ%3D%3D&q=iSpring+Water+Systems+Reviews&sa=X&ved=2ahUKEwiD-_nL35CUAxWb1skDHbhGCJUQ0bkNegQIJRAH&biw=1920&bih=911&dpr=1", "iSpring Google Review"),
   productLinkSeedEntry("", "Trustpilot", "https://www.trustpilot.com/review/ispringfilter.com", "Trustpilot"),
   productLinkSeedEntry("RCC7", "Home Depot", "https://www.homedepot.com/p/206396226"),
   productLinkSeedEntry("RCC7AK", "Home Depot", "https://www.homedepot.com/p/206467327"),
-  productLinkSeedEntry("WGB32BM", "Home Depot", "https://www.homedepot.com/p/206880059")
+  productLinkSeedEntry("RCC7AK-UV", "Home Depot", "https://www.homedepot.com/p/206553338"),
+  productLinkSeedEntry("WGB32BM", "Home Depot", "https://www.homedepot.com/p/206880059"),
+  productLinkSeedEntry("RO500AK", "Home Depot", "https://www.homedepot.com/p/320324120"),
+  productLinkSeedEntry("RO5004F", "Lowe's", "https://www.lowes.com/pd/iSpring-RO5004F-5-stage-Membrane-Reverse-Osmosis-Filtration-Under-Sink-Water-Filtration-System-with-Brushed-Nickel-Faucet/5016743135")
 ];
 const tableColumns = [
   { key: "select", label: "", className: "check-col" },
@@ -5619,17 +5697,35 @@ function productLinkSeedEntry(model, platform, url, label = "") {
   const modelLabel = String(model || "").trim();
   const platformLabel = productLinkPlatforms.includes(platform) ? platform : "Other";
   const title = label || [modelLabel, platformLabel].filter(Boolean).join(" / ") || platformLabel;
+  const category = productLinkSeedCategory(modelLabel, platformLabel);
   return {
     id: `product-link-${slugify(modelLabel || platformLabel)}-${slugify(platformLabel)}`,
     model: modelLabel,
     platform: platformLabel,
     url: normalizeProductLinkUrl(url),
     label: title,
-    notes: "",
+    notes: productLinkSeedNotes(category, platformLabel, normalizeProductLinkUrl(url), title),
     active: true,
     lastUpdated: "2026-05-09",
     addedBy: CURRENT_USER
   };
+}
+
+function productLinkSeedCategory(model, platform) {
+  if (platform === "Google Review" || platform === "Trustpilot") return "Review Links";
+  return productLinkSeedCategoryByModel[normalizeProductModel(model)] || "Product Links";
+}
+
+function productLinkSeedNotes(category, platform, url, label) {
+  const copy = productLinkCustomerReadyCopy(platform, url, label);
+  return `Category: ${category}. Customer-ready copy: ${copy}`;
+}
+
+function productLinkCustomerReadyCopy(platform, url, label) {
+  if (platform === "Trustpilot") return `You can leave a Trustpilot review here: ${url}`;
+  if (platform === "Google Review") return `You can leave an ${label || "iSpring Google Review"} here: ${url}`;
+  if (platform === "Home Depot" || platform === "Lowe's") return `You can view the product on ${platform} here: ${url}`;
+  return `You can view the product here: ${url}`;
 }
 
 function normalizeProductLinks(value) {
@@ -5671,6 +5767,7 @@ function normalizeProductLinkUrl(url) {
 function productLinkPlatformFromSource(source) {
   if (source === "Amazon") return "Amazon";
   if (source === "Home Depot") return "Home Depot";
+  if (source === "Lowe's") return "Lowe's";
   if (source === "Google Review") return "Google Review";
   if (source === "Trustpilot") return "Trustpilot";
   return "";
