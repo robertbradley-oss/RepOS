@@ -1298,9 +1298,6 @@ const el = {
   homePasswordInput: document.querySelector("#homePasswordInput"),
   homePasswordToggle: document.querySelector("#homePasswordToggle"),
   homeStatus: document.querySelector("#homeStatus"),
-  homeLoginHelper: document.querySelector("#homeLoginHelper"),
-  homeSsoButton: document.querySelector("#homeSsoButton"),
-  homeSsoHelper: document.querySelector("#homeSsoHelper"),
   appShell: document.querySelector(".app-shell"),
   workspace: document.querySelector(".workspace"),
   ticketWorkspace: document.querySelector(".ticket-workspace"),
@@ -1410,7 +1407,6 @@ function setHomeLoginControlsDisabled(disabled) {
     button.disabled = disabled;
   });
   if (el.homePrimaryCta) el.homePrimaryCta.disabled = disabled || !homeDevLoginEnabled;
-  if (el.homeSsoButton) el.homeSsoButton.disabled = disabled || !enterpriseSsoConfig.enabled;
 }
 
 function updateHomeAccessCopy() {
@@ -1423,11 +1419,6 @@ function updateHomeAccessCopy() {
     const demoLine = el.homeDemoLink.closest(".home-login-alt");
     if (demoLine) demoLine.hidden = !demoEnabled;
     el.homeDemoLink.disabled = !demoEnabled;
-  }
-  if (el.homeLoginHelper) {
-    el.homeLoginHelper.textContent = demoEnabled
-      ? "Use your demo credentials, or open the demo workspace."
-      : "Use your workspace credentials to continue.";
   }
   if (el.homeEnterpriseButton) {
     el.homeEnterpriseButton.textContent = enterpriseSsoConfig.enabled ? "Log in with Enterprise SSO" : "Enterprise SSO";
@@ -1461,16 +1452,6 @@ function applyEnterpriseSsoConfig(config = {}) {
     enabled: Boolean(config.enabled),
     configured: Boolean(config.configured)
   };
-  if (el.homeSsoButton) {
-    el.homeSsoButton.textContent = enterpriseSsoConfig.enabled ? "Log in with Enterprise SSO" : "Enterprise SSO";
-    el.homeSsoButton.disabled = !enterpriseSsoConfig.enabled;
-    el.homeSsoButton.classList.toggle("is-enabled", enterpriseSsoConfig.enabled);
-  }
-  if (el.homeSsoHelper) {
-    el.homeSsoHelper.textContent = enterpriseSsoConfig.enabled
-      ? "Use your company account to access RepOS."
-      : "Enterprise SSO can be enabled for production workspaces.";
-  }
   updateHomeAccessCopy();
 }
 
@@ -1487,13 +1468,6 @@ async function loadEnterpriseSsoConfig() {
     console.warn("RepOS Enterprise SSO config is unavailable.", error);
     applyEnterpriseSsoConfig();
   }
-}
-
-function handleEnterpriseSsoLogin(event) {
-  event.preventDefault();
-  if (!enterpriseSsoConfig.enabled || el.homeSsoButton?.disabled) return;
-  setHomeStatus("Opening Enterprise SSO...");
-  window.location.assign("/api/auth/sso/start");
 }
 
 function consumeSsoQueryParams() {
@@ -1788,7 +1762,6 @@ function init() {
   el.homeDemoButtons?.forEach((button) => button.addEventListener("click", handleHomeDemoChoice));
   setHomeDemoChoice(selectedHomeDemoId);
   el.homePasswordToggle?.addEventListener("click", toggleHomePassword);
-  el.homeSsoButton?.addEventListener("click", handleEnterpriseSsoLogin);
   applyEnterpriseSsoConfig();
   loadHomeAuthConfig();
   loadEnterpriseSsoConfig();
@@ -11300,6 +11273,7 @@ function renderMessage(message, ticket) {
     <article class="message ${message.type} thread-card">
       <div class="message-head">
         <strong>${escapeHtml(author)}</strong>
+        ${message.type === "note" ? `<span class="message-role">${escapeHtml(roleLabel)}</span>` : ""}
         <time>${dateTimeLabel(message.timestamp)}</time>
       </div>
       <div class="message-body">
