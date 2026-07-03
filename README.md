@@ -62,6 +62,8 @@ npm run smoke
 
 Auth mode is controlled by `TESSARIO_AUTH_MODE`:
 
+The `TESSARIO_*` environment names are legacy compatibility aliases retained for existing deployments while the product-facing app name is RepOS.
+
 - `development` keeps local convenience by auto-authenticating the seeded admin user.
 - `demo` requires an explicit demo sign-in and does not silently create an admin session.
 - `strict` disables dev/demo login, accepts valid existing sessions, and can issue sessions through `/api/auth/login` for configured users.
