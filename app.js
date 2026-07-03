@@ -9851,14 +9851,10 @@ function renderAdminToolCard(id, title, meta, body, status = "") {
 function renderAdminOverview() {
   const visibleReps = visibleAssignmentUsers();
   const eligibleReps = activeAssignmentUsers();
-  const activeDocs = knowledgeDocs.filter((doc) => !doc.archived);
-  const approvedSources = approvedKnowledgeSources();
-  const needsReview = activeDocs.filter((doc) => doc.status === "Needs Review" || doc.status === "Draft").length;
   const activeLinks = productLinks.filter((link) => link.active).length;
   const activeTickets = tickets.filter(isActiveTicket).length;
   const overview = [
     ["Support queue", activeTickets, `${eligibleReps.length} of ${visibleReps.length} reps routing new work`],
-    ["Knowledge Vault", `${approvedSources.length}/${activeDocs.length}`, `${needsReview} source files need review`],
     ["Macros", macroLibrary.length, "Canned replies available from ticket detail"],
     ["Product links", activeLinks, "Active library links available to reps"]
   ];
@@ -9877,7 +9873,7 @@ function renderAdminOverview() {
           </article>
         `).join("")}
       </div>
-      <p class="admin-section-note">Admin Hub brings together support source files, macros, product links, rep assignment, and workspace settings for RepOS.</p>
+      <p class="admin-section-note">Admin Hub brings together product links, macros, rep assignment, and workspace settings for RepOS.</p>
     </section>
   `;
 }
@@ -9965,7 +9961,7 @@ function renderAdminPanel() {
       <div>
         <p class="eyebrow">Admin</p>
         <h1>RepOS Admin Hub</h1>
-        <p>Control center for support tools, source files, reps, assignment routing, and workspace settings.</p>
+        <p>Control center for support tools, product links, reps, assignment routing, and workspace settings.</p>
       </div>
       <button class="secondary-button" id="backFromAdminButton" type="button">Back to queue</button>
     </div>
@@ -9977,7 +9973,7 @@ function renderAdminPanel() {
       </div>
       <p class="admin-section-note">Jump to the admin surfaces that maintain the current support workspace.</p>
       <div class="admin-tool-grid">
-        ${renderAdminToolCard("knowledge", "Knowledge Vault", "Source files", "Manage approved workspace sources.", `${approvedKnowledgeSources().length} approved sources`)}
+        ${renderAdminToolCard("product-links", "Product Link Library", "Product resources", "Manage product and review links for ticket context.", `${productLinks.filter((link) => link.active).length} active links`)}
         ${renderAdminToolCard("macros", "Macros", "Canned replies", "Review the macro library and open a ticket context.", `${macroLibrary.length} macros`)}
         ${renderAdminToolCard("assignment", "Assignment Pool / Reps", "Workload", "Manage eligible reps and reassignment.", `${activeAssignmentUsers().length} eligible reps`)}
         ${renderAdminToolCard("workspace", "Workspace Settings", "Profile", "Open workspace settings and admin controls.", "Profile and recovery tools")}
@@ -9988,7 +9984,7 @@ function renderAdminPanel() {
         <p class="eyebrow">Admin tools</p>
         <h3>Workspace recovery</h3>
       </div>
-      <p>Restore this local iSpring demo workspace to the seeded support queue, assignment pool, profile preferences, Product Link Library, customer accounts, notifications, and an empty RepOS Knowledge Vault. This overwrites persisted local demo changes.</p>
+      <p>Restore this local iSpring demo workspace to the seeded support queue, assignment pool, profile preferences, Product Link Library, customer accounts, and notifications. This overwrites persisted local demo changes.</p>
       <button class="secondary-button danger-soft" id="adminResetWorkspaceButton" type="button">Restore seed demo data</button>
     </section>
     ${renderAdminMacroSection()}
@@ -10030,7 +10026,7 @@ function renderAdminPanel() {
   el.adminPanel.querySelector("#adminResetWorkspaceButton").addEventListener("click", resetDemoData);
   el.adminPanel.querySelectorAll("[data-admin-tool]").forEach((button) => {
     button.addEventListener("click", () => {
-      if (button.dataset.adminTool === "knowledge") showKnowledgeVaultScreen();
+      if (button.dataset.adminTool === "product-links") showKnowledgeVaultScreen();
       if (button.dataset.adminTool === "macros") showMacroLibrary();
       if (button.dataset.adminTool === "assignment") el.adminPanel.querySelector("#assignmentPoolSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
       if (button.dataset.adminTool === "workspace") openProfileModal("workspace");
@@ -10051,80 +10047,30 @@ function renderKnowledgeVaultPanel() {
     return;
   }
 
-  const visibleDocs = getVisibleKnowledgeDocs();
   const visibleProductLinks = getVisibleProductLinks();
-  const activeDocs = knowledgeDocs.filter((doc) => !doc.archived);
-  const approvedSources = approvedKnowledgeSources();
-  const approvedCount = approvedSources.length;
-  const reviewCount = activeDocs.filter((doc) => doc.status === "Needs Review" || doc.status === "Draft").length;
-  const customerFacingCount = activeDocs.filter((doc) => doc.customerFacingAllowed).length;
   el.knowledgePanel.innerHTML = `
     <div class="admin-header knowledge-header">
       <div>
-        <p class="eyebrow">RepOS Knowledge Vault</p>
-        <h1>Source file library</h1>
-        <p>Upload manuals, policies, macros, troubleshooting guides, and other source files for the workspace source library.</p>
+        <p class="eyebrow">Product resources</p>
+        <h1>Product Link Library</h1>
+        <p>Manage product and review links that reps can copy or insert from ticket context.</p>
       </div>
       <button class="secondary-button" id="backFromKnowledgeButton" type="button">Back to queue</button>
     </div>
-    <section class="admin-card knowledge-vault-summary" aria-label="Knowledge Vault summary">
-      <div><span>Total files</span><strong>${activeDocs.length}</strong></div>
-      <div><span>Approved sources</span><strong>${approvedCount}</strong></div>
-      <div><span>Needs review</span><strong>${reviewCount}</strong></div>
-      <div><span>Customer-facing</span><strong>${customerFacingCount}</strong></div>
-    </section>
-    <section class="admin-card knowledge-source-note">
-      <strong>${approvedCount ? "Using approved RepOS Knowledge Vault sources." : "No approved RepOS Knowledge Vault sources available yet."}</strong>
-      <p>${approvedCount ? approvedSources.map((doc) => `Source: ${escapeHtml(doc.fileName)}`).join("<br>") : "Approve an uploaded source before using it as support reference material."}</p>
-      <p>Approved source details stay available in this workspace and help reps see which materials are cleared for support use.</p>
-    </section>
-    <section class="admin-card knowledge-controls-card">
-      <div class="section-title row-title">
-        <div>
-          <p class="eyebrow">Browse sources</p>
-          <h3>Search and filter files</h3>
-        </div>
-        <span class="mini-count">${visibleDocs.length}</span>
-      </div>
-      <div class="knowledge-controls">
-        <label>
-          <span>Search</span>
-          <input id="knowledgeSearch" type="search" value="${escapeHtml(filters.knowledgeSearch)}" placeholder="File name, title, owner, description">
-        </label>
-        <label>
-          <span>Category</span>
-          <select id="knowledgeCategoryFilter">
-            ${["All", ...knowledgeCategories].map((category) => `<option value="${escapeHtml(category)}"${filters.knowledgeCategory === category ? " selected" : ""}>${escapeHtml(category)}</option>`).join("")}
-          </select>
-        </label>
-        <label>
-          <span>Status</span>
-          <select id="knowledgeStatusFilter">
-            ${["All", ...knowledgeStatuses].map((status) => `<option value="${escapeHtml(status)}"${filters.knowledgeStatus === status ? " selected" : ""}>${escapeHtml(status)}</option>`).join("")}
-          </select>
-        </label>
-      </div>
-      <p class="knowledge-filter-hint">Search checks file name, title, owner, category, status, and description.</p>
-    </section>
-    ${currentUserIsAdmin() ? renderKnowledgeUploadArea() : ""}
-    ${currentUserIsAdmin() ? renderKnowledgeUploadApprovalPrompt() : ""}
-    <section class="knowledge-file-section">
-      ${visibleDocs.length ? renderKnowledgeFileTable(visibleDocs) : renderKnowledgeEmptyState()}
-    </section>
     ${renderProductLinkLibrarySection(visibleProductLinks)}
     ${renderAppFooter("knowledge-footer")}
   `;
 
   el.knowledgePanel.querySelector("#backFromKnowledgeButton").addEventListener("click", showQueueScreen);
-  el.knowledgePanel.querySelector("#knowledgeSearch").addEventListener("input", (event) => {
+  el.knowledgePanel.querySelector("#knowledgeSearch")?.addEventListener("input", (event) => {
     filters.knowledgeSearch = event.target.value;
     renderKnowledgeVaultPanel();
   });
-  el.knowledgePanel.querySelector("#knowledgeCategoryFilter").addEventListener("change", (event) => {
+  el.knowledgePanel.querySelector("#knowledgeCategoryFilter")?.addEventListener("change", (event) => {
     filters.knowledgeCategory = event.target.value;
     renderKnowledgeVaultPanel();
   });
-  el.knowledgePanel.querySelector("#knowledgeStatusFilter").addEventListener("change", (event) => {
+  el.knowledgePanel.querySelector("#knowledgeStatusFilter")?.addEventListener("change", (event) => {
     filters.knowledgeStatus = event.target.value;
     renderKnowledgeVaultPanel();
   });
@@ -10215,7 +10161,7 @@ function renderKnowledgeEmptyState() {
   return `
     <div class="empty-state polished knowledge-empty-state">
       <strong>No knowledge files uploaded yet.</strong>
-      <p>Upload manuals, policies, macros, troubleshooting guides, or other source files for this workspace.</p>
+      <p>Upload internal source files for this workspace.</p>
     </div>
   `;
 }
@@ -10371,7 +10317,7 @@ function handleKnowledgeFiles(fileList) {
   if (!currentUserIsAdmin()) return;
   const files = Array.from(fileList).filter(isSupportedKnowledgeFile);
   if (!files.length) {
-    showToast("No supported RepOS Knowledge Vault files selected.");
+    showToast("No supported workspace source files selected.");
     return;
   }
   const today = toDateInput(new Date().toISOString());
@@ -10404,7 +10350,7 @@ function handleKnowledgeFiles(fileList) {
   };
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
-  showToast(`${uploaded.length} file${uploaded.length === 1 ? "" : "s"} uploaded to RepOS Knowledge Vault metadata.`);
+  showToast(`${uploaded.length} workspace source file${uploaded.length === 1 ? "" : "s"} uploaded.`);
 }
 
 function isSupportedKnowledgeFile(file) {
@@ -10694,7 +10640,7 @@ function removeKnowledgeFile(docId) {
   setKnowledgeSourceApproval(doc, false);
   persistKnowledgeDocs();
   renderKnowledgeVaultPanel();
-  showToast("Knowledge file removed from the active vault.");
+  showToast("Workspace source file removed.");
 }
 
 function setKnowledgeSourceApproval(doc, approved) {
@@ -10723,7 +10669,7 @@ function renderKnowledgeFileModal(doc) {
     <form id="knowledgeFileForm" class="knowledge-file-form">
       <div class="modal-header">
         <div>
-          <p class="eyebrow">RepOS Knowledge Vault file</p>
+          <p class="eyebrow">Workspace source file</p>
           <h2>${escapeHtml(doc.fileName)}</h2>
           <p>RepOS stores source details here for workspace reference and review.</p>
         </div>
@@ -10801,7 +10747,7 @@ function saveKnowledgeFileMetadata(event) {
   persistKnowledgeDocs();
   closeKnowledgeFileModal();
   renderKnowledgeVaultPanel();
-  showToast("Knowledge file metadata saved.");
+  showToast("Workspace source metadata saved.");
 }
 
 function formatFileSize(bytes) {
@@ -10982,7 +10928,7 @@ function currentUserCanUseMacros() {
 function enforceAuthorizedScreen() {
   if (currentUserIsAdmin()) return;
   if (!["admin", "knowledge"].includes(uiState.activeScreen)) return;
-  const label = uiState.activeScreen === "knowledge" ? "Knowledge Vault" : "Admin Hub";
+  const label = uiState.activeScreen === "knowledge" ? "Product Link Library" : "Admin Hub";
   uiState.activeScreen = "queue";
   showAdminPermissionMessage(label);
 }
@@ -11005,7 +10951,7 @@ function showAdminScreen() {
 
 function showKnowledgeVaultScreen() {
   if (!currentUserIsAdmin()) {
-    showAdminPermissionMessage("Knowledge Vault");
+    showAdminPermissionMessage("Product Link Library");
     uiState.activeScreen = "queue";
     render();
     return;
@@ -11581,8 +11527,8 @@ function renderTicketKnowledgeSources(ticket) {
     <section class="context-card nested-card ticket-knowledge-card">
       <div class="section-title row-title">
         <div>
-          <p class="eyebrow">Knowledge Vault</p>
-          <h3>Ticket sources</h3>
+          <p class="eyebrow">Workspace sources</p>
+          <h3>Ticket references</h3>
         </div>
         <span class="mini-count">${approvedCount}</span>
       </div>
@@ -11601,7 +11547,7 @@ function renderTicketKnowledgeSources(ticket) {
           `).join("")}
         </div>
       ` : `
-        <p class="compact-context-note">${approvedCount ? "No strong match for this ticket yet. Use the Knowledge Vault screen to search all approved sources." : "No approved Knowledge Vault sources yet."}</p>
+        <p class="compact-context-note">${approvedCount ? "No strong match for this ticket yet." : "No approved workspace source files yet."}</p>
       `}
     </section>
   `;
@@ -12737,7 +12683,7 @@ function approvedKnowledgeSources() {
 
 function resetDemoData() {
   const demoName = isGenericDemoWorkspace() ? "Northstar Support" : "iSpring";
-  const confirmed = window.confirm(`Restore seeded ${demoName} demo data? This overwrites tickets, assignment pool, profile preferences, Knowledge Vault metadata, product links, customer accounts, and notifications saved in this local demo state. Uploaded files are not deleted.`);
+  const confirmed = window.confirm(`Restore seeded ${demoName} demo data? This overwrites tickets, assignment pool, profile preferences, product links, customer accounts, and notifications saved in this local demo state. Uploaded files are not deleted.`);
   if (!confirmed) return false;
   tickets = normalizeTickets(demoTicketSeed());
   lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
