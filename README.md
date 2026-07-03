@@ -179,6 +179,8 @@ TESSARIO_UPLOAD_DIR=/data/uploads
 
 Before destructive demo restores, sign in as an admin and use Admin Hub > Production operations > Download state backup. The backup export is admin-only and omits session secrets, cookies, password hashes, active sessions, SSO secrets, and plaintext passwords. Restore seed demo data requires typing `RESTORE`; it overwrites tickets, assignment pool, profile preferences, product links, customer accounts, and notifications, but does not delete uploaded files.
 
+Admins and owners can create password-backed login users from Admin Hub > Login users. Login users control sign-in and role access; assignment-pool reps control ticket routing and reassignment. To create a rep test account, choose the `rep` role, set a temporary password, verify the user can sign in, then have the password saved or rotated immediately. Rep login users can use tickets, macros, and ticket context tools, but admin-only backup, restore, login-user, and Product Link Library management tools stay restricted.
+
 For admin password rotation, set a new `REPOS_ADMIN_PASSWORD`, restart/redeploy, sign in once, then prefer removing the plaintext password or replacing it with `REPOS_ADMIN_PASSWORD_HASH`. Keep `REPOS_SESSION_SECRET` stable across restarts.
 
 For Enterprise SSO, set `REPOS_SSO_ENABLED=true`, configure issuer/client/secret/redirect URI, register `https://your-repos-domain.com/api/auth/sso/callback` with the provider, and optionally set `REPOS_SSO_ALLOWED_DOMAINS`. Confirm `/api/auth/sso/config` reports enabled/configured before directing users to SSO.

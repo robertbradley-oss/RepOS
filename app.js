@@ -533,6 +533,7 @@ let productFamilies = ispringProductFamilies.slice();
 let issueTypes = ispringIssueTypes.slice();
 const activeWorkloadStatuses = workspaceConfig.activeWorkloadStatuses;
 const userRoles = ["admin", "manager", "rep"];
+const authUserRoles = ["rep", "manager", "admin", "owner"];
 const seedUsers = workspaceConfig.reps;
 const ispringMacroCategories = workspaceConfig.macroCategories.slice();
 const ispringMacroLibrary = workspaceConfig.macros.slice();
@@ -1398,6 +1399,7 @@ let backendSyncAvailable = false;
 const backendSyncQueue = new Map();
 let sessionUser = null;
 let enterpriseSsoConfig = { enabled: false, configured: false };
+let authUsers = [];
 let opsHealthSnapshot = null;
 let opsQueueViews = [];
 let opsStatusError = "";
@@ -5986,6 +5988,10 @@ async function hydrateBackendState() {
       setStoredValue(USERS_STORAGE_KEY, JSON.stringify(users));
       hydrated = true;
     }
+    if (Array.isArray(state.authUsers)) {
+      authUsers = state.authUsers;
+      hydrated = true;
+    }
     if (isBackendPlainObject(state.profile)) {
       profile = state.profile;
       setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(profile));
@@ -10148,6 +10154,85 @@ function safeFilenameTimestamp(value) {
   return iso.replace(/\.\d{3}Z$/, "Z").replace(/[:.]/g, "-");
 }
 
+function renderAdminAuthUsersSection() {
+  const rows = authUsers.length
+    ? authUsers.map((user) => `
+      <tr>
+        <td><strong>${escapeHtml(user.name || user.displayName || user.email)}</strong></td>
+        <td>${escapeHtml(user.email || "")}</td>
+        <td>${escapeHtml(user.role || "rep")}</td>
+        <td>${user.active === false ? "Disabled" : "Active"}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="4">No login users loaded yet.</td></tr>`;
+
+  return `
+    <section class="admin-card admin-auth-users-card" aria-label="Login users">
+      <div class="section-title row-title">
+        <div>
+          <p class="eyebrow">Access</p>
+          <h3>Login users</h3>
+        </div>
+      </div>
+      <p class="admin-section-note">Create password-backed RepOS login accounts. These are separate from assignment-pool reps, which only control ticket routing.</p>
+      <form class="admin-add-form" id="createLoginUserForm">
+        <input name="name" required maxlength="80" placeholder="Display name">
+        <input name="email" required type="email" maxlength="120" placeholder="email@company.com">
+        <select name="role" aria-label="Login role">
+          ${authUserRoles.map((role) => `<option value="${escapeHtml(role)}">${escapeHtml(role)}</option>`).join("")}
+        </select>
+        <input name="password" type="password" minlength="12" autocomplete="new-password" placeholder="Temporary password">
+        <label class="profile-toggle"><input name="active" type="checkbox" checked><span>Active</span></label>
+        <button class="primary-button" type="submit">Create/update login</button>
+      </form>
+      <p class="admin-section-note">Use a temporary password and have the rep save it securely. Password hashes are never shown in RepOS.</p>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+async function handleCreateLoginUser(event) {
+  event.preventDefault();
+  if (!currentUserIsAdmin()) {
+    showAdminPermissionMessage("Login users");
+    return;
+  }
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const payload = {
+    name: stringFormValue(formData, "name"),
+    email: stringFormValue(formData, "email"),
+    role: stringFormValue(formData, "role"),
+    password: stringFormValue(formData, "password"),
+    active: formData.has("active")
+  };
+  try {
+    const response = await fetch("/api/auth/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result?.message || "Login user could not be saved.");
+    }
+    authUsers = Array.isArray(result.users) ? result.users : authUsers;
+    form.reset();
+    const activeInput = form.querySelector('input[name="active"]');
+    if (activeInput) activeInput.checked = true;
+    showToast(`Login user saved for ${result.user?.email || payload.email}.`);
+    hydrateBackendAssignmentUsers().then(() => render({ preserveQueueList: true, suppressQueueRowEnter: true }));
+  } catch (error) {
+    console.warn("RepOS login user save failed.", error);
+    showToast(error instanceof Error ? error.message : "Login user could not be saved.");
+  }
+}
+
 function renderAdminMacroSection() {
   const favoriteCount = macroLibrary.filter((macro) => macro.favorite).length;
   const dailyCount = macroLibrary.filter((macro) => macro.dailyUse).length;
@@ -10258,6 +10343,7 @@ function renderAdminPanel() {
       <p>Restore this local iSpring demo workspace to the seeded support queue, assignment pool, profile preferences, Product Link Library, customer accounts, and notifications. This overwrites persisted local demo changes.</p>
       <button class="secondary-button danger-soft" id="adminResetWorkspaceButton" type="button">Restore seed demo data</button>
     </section>
+    ${renderAdminAuthUsersSection()}
     ${renderAdminMacroSection()}
     <section class="admin-card admin-assignment-card" id="assignmentPoolSection">
       <div class="admin-assignment-head">
@@ -10295,6 +10381,7 @@ function renderAdminPanel() {
 
   el.adminPanel.querySelector("#backFromAdminButton").addEventListener("click", showQueueScreen);
   el.adminPanel.querySelector("#adminResetWorkspaceButton").addEventListener("click", resetDemoData);
+  el.adminPanel.querySelector("#createLoginUserForm")?.addEventListener("submit", handleCreateLoginUser);
   attachAdminOperationsHandlers();
   el.adminPanel.querySelectorAll("[data-admin-tool]").forEach((button) => {
     button.addEventListener("click", () => {

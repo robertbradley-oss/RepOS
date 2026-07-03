@@ -200,6 +200,23 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  if (request.method === "POST" && url.pathname === "/api/auth/users") {
+    const user = await requireAdmin(request, response);
+    if (!user) return;
+    const input = await readJsonBody(request);
+    const validation = await validateAuthUserUpsert(input);
+    if (!validation.ok) {
+      sendJson(response, 400, validation.error);
+      return;
+    }
+    const saved = await store.ensureAuthUser(validation.value);
+    sendJson(response, 200, {
+      user: publicUser(saved),
+      users: (await store.listAuthUsers()).map(publicUser)
+    });
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/admin/export") {
     const user = await requireAdmin(request, response);
     if (!user) return;
@@ -1675,6 +1692,69 @@ function normalizeSettingsRole(value, fallback) {
 function normalizeAuthRole(value, fallback) {
   const role = String(value || "").trim().toLowerCase();
   return ["admin", "manager", "rep", "owner"].includes(role) ? role : fallback;
+}
+
+async function validateAuthUserUpsert(input) {
+  if (!isPlainObject(input)) return invalidAuthUser("payload", "Login user details are required.");
+  const email = normalizeEmail(input.email);
+  if (!email || !isValidCustomerLookupEmail(email)) return invalidAuthUser("email", "A valid email address is required.");
+
+  const existing = await store.findAuthUserByEmail(email);
+  const displayName = cleanSettingText(input.name || input.displayName || input.repName, authDisplayNameFromEmail(email), 80);
+  const role = normalizeAuthRole(input.role, "");
+  if (!role) return invalidAuthUser("role", "Role must be owner, admin, manager, or rep.");
+
+  const password = input.password == null ? "" : String(input.password);
+  const passwordRequired = !existing || !isValidPasswordHash(existing.passwordHash);
+  if (passwordRequired && !password) return invalidAuthUser("password", "A temporary password is required for new login users.");
+  if (password && password.length < 12) return invalidAuthUser("password", "Temporary password must be at least 12 characters.");
+
+  const active = authUserActiveValue(input, existing);
+  if (existing && isActiveAdminRole(existing) && (!active || !adminRoles.includes(role))) {
+    const remainingAdmins = (await store.listAuthUsers())
+      .filter((user) => user.id !== existing.id && normalizeEmail(user.email) !== email)
+      .filter(isActiveAdminRole);
+    if (!remainingAdmins.length) {
+      return invalidAuthUser("role", "At least one active admin or owner login must remain.");
+    }
+  }
+
+  return {
+    ok: true,
+    value: {
+      ...(existing || {}),
+      id: existing?.id || authUserIdFromEmail(email),
+      email,
+      displayName,
+      repName: displayName,
+      role,
+      active,
+      ...(password ? { passwordHash: hashPassword(password) } : {})
+    }
+  };
+}
+
+function authDisplayNameFromEmail(email) {
+  const local = String(email || "").split("@")[0] || "RepOS User";
+  return local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ") || "RepOS User";
+}
+
+function authUserActiveValue(input, existing) {
+  if (typeof input.active === "boolean") return input.active;
+  if (typeof input.enabled === "boolean") return input.enabled;
+  return existing ? existing.active !== false : true;
+}
+
+function isActiveAdminRole(user) {
+  return user?.active !== false && adminRoles.includes(String(user?.role || "").toLowerCase());
+}
+
+function invalidAuthUser(field, message) {
+  return { ok: false, error: { error: "invalid_auth_user", message, details: { field } } };
 }
 
 function normalizeSettingsInteger(value, fallback, min, max) {

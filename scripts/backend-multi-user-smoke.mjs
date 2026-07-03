@@ -49,6 +49,27 @@ try {
   const ownerUsers = await getJson(port, "/api/auth/users", ownerCookie);
   assert(ownerUsers.response.ok, `Owner auth users route failed: ${ownerUsers.response.status}`);
 
+  const createdRep = await postJson(port, "/api/auth/users", {
+    email: "phase2.rep@example.com",
+    name: "Phase Two Rep",
+    role: "rep",
+    password: "phase-two-rep-password",
+    active: true
+  }, adminCookie);
+  const createdRepText = JSON.stringify(createdRep.payload);
+  assert(createdRep.response.ok, `Admin auth user create failed: ${createdRep.response.status}`);
+  assert(createdRep.payload.user?.email === "phase2.rep@example.com", "Created rep response omitted the sanitized user.");
+  assert(createdRep.payload.user?.role === "rep", "Created rep did not keep the rep role.");
+  assert(!createdRepText.includes("passwordHash") && !createdRepText.includes("phase-two-rep-password"), "Auth user create response leaked password material.");
+
+  const passwordRepCookie = await passwordLogin(port, "phase2.rep@example.com", "phase-two-rep-password");
+  const passwordRepCurrent = await getJson(port, "/api/users/current", passwordRepCookie);
+  assert(passwordRepCurrent.response.ok && passwordRepCurrent.payload.user?.role === "rep", "Password-backed rep login failed.");
+  const passwordRepUsers = await getJson(port, "/api/auth/users", passwordRepCookie);
+  assert(passwordRepUsers.response.status === 403, "Password-backed rep could read admin auth users.");
+  const passwordRepExport = await getJson(port, "/api/admin/export", passwordRepCookie);
+  assert(passwordRepExport.response.status === 403, "Password-backed rep could export admin state.");
+
   for (const [label, cookie] of [["manager", managerCookie], ["rep", repCookie]]) {
     const restrictedUsers = await getJson(port, "/api/auth/users", cookie);
     assert(restrictedUsers.response.status === 403, `${label} could read admin auth users.`);
@@ -243,6 +264,18 @@ async function login(targetPort, email) {
   if (!response.ok) throw new Error(`Dev login failed for ${email}: ${response.status}`);
   const cookie = response.headers.get("set-cookie")?.split(";")[0];
   if (!cookie) throw new Error(`Dev login did not return a cookie for ${email}.`);
+  return cookie;
+}
+
+async function passwordLogin(targetPort, email, password) {
+  const response = await fetch(`http://127.0.0.1:${targetPort}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+  if (!response.ok) throw new Error(`Password login failed for ${email}: ${response.status}`);
+  const cookie = response.headers.get("set-cookie")?.split(";")[0];
+  if (!cookie) throw new Error(`Password login did not return a cookie for ${email}.`);
   return cookie;
 }
 
