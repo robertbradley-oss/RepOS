@@ -18,7 +18,7 @@ import { ValidationError, normalizeTicketStatus } from "./lib/ticket-workflow.mj
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 4173);
-const host = process.env.HOST || "127.0.0.1";
+const host = process.env.HOST || (isRailwayRuntime() ? "0.0.0.0" : "127.0.0.1");
 const nodeEnv = process.env.NODE_ENV || "development";
 const dataFile = process.env.TESSARIO_DATA_FILE || join(root, ".data", "tessario-state.json");
 const uploadDir = process.env.TESSARIO_UPLOAD_DIR || join(root, ".uploads");
@@ -794,6 +794,17 @@ function resolveAuthMode() {
     return process.env.TESSARIO_ALLOW_DEVELOPMENT_AUTH_IN_PRODUCTION === "1" ? "development" : "strict";
   }
   return normalized;
+}
+
+function isRailwayRuntime() {
+  return Boolean(
+    process.env.RAILWAY_ENVIRONMENT ||
+    process.env.RAILWAY_ENVIRONMENT_NAME ||
+    process.env.RAILWAY_PROJECT_ID ||
+    process.env.RAILWAY_SERVICE_ID ||
+    process.env.RAILWAY_PUBLIC_DOMAIN ||
+    process.env.RAILWAY_GIT_COMMIT_SHA
+  );
 }
 
 function authRuntimeInfo() {
