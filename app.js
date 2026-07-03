@@ -273,13 +273,20 @@ const workspaceConfig = {
     { id: "michelle-roberts", name: "CS5 Michelle", role: "rep", assignmentEligible: true, removed: false }
   ],
   macroCategories: [
+    "Warranty",
     "Warranty / Receipt",
+    "Reviews",
+    "Replacements",
+    "Tracking",
+    "Refunds",
+    "Verification",
+    "Troubleshooting",
+    "Follow-up",
     "RO Troubleshooting",
     "Tankless RO",
     "Whole House",
     "Replacement Parts",
     "Returns",
-    "Reviews",
     "Water Tests"
   ],
   macros: [
@@ -376,6 +383,132 @@ const workspaceConfig = {
       dailyUse: true,
       body:
         "Hi {{customer_first_name}},\n\nI am glad we could help with {{model}}. If everything is working well now, we would appreciate a quick review or update here: {{product_review_link}}\n\nThank you for working with us on {{ticket_number}}.\n\nThanks,\n{{rep_name}}"
+    },
+    {
+      id: "robert-warranty-registration-receipt-needed",
+      name: "Warranty Registration — Receipt Needed",
+      category: "Warranty",
+      favorite: true,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nCould you please attach and email a copy of the vendor receipt, either as a PDF or screenshot, for the item you would like to register for the warranty? I’d be happy to help you out!\n\nPlease also include your shipping address and contact number.\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-warranty-registered-amazon-review",
+      name: "Warranty Registered + Amazon Review",
+      category: "Warranty",
+      favorite: true,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThanks for sending that over!\n\nI have registered your [MODEL] for the 3 year warranty. We offer lifetime technical support, so feel free to reach out if you have any questions or need help with the system in the future. Let me know if there is anything else that I could help out with!\n\nDo you think you could help me out also? Could you possibly leave a review and mention my name “Robert” in it? These reviews go a long way for me personally and here at the office!\n\nIf you choose to do so, let me know. You can leave a review on Amazon here: [Amazon Link]\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-warranty-registered-trustpilot-google-review",
+      name: "Warranty Registered + Trustpilot / Google Review",
+      category: "Warranty",
+      favorite: true,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThanks for sending that over!\n\nI have registered your [MODEL] for the 3 year warranty. We offer lifetime technical support, so feel free to reach out if you have any questions or need help with the system in the future. Let me know if there is anything else that I could help out with!\n\nDo you think you could help me out also? Could you possibly leave a review and mention my name “Robert” in it? These reviews go a long way for me personally and here at the office!\n\nIf you choose to do so, let me know. You can leave a Trustpilot review here:\nhttps://www.trustpilot.com/review/ispringfilter.com\n\nYou can leave a Google review here:\n[iSpring Google Review](Google Review Link)\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-customer-says-they-will-leave-review",
+      name: "Customer Says They Will Leave Review",
+      category: "Reviews",
+      favorite: false,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThank you, I really appreciate that!\n\nFeel free to reach out if you have any questions or need help with the system in the future.\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-replacement-part-sent-review-request",
+      name: "Replacement Part Sent + Review Request",
+      category: "Replacements",
+      favorite: true,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThanks for sending that information over to me!\n\nI have placed an order to have [replacement part(s)] sent out to you. It will ship out of our warehouse in Atlanta, GA asap, and I’ll be able to provide tracking information once it becomes available. Let me know if there is anything else that I could help out with!\n\nDo you think you could help me out also? Could you possibly leave a review and mention my name “Robert” in it? These reviews go a long way for me personally and here at the office!\n\nIf you choose to do so, let me know. You can leave a review here: [Review Link]\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-replacement-tracking-provided",
+      name: "Replacement Tracking Provided",
+      category: "Tracking",
+      favorite: false,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nYour replacement has shipped. I have listed the tracking information below:\n\nCarrier: [tracking number]\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-tracking-label-created-not-moving-yet",
+      name: "Tracking Label Created / Not Moving Yet",
+      category: "Tracking",
+      favorite: false,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThe order has been processed on our end, but the carrier may only show the label until the package receives its first scan.\n\nPlease keep an eye on the tracking, and it should update once the carrier scans the package into transit.\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-refund-processed",
+      name: "Refund Processed",
+      category: "Refunds",
+      favorite: false,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nYou’re very welcome!\n\nThe $[amount] refund has been processed on our end. Please allow about 5–10 business days for it to appear back on your original payment method.\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-promo-code-not-applied-sent-for-review",
+      name: "Promo Code Not Applied — Sent for Review",
+      category: "Follow-up",
+      favorite: false,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThanks for sending that over.\n\nI have sent this to the appropriate channels to be reviewed and handled. I am just waiting to hear back now, and I’ll update you once I have more information.\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-missing-attachment-image-did-not-come-through",
+      name: "Missing Attachment / Image Did Not Come Through",
+      category: "Follow-up",
+      favorite: false,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThanks for sending that over.\n\nIt looks like the image did not come through on my end. Could you please resend the photo and also let me know what issue you are having with the system?\n\nOnce I have both, I can help confirm the next best step.\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-refresh-my-memory-after-phone-call",
+      name: "Refresh My Memory After Phone Call",
+      category: "Follow-up",
+      favorite: false,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThanks for sending the product information over.\n\nCould you please refresh my memory on what issue you were having with the system? Once I have that detail, I can help confirm the next best step.\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-need-proof-before-warranty-replacement-review",
+      name: "Need Proof Before Warranty/Replacement Review",
+      category: "Verification",
+      favorite: true,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThanks for reaching out.\n\nI’d be happy to review this for you. Could you please send the following information?\n\nA copy of the vendor receipt\nA photo of the full system\nA close-up photo of the model label\nA photo or short video showing the issue\nYour best shipping address and phone number\n\nOnce I have that information, I can review the case and confirm the next step.\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-confirm-shipping-address-before-replacement",
+      name: "Confirm Shipping Address Before Replacement",
+      category: "Replacements",
+      favorite: false,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nThanks for sending that over.\n\nThis is covered under warranty, so I can have a replacement [part] sent out to you.\n\nCould you please confirm that the address listed on the receipt is a good shipping address?\n\nOnce you confirm, I can move forward with getting that sent out.\n\nThanks,\nRobert"
+    },
+    {
+      id: "robert-rcc7ak-ro-filter-replacement-schedule",
+      name: "RCC7AK / RO Filter Replacement Schedule",
+      category: "Troubleshooting",
+      favorite: false,
+      dailyUse: true,
+      body:
+        "Hi [Customer],\n\nFor your system, the general replacement schedule is:\n\nStage 1 sediment filter: every 6–12 months\nStage 2 carbon filter: about every 12 months\nStage 3 carbon filter: about every 12 months\nRO membrane: about every 2–3 years\nPost carbon filter: about every 12 months\nAlkaline filter, if your model has one: about every 12 months\n\nThe exact timing can vary based on your water quality and usage. Slower flow, a longer tank refill time, taste or odor changes, or rising TDS are all signs that filters may need to be changed.\n\nThanks,\nRobert"
     }
   ]
 };
