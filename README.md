@@ -153,6 +153,46 @@ The helper only edits the configured JSON state file, creates a backup next to i
 
 JSON-file persistence remains the default and writes through a queued temp-file replace with a `.bak` backup. Postgres is supported through `DATABASE_URL`, but it should not become the default until production auth, migrations, backup/restore operations, and managed file storage are completed.
 
+### Production Operations
+
+For strict Railway production, keep these variables configured:
+
+```bash
+NODE_ENV=production
+TESSARIO_AUTH_MODE=strict
+TESSARIO_DISABLE_DEV_LOGIN=1
+REPOS_SECURE_COOKIES=1
+REPOS_SESSION_SECRET="use-at-least-32-random-characters"
+REPOS_ADMIN_EMAIL=admin@example.com
+REPOS_ADMIN_PASSWORD="set-a-strong-temporary-password"
+# or REPOS_ADMIN_PASSWORD_HASH="scrypt:..."
+REPOS_ADMIN_NAME="RepOS Admin"
+REPOS_ADMIN_ROLE=admin
+```
+
+Use durable Railway volume paths for JSON state and uploads:
+
+```bash
+TESSARIO_DATA_FILE=/data/tessario-state.json
+TESSARIO_UPLOAD_DIR=/data/uploads
+```
+
+Before destructive demo restores, sign in as an admin and use Admin Hub > Production operations > Download state backup. The backup export is admin-only and omits session secrets, cookies, password hashes, active sessions, SSO secrets, and plaintext passwords. Restore seed demo data requires typing `RESTORE`; it overwrites tickets, assignment pool, profile preferences, product links, customer accounts, and notifications, but does not delete uploaded files.
+
+For admin password rotation, set a new `REPOS_ADMIN_PASSWORD`, restart/redeploy, sign in once, then prefer removing the plaintext password or replacing it with `REPOS_ADMIN_PASSWORD_HASH`. Keep `REPOS_SESSION_SECRET` stable across restarts.
+
+For Enterprise SSO, set `REPOS_SSO_ENABLED=true`, configure issuer/client/secret/redirect URI, register `https://your-repos-domain.com/api/auth/sso/callback` with the provider, and optionally set `REPOS_SSO_ALLOWED_DOMAINS`. Confirm `/api/auth/sso/config` reports enabled/configured before directing users to SSO.
+
+The `TESSARIO_*` names remain legacy compatibility aliases for the existing JSON persistence and auth configuration.
+
+Production health checks:
+
+```bash
+curl https://your-repos-app.example.com/api/health
+curl https://your-repos-app.example.com/api/session
+curl https://your-repos-app.example.com/api/auth/sso/config
+```
+
 ## Current Status
 
 RepOS is an active prototype for exploring customer support workflows and internal tooling.

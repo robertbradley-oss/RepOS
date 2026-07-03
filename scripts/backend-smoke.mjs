@@ -61,6 +61,22 @@ try {
     throw new Error("Admin bootstrap did not return the expected session and full workspace state.");
   }
 
+  const adminExport = await fetch(`http://127.0.0.1:${port}/api/admin/export`);
+  const adminExportPayload = await adminExport.json();
+  const exportedStateText = JSON.stringify(adminExportPayload.state || {});
+  if (
+    !adminExport.ok ||
+    adminExportPayload.metadata?.app !== "RepOS" ||
+    adminExportPayload.metadata?.counts?.authUsers !== 1 ||
+    adminExportPayload.state?.settings?.workspaceName !== "iSpring Water Systems" ||
+    !Array.isArray(adminExportPayload.state?.authUsers) ||
+    exportedStateText.includes("passwordHash") ||
+    exportedStateText.includes("authSessions") ||
+    exportedStateText.includes("fileRecords")
+  ) {
+    throw new Error("Admin state export did not return the expected sanitized backup payload.");
+  }
+
   const settingsPatch = await fetch(`http://127.0.0.1:${port}/api/settings`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

@@ -200,6 +200,13 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  if (request.method === "GET" && url.pathname === "/api/admin/export") {
+    const user = await requireAdmin(request, response);
+    if (!user) return;
+    sendJson(response, 200, await buildStateExportPayload(user));
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/auth/sso/config") {
     sendJson(response, 200, publicSsoConfig());
     return;
@@ -768,6 +775,58 @@ async function stateWithPublicAuthUsers(state) {
   return {
     ...state,
     authUsers: (await store.listAuthUsers()).map(publicUser)
+  };
+}
+
+async function buildStateExportPayload(user) {
+  const state = await stateWithPublicAuthUsers(await store.loadState());
+  const sanitizedState = sanitizeExportState(state);
+  return {
+    metadata: {
+      exportedAt: new Date().toISOString(),
+      exportedBy: publicUser(user),
+      app: "RepOS",
+      version: appInfo.version,
+      commit: appInfo.commit,
+      authMode,
+      persistence: store.mode,
+      storage: storageRuntimeInfo(),
+      counts: exportStateCounts(sanitizedState)
+    },
+    state: sanitizedState
+  };
+}
+
+function sanitizeExportState(state = {}) {
+  const clean = {};
+  for (const key of [
+    "tickets",
+    "users",
+    "profile",
+    "settings",
+    "queueViews",
+    "notifications",
+    "knowledgeDocs",
+    "productLinks",
+    "customerAccounts",
+    "lastTicketNumber"
+  ]) {
+    if (Object.hasOwn(state, key)) clean[key] = state[key];
+  }
+  clean.authUsers = Array.isArray(state.authUsers) ? state.authUsers.map(publicUser) : [];
+  return clean;
+}
+
+function exportStateCounts(state = {}) {
+  return {
+    tickets: Array.isArray(state.tickets) ? state.tickets.length : 0,
+    users: Array.isArray(state.users) ? state.users.length : 0,
+    queueViews: Array.isArray(state.queueViews) ? state.queueViews.length : 0,
+    notifications: Array.isArray(state.notifications) ? state.notifications.length : 0,
+    knowledgeDocs: Array.isArray(state.knowledgeDocs) ? state.knowledgeDocs.length : 0,
+    productLinks: Array.isArray(state.productLinks) ? state.productLinks.length : 0,
+    customerAccounts: isPlainObject(state.customerAccounts) ? Object.keys(state.customerAccounts).length : 0,
+    authUsers: Array.isArray(state.authUsers) ? state.authUsers.length : 0
   };
 }
 

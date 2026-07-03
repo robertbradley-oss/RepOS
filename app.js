@@ -1398,6 +1398,10 @@ let backendSyncAvailable = false;
 const backendSyncQueue = new Map();
 let sessionUser = null;
 let enterpriseSsoConfig = { enabled: false, configured: false };
+let opsHealthSnapshot = null;
+let opsQueueViews = [];
+let opsStatusError = "";
+let opsStatusLoading = false;
 let homeDevLoginEnabled = false;
 let backendAssignmentUsers = [];
 let lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
@@ -1651,6 +1655,7 @@ async function loadHomeAuthConfig() {
     const response = await fetch("/api/health", { cache: "no-store" });
     if (!response.ok) throw new Error(`Auth config failed: ${response.status}`);
     const payload = await response.json();
+    opsHealthSnapshot = payload;
     applyHomeAuthConfig({ devLogin: payload?.auth?.devLogin });
   } catch (error) {
     console.warn("RepOS auth config is unavailable.", error);
@@ -10011,6 +10016,138 @@ function renderAdminOverview() {
   `;
 }
 
+function renderAdminOperationsSection() {
+  const health = opsHealthSnapshot || {};
+  const storage = health.storage || {};
+  const auth = health.auth || {};
+  const sso = auth.enterpriseSso || {};
+  const counts = [
+    ["Tickets", tickets.length],
+    ["Customer accounts", Object.keys(customerAccounts || {}).length],
+    ["Product links", productLinks.length],
+    ["Queue views", opsQueueViews.length || allQueueViews.length]
+  ];
+  const runtimeFacts = [
+    ["Health", health.readiness?.ready ? "Ready" : opsStatusLoading ? "Checking..." : "Unavailable"],
+    ["Commit", health.commit ? String(health.commit).slice(0, 8) : "Unknown"],
+    ["Version", health.version || "Unknown"],
+    ["Auth mode", auth.mode || "Unknown"],
+    ["Dev login", auth.devLogin ? "Enabled" : "Disabled"],
+    ["SSO", `enabled ${sso.enabled ? "yes" : "no"} / configured ${sso.configured ? "yes" : "no"} / requested ${sso.requested ? "yes" : "no"}`],
+    ["Persistence", health.persistenceMode || health.persistence || "Unknown"],
+    ["Data file", storage.dataFile?.location || "Unknown"],
+    ["Data durable", storage.dataFile?.durable ? "Yes" : "No"],
+    ["Uploads", storage.uploads?.location || "Unknown"],
+    ["Uploads durable", storage.uploads?.durable ? "Yes" : "No"]
+  ];
+  return `
+    <section class="admin-card admin-operations-card" id="adminOperationsCard" aria-label="Production operations">
+      <div class="section-title row-title">
+        <div>
+          <p class="eyebrow">Production operations</p>
+          <h3>Runtime status and backups</h3>
+        </div>
+        <div class="context-actions split-actions">
+          <button class="ghost-button" id="refreshAdminOpsButton" type="button">Refresh status</button>
+          <button class="primary-button" id="downloadStateBackupButton" type="button">Download state backup</button>
+        </div>
+      </div>
+      <p class="admin-section-note">Safe runtime details only. Secrets, cookies, password hashes, and active sessions are never shown here.</p>
+      ${opsStatusError ? `<p class="form-error">${escapeHtml(opsStatusError)}</p>` : ""}
+      <div class="admin-overview-grid">
+        ${counts.map(([label, value]) => `
+          <article>
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value)}</strong>
+            <small>current workspace count</small>
+          </article>
+        `).join("")}
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <tbody>
+            ${runtimeFacts.map(([label, value]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value)}</td></tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+async function refreshAdminOperationsStatus({ silent = false } = {}) {
+  if (!window.fetch || opsStatusLoading) return;
+  opsStatusLoading = true;
+  opsStatusError = "";
+  updateAdminOperationsCard();
+  try {
+    const [healthResponse, queueViewsResponse] = await Promise.all([
+      fetch("/api/health", { cache: "no-store" }),
+      fetch("/api/queue-views", { cache: "no-store" })
+    ]);
+    if (!healthResponse.ok) throw new Error(`Health check failed: ${healthResponse.status}`);
+    opsHealthSnapshot = await healthResponse.json();
+    if (queueViewsResponse.ok) {
+      const payload = await queueViewsResponse.json();
+      opsQueueViews = Array.isArray(payload.queueViews) ? payload.queueViews : [];
+    }
+    if (!silent) showToast("Production operations status refreshed.");
+  } catch (error) {
+    console.warn("RepOS operations status refresh failed.", error);
+    opsStatusError = "Production operations status is unavailable.";
+  } finally {
+    opsStatusLoading = false;
+    updateAdminOperationsCard();
+  }
+}
+
+function updateAdminOperationsCard() {
+  if (uiState.activeScreen !== "admin" || !el.adminPanel) return;
+  const current = el.adminPanel.querySelector("#adminOperationsCard");
+  if (!current) return;
+  const template = document.createElement("template");
+  template.innerHTML = renderAdminOperationsSection().trim();
+  current.replaceWith(template.content.firstElementChild);
+  attachAdminOperationsHandlers();
+}
+
+function attachAdminOperationsHandlers() {
+  el.adminPanel.querySelector("#refreshAdminOpsButton")?.addEventListener("click", () => refreshAdminOperationsStatus());
+  el.adminPanel.querySelector("#downloadStateBackupButton")?.addEventListener("click", downloadStateBackup);
+}
+
+async function downloadStateBackup() {
+  if (!currentUserIsAdmin()) {
+    showAdminPermissionMessage("State backup");
+    return;
+  }
+  try {
+    const response = await fetch("/api/admin/export", { cache: "no-store" });
+    if (!response.ok) throw new Error(`State backup export failed: ${response.status}`);
+    const payload = await response.json();
+    const exportedAt = payload?.metadata?.exportedAt || new Date().toISOString();
+    const filename = `repos-state-backup-${safeFilenameTimestamp(exportedAt)}.json`;
+    const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast("State backup downloaded.");
+  } catch (error) {
+    console.warn("RepOS state backup download failed.", error);
+    showToast("State backup could not be downloaded.");
+  }
+}
+
+function safeFilenameTimestamp(value) {
+  const date = new Date(value);
+  const iso = Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+  return iso.replace(/\.\d{3}Z$/, "Z").replace(/[:.]/g, "-");
+}
+
 function renderAdminMacroSection() {
   const favoriteCount = macroLibrary.filter((macro) => macro.favorite).length;
   const dailyCount = macroLibrary.filter((macro) => macro.dailyUse).length;
@@ -10099,6 +10236,7 @@ function renderAdminPanel() {
       <button class="secondary-button" id="backFromAdminButton" type="button">Back to queue</button>
     </div>
     ${renderAdminOverview()}
+    ${renderAdminOperationsSection()}
     <section class="admin-card admin-hub-card">
       <div class="section-title">
         <p class="eyebrow">Admin navigation</p>
@@ -10157,6 +10295,7 @@ function renderAdminPanel() {
 
   el.adminPanel.querySelector("#backFromAdminButton").addEventListener("click", showQueueScreen);
   el.adminPanel.querySelector("#adminResetWorkspaceButton").addEventListener("click", resetDemoData);
+  attachAdminOperationsHandlers();
   el.adminPanel.querySelectorAll("[data-admin-tool]").forEach((button) => {
     button.addEventListener("click", () => {
       if (button.dataset.adminTool === "product-links") showKnowledgeVaultScreen();
@@ -10172,6 +10311,7 @@ function renderAdminPanel() {
     const select = el.adminPanel.querySelector(`[data-reassign-target="${button.dataset.reassignFrom}"]`);
     reassignTicketsFromUser(button.dataset.reassignFrom, select.value);
   }));
+  refreshAdminOperationsStatus({ silent: true });
 }
 
 function renderKnowledgeVaultPanel() {
@@ -12816,8 +12956,11 @@ function approvedKnowledgeSources() {
 
 function resetDemoData() {
   const demoName = isGenericDemoWorkspace() ? "Northstar Support" : "iSpring";
-  const confirmed = window.confirm(`Restore seeded ${demoName} demo data? This overwrites tickets, assignment pool, profile preferences, product links, customer accounts, and notifications saved in this local demo state. Uploaded files are not deleted.`);
-  if (!confirmed) return false;
+  const typed = window.prompt(`Restore seeded ${demoName} demo data?\n\nThis overwrites tickets, assignment pool, profile preferences, product links, customer accounts, and notifications saved in this demo state. Uploaded files are not deleted.\n\nDownload a state backup first if you need to preserve current data.\n\nType RESTORE to continue.`);
+  if (typed !== "RESTORE") {
+    showToast("Seed restore cancelled.");
+    return false;
+  }
   tickets = normalizeTickets(demoTicketSeed());
   lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
   profile = JSON.parse(JSON.stringify(demoProfileSeed()));
