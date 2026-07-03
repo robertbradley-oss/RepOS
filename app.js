@@ -19,7 +19,15 @@ const LEGACY_KNOWLEDGE_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.knowledge
 const LEGACY_PRODUCT_LINK_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.productLinkLibrary.v1`;
 const LEGACY_CUSTOMER_ACCOUNTS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.customerAccounts.v1`;
 const LEGACY_NOTIFICATIONS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.notifications.v1`;
-const CURRENT_USER = "CS14 Robert";
+const DEMO_WORKSPACE_STORAGE_KEY = "repos.activeDemoWorkspace.v1";
+const GENERIC_DEMO_SEED_VERSION_STORAGE_KEY = "repos.genericDemoSeedVersion.v1";
+const GENERIC_DEMO_SEED_VERSION = "generic-demo-100-threads-v1";
+const ISPRING_DEMO_ID = "ispring";
+const GENERIC_DEMO_ID = "generic";
+const demoWorkspaceIds = new Set([ISPRING_DEMO_ID, GENERIC_DEMO_ID]);
+let activeDemoWorkspaceId = safeDemoWorkspaceId(localStorage.getItem(DEMO_WORKSPACE_STORAGE_KEY));
+let selectedHomeDemoId = activeDemoWorkspaceId;
+const CURRENT_USER = "Morgan Lee";
 const MIN_TICKET_NUMBER = 100000;
 const verifiedPurchaseSources = ["Amazon", "iSpring direct", "Home Depot", "Lowe's", "Walmart", "eBay"];
 const legacyRepNameMap = {
@@ -42,6 +50,8 @@ const workspaceConfig = {
   workspaceName: "iSpring Water Systems",
   workspaceShortName: "iSpring",
   workspaceLabel: "Workspace: iSpring Water Systems",
+  workspaceLogoSrc: "./assets/ispring-logo.png",
+  workspaceInitials: "iS",
   tagline: "Ticketing made clear.",
   workspaceNote: "iSpring Water Systems is the active workspace in this RepOS session.",
   ticketPrefix: "ISP",
@@ -54,9 +64,9 @@ const workspaceConfig = {
     workspaceName: "iSpring Water Systems",
     workspaceLabel: "Workspace: iSpring Water Systems",
     supportEmail: "support@ispringfilters.com",
-    currentUserName: "CS14 Robert",
+    currentUserName: "Morgan Lee",
     currentUserRole: "admin",
-    defaultAssignee: "CS14 Robert",
+    defaultAssignee: "Morgan Lee",
     timezone: "America/New_York",
     demoMode: true,
     allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
@@ -213,15 +223,15 @@ const workspaceConfig = {
     confirms: "Customer provides enough detail for a workflow decision."
   },
   defaultProfile: {
-    firstName: "Robert",
-    lastName: "",
-    displayName: "CS14 Robert",
-    email: "cs14.ispring@hotmail.com",
+    firstName: "Morgan",
+    lastName: "Lee",
+    displayName: "Morgan Lee",
+    email: "morgan.lee@demo.repos",
     phone: "678-555-0144",
     mobile: "",
-    extension: "CS14",
-    username: "cs14",
-    role: "Admin",
+    extension: "DEMO",
+    username: "morgan.lee",
+    role: "Workspace Admin",
     twoFactorEnabled: true,
     defaultLandingView: "open",
     defaultQueueView: "table",
@@ -234,7 +244,7 @@ const workspaceConfig = {
     ticketDensity: "Comfortable",
     defaultSort: "Last Updated",
     autoOpenFirstTicket: false,
-    mySignature: "Thanks,\nRobert",
+    mySignature: "Thanks,\nMorgan",
     departmentSignature: "Customer Service Department\niSpring Water Systems",
     defaultSignature: "My Signature",
     insertSignature: true,
@@ -254,6 +264,7 @@ const workspaceConfig = {
     quietHoursEnd: "08:00"
   },
   reps: [
+    { id: "morgan-lee", name: "Morgan Lee", role: "admin", assignmentEligible: true, removed: false },
     { id: "robert-bradley", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
     { id: "nick-lawrence", name: "CS1 Nick", role: "rep", assignmentEligible: true, removed: false },
     { id: "julius-francis", name: "CS2 Julius", role: "rep", assignmentEligible: true, removed: false },
@@ -383,13 +394,17 @@ const toolbarStatusActions = [
 ];
 const closedDateRangeOptions = ["Today", "Yesterday", "This Week", "This Month", "This Quarter"];
 const seedPriorities = ["Urgent", "High", "Normal", "Low"];
-const productFamilies = workspaceConfig.productFamilies;
-const issueTypes = workspaceConfig.ticketCategories;
+const ispringProductFamilies = workspaceConfig.productFamilies.slice();
+const ispringIssueTypes = workspaceConfig.ticketCategories.slice();
+let productFamilies = ispringProductFamilies.slice();
+let issueTypes = ispringIssueTypes.slice();
 const activeWorkloadStatuses = workspaceConfig.activeWorkloadStatuses;
 const userRoles = ["admin", "manager", "rep"];
 const seedUsers = workspaceConfig.reps;
-const macroCategories = workspaceConfig.macroCategories;
-const macroLibrary = workspaceConfig.macros;
+const ispringMacroCategories = workspaceConfig.macroCategories.slice();
+const ispringMacroLibrary = workspaceConfig.macros.slice();
+let macroCategories = ispringMacroCategories.slice();
+let macroLibrary = ispringMacroLibrary.slice();
 const knowledgeCategories = workspaceConfig.knowledgeVaultCategories;
 const knowledgeStatuses = workspaceConfig.knowledgeVaultStatuses;
 const closedQueueStatuses = ["Closed", "Resolved"];
@@ -875,9 +890,9 @@ const seedTickets = [
   }),
   buildTicket({
     id: "ISP-28487",
-    subject: "CS14 Robert test customer RO500 reset loop",
-    customer: "CS14 Robert test customer",
-    email: "robert.bradley.test@example.com",
+    subject: "Demo Warranty Customer RO500 reset loop",
+    customer: "Demo Warranty Customer",
+    email: "demo.warranty.customer@example.com",
     phone: "470-555-0104",
     model: "RO500AK",
     family: "Tankless RO",
@@ -897,15 +912,15 @@ const seedTickets = [
     issue: "Tankless reset sequence may be incomplete",
     firstTest: "Confirm exact filter reset sequence and flush time.",
     confirms: "Display exits reset loop after proper sequence.",
-    customerMessage: "This is Robert's test customer. RO500 keeps returning to the filter reset screen.",
+    customerMessage: "This is a demo warranty customer. RO500 keeps returning to the filter reset screen.",
     repReply: "",
     internalNote: "Use this record to test multiple-ticket customer history by email only."
   }),
   buildTicket({
     id: "ISP-28486",
-    subject: "CS14 Robert test customer replacement filter question",
-    customer: "CS14 Robert test customer",
-    email: "robert.bradley.test@example.com",
+    subject: "Demo Warranty Customer replacement filter question",
+    customer: "Demo Warranty Customer",
+    email: "demo.warranty.customer@example.com",
     phone: "470-555-0104",
     model: "RO500AK",
     family: "Tankless RO",
@@ -931,9 +946,9 @@ const seedTickets = [
   }),
   buildTicket({
     id: "ISP-28485",
-    subject: "CS14 Robert test customer receipt upload verification",
-    customer: "CS14 Robert test customer",
-    email: "robert.bradley.test@example.com",
+    subject: "Demo Warranty Customer receipt upload verification",
+    customer: "Demo Warranty Customer",
+    email: "demo.warranty.customer@example.com",
     phone: "470-555-0104",
     model: "RO500AK",
     family: "Warranty",
@@ -1165,7 +1180,7 @@ let workspaceSettings = normalizeWorkspaceSettings(loadWorkspaceSettings());
 applyWorkspaceSettings();
 let tickets = normalizeTickets(loadTickets());
 rebaselineOpenTicketSla(tickets);
-if (ensureReceiptTestTickets(tickets)) localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+if (!isGenericDemoWorkspace() && ensureReceiptTestTickets(tickets)) setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
 let backendSyncReady = false;
 let backendSyncTimer = 0;
 let backendSyncAvailable = false;
@@ -1175,8 +1190,8 @@ let backendAssignmentUsers = [];
 let lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 let profile = loadProfile();
 let customerAccounts = loadCustomerAccounts(tickets);
-let customerAccountReceiptDataChanged = ensureReceiptTestCustomerAccounts(tickets);
-customerAccountReceiptDataChanged = ensureMockReceiptRecordsForTickets(tickets) || customerAccountReceiptDataChanged;
+let customerAccountReceiptDataChanged = !isGenericDemoWorkspace() && ensureReceiptTestCustomerAccounts(tickets);
+customerAccountReceiptDataChanged = (!isGenericDemoWorkspace() && ensureMockReceiptRecordsForTickets(tickets)) || customerAccountReceiptDataChanged;
 if (customerAccountReceiptDataChanged) persistCustomerAccounts();
 if (tickets.some((ticket) => applyCustomerAccountToTicket(ticket))) persistTickets();
 let users = loadUsers();
@@ -1198,6 +1213,7 @@ let customSelectObserver = null;
 let customSelectRefreshFrame = 0;
 let editableFieldObserver = null;
 let activeCustomSelect = null;
+let workspaceEntered = false;
 let sidebarLabelsHidden = false;
 let sidebarLayoutCollapsed = false;
 let sidebarMotioning = false;
@@ -1268,15 +1284,26 @@ let pendingReceiptUpload = {
 const el = {
   homeScreen: document.querySelector("#homeScreen"),
   homeLoginForm: document.querySelector("#homeLoginForm"),
-  homeLoginError: document.querySelector("#homeLoginError"),
+  homeLoginButton: document.querySelector("#homeLoginButton"),
+  homeSignInButton: document.querySelector("#homeSignInButton"),
+  homePrimaryCta: document.querySelector("#homePrimaryCta"),
+  homeDemoButtons: document.querySelectorAll("[data-demo-workspace]"),
+  homeEmailInput: document.querySelector("#homeEmailInput"),
+  homePasswordInput: document.querySelector("#homePasswordInput"),
+  homePasswordToggle: document.querySelector("#homePasswordToggle"),
+  homeStatus: document.querySelector("#homeStatus"),
   appShell: document.querySelector(".app-shell"),
   workspace: document.querySelector(".workspace"),
   ticketWorkspace: document.querySelector(".ticket-workspace"),
   viewNav: document.querySelector("#viewNav"),
   queueSearch: document.querySelector("#queueSearch"),
   brandTagline: document.querySelector("#brandTagline"),
+  sidebarWorkspaceSwitcher: document.querySelector("#sidebarWorkspaceSwitcher"),
+  sidebarWorkspaceLogo: document.querySelector("#sidebarWorkspaceLogo"),
+  sidebarWorkspaceInitials: document.querySelector("#sidebarWorkspaceInitials"),
   sidebarWorkspaceLabel: document.querySelector("#sidebarWorkspaceLabel"),
   topbarWorkspaceLabel: document.querySelector("#topbarWorkspaceLabel"),
+  homeNavButton: document.querySelector("#homeNavButton"),
   dashboardNavButton: document.querySelector("#dashboardNavButton"),
   ticketsNavButton: document.querySelector("#ticketsNavButton"),
   ticketNavCount: document.querySelector("#ticketNavCount"),
@@ -1351,15 +1378,244 @@ function animateDialogClose(dialog, afterFn) {
   }, cssDurationMs("--motion-fast", 140) + 20);
 }
 
+function setHomeStatus(message, isError = false) {
+  if (!el.homeStatus) return;
+  el.homeStatus.textContent = message || "";
+  el.homeStatus.classList.toggle("is-error", Boolean(isError));
+}
+
+function toggleHomePassword() {
+  const input = el.homePasswordInput;
+  const toggle = el.homePasswordToggle;
+  if (!input || !toggle) return;
+  const reveal = input.type === "password";
+  input.type = reveal ? "text" : "password";
+  toggle.setAttribute("aria-pressed", String(reveal));
+  toggle.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
+  toggle.classList.toggle("is-revealed", reveal);
+  input.focus({ preventScroll: true });
+}
+
+function setHomeLoginControlsDisabled(disabled) {
+  document.querySelectorAll("#homeLoginButton, #homeSignInButton, #homePrimaryCta, [data-demo-workspace]").forEach((button) => {
+    button.disabled = disabled;
+  });
+}
+
+function setHomeDemoChoice(demoId) {
+  selectedHomeDemoId = safeDemoWorkspaceId(demoId);
+  el.homeDemoButtons?.forEach((button) => {
+    const active = button.dataset.demoWorkspace === selectedHomeDemoId;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function activateDemoWorkspace(demoId) {
+  const nextDemoId = safeDemoWorkspaceId(demoId);
+  if (activeDemoWorkspaceId === nextDemoId) {
+    setHomeDemoChoice(nextDemoId);
+    return;
+  }
+
+  activeDemoWorkspaceId = nextDemoId;
+  selectedHomeDemoId = nextDemoId;
+  localStorage.setItem(DEMO_WORKSPACE_STORAGE_KEY, activeDemoWorkspaceId);
+  backendSyncQueue.clear();
+  backendSyncAvailable = false;
+  backendSyncReady = isGenericDemoWorkspace();
+  backendAssignmentUsers = [];
+  sessionUser = isGenericDemoWorkspace() ? genericSessionUser() : null;
+
+  workspaceSettings = normalizeWorkspaceSettings(loadWorkspaceSettings());
+  applyWorkspaceSettings();
+  applyWorkspaceBranding();
+  tickets = normalizeTickets(loadTickets());
+  rebaselineOpenTicketSla(tickets);
+  if (!isGenericDemoWorkspace() && ensureReceiptTestTickets(tickets)) setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
+  lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
+  profile = loadProfile();
+  customerAccounts = loadCustomerAccounts(tickets);
+  if (!isGenericDemoWorkspace() && ensureReceiptTestCustomerAccounts(tickets)) persistCustomerAccounts();
+  users = loadUsers();
+  knowledgeDocs = loadKnowledgeDocs();
+  productLinks = loadProductLinks();
+  notifications = loadNotifications(tickets);
+
+  selectedTicketId = "";
+  selectedTicketIds.clear();
+  closingTicketIds.clear();
+  pendingStatusChanges.clear();
+  notificationsOpen = false;
+  activeView = "open";
+  uiState.activeScreen = "queue";
+  uiState.activeQuickControl = "open";
+  queuePage = 1;
+  filters.queue = "";
+  filters.table = {};
+  setHomeDemoChoice(nextDemoId);
+  renderToolbarSelectOptions();
+  applyProfilePreferences({ initialize: true });
+  updateProfileButton();
+  render({ preserveQueueList: false, suppressQueueRowEnter: true });
+}
+
+function handleHomeDemoChoice(event) {
+  const button = event.target.closest("[data-demo-workspace]");
+  if (!button) return;
+  setHomeDemoChoice(button.dataset.demoWorkspace);
+}
+
+function enterStaticDemoWorkspace() {
+  sessionUser = isGenericDemoWorkspace() ? genericSessionUser() : null;
+  backendSyncReady = true;
+  backendSyncAvailable = false;
+  backendAssignmentUsers = [];
+  if (applySessionUserToWorkspace()) {
+    updateProfileButton();
+    render({ preserveQueueList: true, suppressQueueRowEnter: true });
+  }
+  if (el.homePasswordInput) el.homePasswordInput.value = "";
+  setHomeStatus("Opening RepOS demo...");
+  enterWorkspace();
+}
+
+async function handleHomeLogin(event) {
+  event.preventDefault();
+  activateDemoWorkspace(selectedHomeDemoId);
+  const email = String(el.homeEmailInput?.value || "").trim();
+  const password = String(el.homePasswordInput?.value || "");
+
+  if (!email || !password) {
+    setHomeStatus("Enter your email and password.", true);
+    (email ? el.homePasswordInput : el.homeEmailInput)?.focus({ preventScroll: true });
+    return;
+  }
+
+  setHomeStatus("Signing in...");
+
+  if (!window.fetch) {
+    setHomeStatus("RepOS sign in requires the backend connection. Try again when the server is available.", true);
+    return;
+  }
+
+  setHomeLoginControlsDisabled(true);
+
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (response.status === 401) {
+      setHomeStatus("That email and password don't match. Try again.", true);
+      el.homePasswordInput?.focus({ preventScroll: true });
+      el.homePasswordInput?.select?.();
+      return;
+    }
+    if (response.status === 404 || response.status === 405) {
+      enterStaticDemoWorkspace();
+      return;
+    }
+    if (!response.ok) throw new Error(`Sign in failed: ${response.status}`);
+    const payload = await response.json();
+    sessionUser = isGenericDemoWorkspace() ? genericSessionUser() : isBackendPlainObject(payload?.user) ? payload.user : sessionUser;
+    await hydrateBackendState();
+    if (applySessionUserToWorkspace()) {
+      updateProfileButton();
+      render({ preserveQueueList: true, suppressQueueRowEnter: true });
+    }
+    if (el.homePasswordInput) el.homePasswordInput.value = "";
+    setHomeStatus("Opening RepOS...");
+    enterWorkspace();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      enterStaticDemoWorkspace();
+      return;
+    }
+    console.warn("RepOS sign in is unavailable.", error);
+    setHomeStatus("RepOS sign in is unavailable. Check the server connection and try again.", true);
+    el.homePasswordInput?.focus({ preventScroll: true });
+  } finally {
+    setHomeLoginControlsDisabled(false);
+  }
+}
+
+function handleHomeLoginButtonClick(event) {
+  event.preventDefault();
+  handleHomeLogin(event);
+}
+
+function enterWorkspace() {
+  workspaceEntered = true;
+  document.title = "RepOS Workspace";
+  applyUiState();
+  window.requestAnimationFrame(() => {
+    openTicketFromHash();
+    if (!location.hash) el.queueSearch?.focus({ preventScroll: true });
+  });
+}
+
+function showHomeScreen() {
+  workspaceEntered = false;
+  document.title = "RepOS";
+  setHomeStatus("");
+  applyUiState();
+  window.requestAnimationFrame(() => el.homeEmailInput?.focus({ preventScroll: true }));
+}
+
+function finalizeSignOut(message = "Signed out.") {
+  sessionUser = null;
+  backendAssignmentUsers = [];
+  backendSyncAvailable = false;
+  notificationsOpen = false;
+  closeNotificationsPanel();
+  [el.ticketModal, el.customerHistoryModal, el.workflowConfirmModal, el.profileModal, el.knowledgeFileModal].forEach((dialog) => {
+    if (!dialog) return;
+    if (dialog.open && typeof dialog.close === "function") dialog.close();
+    dialog.hidden = true;
+    dialog.setAttribute("hidden", "");
+  });
+  if (location.hash) history.replaceState(null, "", `${location.pathname}${location.search}`);
+  showHomeScreen();
+  setHomeStatus(message);
+}
+
+async function handleSignOut() {
+  if (!window.fetch) {
+    finalizeSignOut();
+    return;
+  }
+  const signOutButton = document.querySelector("#signOutButton");
+  if (signOutButton) signOutButton.disabled = true;
+  try {
+    const response = await fetch("/api/auth/logout", { method: "POST" });
+    if (!response.ok) throw new Error(`Sign out failed: ${response.status}`);
+    finalizeSignOut();
+  } catch (error) {
+    console.warn("RepOS sign out failed.", error);
+    showToast("Sign out failed. Check the server connection and try again.");
+  } finally {
+    if (signOutButton) signOutButton.disabled = false;
+  }
+}
+
 function init() {
   closeTicketModal();
-  setupPublicHome();
   applyWorkspaceBranding();
   renderToolbarSelectOptions();
   setupCustomSelects();
   setupEditableFieldHardeners();
   applyProfilePreferences({ initialize: true });
 
+  el.homeLoginForm?.addEventListener("submit", handleHomeLogin);
+  el.homeLoginButton?.addEventListener("click", handleHomeLoginButtonClick);
+  el.homeSignInButton?.addEventListener("click", handleHomeLoginButtonClick);
+  el.homePrimaryCta?.addEventListener("click", handleHomeLoginButtonClick);
+  el.homeDemoButtons?.forEach((button) => button.addEventListener("click", handleHomeDemoChoice));
+  setHomeDemoChoice(selectedHomeDemoId);
+  el.homePasswordToggle?.addEventListener("click", toggleHomePassword);
+  el.homeNavButton?.addEventListener("click", showHomeScreen);
   el.dashboardNavButton.addEventListener("click", showDashboardScreen);
   el.ticketsNavButton?.addEventListener("click", showQueueScreen);
   el.viewNav.addEventListener("click", handleViewClick);
@@ -1472,91 +1728,6 @@ function init() {
   render();
   openTicketFromHash();
   window.addEventListener("hashchange", openTicketFromHash);
-  hydrateBackendState();
-}
-
-function setupPublicHome() {
-  if (!el.homeScreen || !el.homeLoginForm) return;
-  el.homeLoginForm.addEventListener("submit", handlePublicHomeLogin);
-
-  const emailInput = el.homeLoginForm.querySelector("#homeLoginEmail");
-  const passwordInput = el.homeLoginForm.querySelector("#homeLoginPassword");
-  const pwToggle = el.homeLoginForm.querySelector("#homePwToggle");
-  const ssoButton = el.homeLoginForm.querySelector("#homeSsoButton");
-
-  pwToggle?.addEventListener("click", () => {
-    if (!passwordInput) return;
-    const reveal = passwordInput.type === "password";
-    passwordInput.type = reveal ? "text" : "password";
-    pwToggle.classList.toggle("is-revealed", reveal);
-    pwToggle.setAttribute("aria-pressed", String(reveal));
-    pwToggle.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
-    passwordInput.focus({ preventScroll: true });
-  });
-
-  // Demo accounts: the dev workspace has a single seeded demo login, so every
-  // pill prefills those working credentials and leaves the user ready to sign in.
-  el.homeLoginForm.querySelectorAll(".home-demo-pill").forEach((pill) => {
-    pill.addEventListener("click", () => {
-      if (emailInput) emailInput.value = "robbybradley@gmail.com";
-      if (passwordInput) passwordInput.value = "repos-demo";
-      if (el.homeLoginError) el.homeLoginError.hidden = true;
-      el.homeLoginForm.querySelector("button[type='submit']")?.focus({ preventScroll: true });
-    });
-  });
-
-  ssoButton?.addEventListener("click", () => {
-    showPublicHomeError("Single sign-on isn't configured for the demo. Use a demo account above to sign in.");
-  });
-}
-
-async function handlePublicHomeLogin(event) {
-  event.preventDefault();
-  if (!window.fetch) {
-    showPublicHomeError("Sign-in requires a local RepOS server. Start the app server and try again.");
-    return;
-  }
-
-  const form = new FormData(el.homeLoginForm);
-  const email = String(form.get("email") || "").trim();
-  const submitButton = el.homeLoginForm.querySelector("button[type='submit']");
-  if (el.homeLoginError) el.homeLoginError.hidden = true;
-  if (submitButton) submitButton.disabled = true;
-
-  try {
-    const response = await fetch("/api/auth/dev-login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(email ? { email } : {})
-    });
-    if (!response.ok) throw new Error(`RepOS sign-in failed: ${response.status}`);
-    const payload = await response.json().catch(() => ({}));
-    sessionUser = isBackendPlainObject(payload?.user) ? payload.user : sessionUser;
-    enterRepOSWorkspace();
-    hydrateBackendState();
-  } catch (error) {
-    console.warn("RepOS sign-in failed.", error);
-    showPublicHomeError("We could not sign you in. Check that the RepOS server is running, then try again.");
-  } finally {
-    if (submitButton) submitButton.disabled = false;
-  }
-}
-
-function showPublicHomeError(message) {
-  if (!el.homeLoginError) return;
-  el.homeLoginError.textContent = message;
-  el.homeLoginError.hidden = false;
-}
-
-function enterRepOSWorkspace() {
-  el.homeScreen.hidden = true;
-  el.appShell.hidden = false;
-  document.body.classList.remove("public-home");
-  document.body.classList.add("workspace-authenticated");
-  requestAnimationFrame(() => {
-    applyUiState();
-    syncSidebarActiveIndicator();
-  });
 }
 
 // "Copy ticket link" produces a `#<ticket-id>` URL; honor it on load and on
@@ -1571,6 +1742,13 @@ function openTicketFromHash() {
 function applyWorkspaceBranding() {
   if (el.brandTagline) el.brandTagline.textContent = workspaceConfig.tagline;
   if (el.sidebarWorkspaceLabel) el.sidebarWorkspaceLabel.textContent = workspaceConfig.workspaceShortName;
+  if (el.sidebarWorkspaceSwitcher) el.sidebarWorkspaceSwitcher.title = workspaceConfig.workspaceLabel;
+  if (el.sidebarWorkspaceInitials) el.sidebarWorkspaceInitials.textContent = workspaceConfig.workspaceInitials || workspaceConfig.workspaceShortName.slice(0, 2);
+  if (el.sidebarWorkspaceLogo && workspaceConfig.workspaceLogoSrc) {
+    el.sidebarWorkspaceLogo.src = workspaceConfig.workspaceLogoSrc;
+    el.sidebarWorkspaceLogo.hidden = false;
+    if (el.sidebarWorkspaceInitials) el.sidebarWorkspaceInitials.hidden = true;
+  }
   if (el.topbarWorkspaceLabel) el.topbarWorkspaceLabel.textContent = workspaceConfig.workspaceLabel;
 }
 
@@ -2010,7 +2188,7 @@ function buildTicket(config) {
       firstTest: config.firstTest,
       confirms: config.confirms
     },
-    conversation: buildConversation(config, createdAt, lastCustomerAt, lastRepAt),
+    conversation: Array.isArray(config.conversation) ? config.conversation : buildConversation(config, createdAt, lastCustomerAt, lastRepAt),
     checklist: checklistFor(config),
     guardrails: guardrailsFor(config),
     similar: similarFor(config),
@@ -2134,14 +2312,14 @@ function extendedThreadForCase(config) {
     { type: "customer", ageHours: config.ageHours - 48, body: config.resultTwo },
     { type: "timeline", author: "System", ageHours: config.ageHours - 48.2, body: `Attachment received: ${evidenceFile}.` },
     { type: "note", author: rep, ageHours: config.ageHours - 49, body: config.secondNote },
-    { type: "timeline", author: "System", ageHours: config.ageHours - 52, body: `Reassigned from ${rep} to ${specialist} for ${config.reassignReason}.` },
+    { type: "timeline", author: rep, ageHours: config.ageHours - 52, body: `Reassigned from ${rep} to ${specialist} for ${config.reassignReason}.` },
     { type: "rep", author: specialist, ageHours: config.ageHours - 56, body: config.checkThree },
     { type: "customer", ageHours: config.ageHours - 70, body: config.resultThree },
     { type: "timeline", author: specialist, ageHours: config.ageHours - 70.2, body: `Status changed to ${reviewStatus}.` },
     { type: "rep", author: specialist, ageHours: config.ageHours - 76, body: config.checkFour },
     { type: "customer", ageHours: config.ageHours - 92, body: config.resultFour },
     { type: "note", author: lead, ageHours: config.ageHours - 93, body: config.leadNote },
-    { type: "timeline", author: "System", ageHours: config.ageHours - 96, body: config.activityEvent },
+    { type: "timeline", author: /after SLA timer/i.test(config.activityEvent) ? "System" : specialist, ageHours: config.ageHours - 96, body: config.activityEvent },
     { type: "rep", author: specialist, ageHours: config.ageHours - 101, body: config.nextReply },
     { type: "customer", ageHours: config.ageHours - 116, body: config.customerFollowup },
     { type: "timeline", author: specialist, ageHours: config.ageHours - 116.2, body: `Status changed to ${finalStatus}.` },
@@ -2754,12 +2932,12 @@ function generateLongThreadMockTickets() {
         { type: "customer", ageHours: 48, body: "I uploaded the video. It shows F1, then beeps, then goes back to the same warning." },
         { type: "timeline", author: "System", ageHours: 47.8, body: "Attachment received: ro500-display-reset-loop.mov." },
         { type: "note", author: lead, ageHours: 47.4, body: "Video shows reset acknowledged but not completing rinse. Ask for filter label photo before part replacement." },
-        { type: "timeline", author: "System", ageHours: 46, body: "Reassigned from CS14 Robert to CS1 Nick for tankless RO review." },
+        { type: "timeline", author: lead, ageHours: 46, body: "Reassigned from CS14 Robert to CS1 Nick for tankless RO review." },
         { type: "rep", author: "CS1 Nick", ageHours: 44, body: "Thanks Dana. The video helps. Please also send a close-up of the filter labels, especially the small part numbers." },
         { type: "customer", ageHours: 18, body: "The labels say RO500-F1 and RO500-F2. I bought them from Amazon with the system." },
         { type: "rep", author: "CS1 Nick", ageHours: 12, body: "Those labels look right. Please run the rinse cycle for 10 minutes after reset, then power cycle the unit once." },
         { type: "customer", ageHours: 4, body: "I will try tonight. The unit is usable but the beep is driving us crazy." },
-        { type: "timeline", author: "System", ageHours: 3.8, body: "Status changed to Waiting Customer." }
+        { type: "timeline", author: "CS1 Nick", ageHours: 3.8, body: "Status changed to Waiting Customer." }
       ]
     }),
     buildLongThreadTicket({
@@ -2797,7 +2975,7 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS2 Julius", ageHours: 72, body: "Please send inlet pressure before the system, outlet pressure after the system, and a photo of the flow direction arrow." },
         { type: "customer", ageHours: 40, body: "Photos attached. Inlet reads 38 PSI and outlet is around 20 PSI with water running." },
         { type: "timeline", author: "System", ageHours: 39.8, body: "Attachment received: pressure-gauge-before-after.jpg." },
-        { type: "timeline", author: "System", ageHours: 38, body: "Status changed to Escalated." },
+        { type: "timeline", author: "CS2 Julius", ageHours: 38, body: "Status changed to Escalated." },
         { type: "note", author: "CS14 Robert", ageHours: 37.5, body: "Manager review: inlet 38 PSI is already low. Avoid saying filter is defective until fresh sediment stage and inlet pressure are confirmed." },
         { type: "rep", author: "CS2 Julius", ageHours: 34, body: "The outlet drop is meaningful, but the inlet pressure is also low. Please test with a fresh sediment cartridge and no other fixtures running." },
         { type: "customer", ageHours: 10, body: "This is frustrating. We bought the system to improve water, not lose pressure. I need a clear answer today." }
@@ -2838,7 +3016,7 @@ function generateLongThreadMockTickets() {
         { type: "rep", ageHours: 41, body: "Thanks. That confirms the order source, but we still need the item line or invoice view showing RCC7AK." },
         { type: "customer", ageHours: 26, body: "I found a PDF but it has my address. Is that okay to send?" },
         { type: "rep", ageHours: 24, body: "Yes, you can send it here. We only use it to verify purchase source, date, and model for the warranty record." },
-        { type: "timeline", author: "System", ageHours: 22, body: "Status changed to Waiting Customer." }
+        { type: "timeline", author: lead, ageHours: 22, body: "Status changed to Waiting Customer." }
       ]
     }),
     buildLongThreadTicket({
@@ -2877,7 +3055,7 @@ function generateLongThreadMockTickets() {
         { type: "note", author: "CS5 Michelle", ageHours: 60.2, body: "Photos show shipping damage before install. Amazon source. Review exception before promising replacement." },
         { type: "rep", author: "CS5 Michelle", ageHours: 57, body: "Thank you for sending those. Because this was purchased through Amazon and appears shipping-related, we need to review the replacement path carefully." },
         { type: "customer", ageHours: 29, body: "This is unacceptable. I paid for a working system, and I need the broken fitting replaced now." },
-        { type: "timeline", author: "System", ageHours: 28.5, body: "Status changed to Escalated." },
+        { type: "timeline", author: "CS5 Michelle", ageHours: 28.5, body: "Status changed to Escalated." },
         { type: "note", author: lead, ageHours: 27, body: "Escalated for manager review. Offer clear next step, but do not state replacement approval until exception is confirmed." },
         { type: "rep", author: lead, ageHours: 24, body: "I understand the frustration. I am escalating this for exception review and will update you with the approved next step as soon as we confirm it." }
       ]
@@ -2916,7 +3094,7 @@ function generateLongThreadMockTickets() {
         { type: "note", author: lead, ageHours: 82, body: "Home Depot source. Return approval may need seller path. Need water data before defect conclusion." },
         { type: "rep", ageHours: 78, body: "Thanks. To separate product performance from water chemistry, please send current iron, manganese, hardness, pH, and flow rate if available." },
         { type: "customer", ageHours: 39, body: "This is exactly the runaround I was worried about. I installed what you sell and my water still looks bad." },
-        { type: "timeline", author: "System", ageHours: 38.5, body: "Status changed to Overdue." },
+        { type: "timeline", author: lead, ageHours: 38.5, body: "Status changed to Overdue." },
         { type: "note", author: lead, ageHours: 37, body: "Overdue escalation risk. Acknowledge frustration and set expectation; do not approve return without policy/defect review." },
         { type: "rep", ageHours: 34, body: "I hear you. I am not trying to send you in circles. The next useful step is reviewing the current water test so we can determine whether this is a product issue, water chemistry limit, or return-policy path." }
       ]
@@ -2956,7 +3134,7 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS3 Sean", ageHours: 54, body: "Please push the brine line firmly into the fitting until it bottoms out, then start a manual regeneration." },
         { type: "customer", ageHours: 28, body: "After regeneration, I see some water now. It pulled down during the cycle, so I think it is working." },
         { type: "rep", author: "CS3 Sean", ageHours: 26, body: "That behavior sounds correct. Please monitor one more regeneration cycle and tell us if the level fails to change." },
-        { type: "timeline", author: "System", ageHours: 25, body: "Status changed to Open." }
+        { type: "timeline", author: "CS3 Sean", ageHours: 25, body: "Status changed to Open." }
       ]
     }),
     buildLongThreadTicket({
@@ -2994,7 +3172,7 @@ function generateLongThreadMockTickets() {
         { type: "note", author: "CS1 Nick", ageHours: 52, body: "Pins look seated. Ballast label matches UVF55FS. Receipt missing; check warranty before replacement language." },
         { type: "rep", author: "CS1 Nick", ageHours: 49, body: "The connection looks correct. Please send proof of purchase so we can review whether a replacement ballast is covered." },
         { type: "customer", ageHours: 22, body: "I do not have the receipt handy, but this is less than a year old." },
-        { type: "timeline", author: "System", ageHours: 20, body: "Replacement ballast exception approved by CS14 Robert." },
+        { type: "timeline", author: "Morgan Lee", ageHours: 20, body: "Replacement ballast exception approved by Morgan Lee." },
         { type: "timeline", author: "System", ageHours: 19.8, body: "Parts sent and follow-up due after delivery." },
         { type: "rep", author: "CS1 Nick", ageHours: 19, body: "We are sending a replacement ballast as an exception. Please keep the lamp and sleeve installed until the replacement arrives." }
       ]
@@ -3031,11 +3209,11 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS3 Sean", ageHours: 84, body: "Please flush the screen fully and send a close-up photo of the mesh after flushing." },
         { type: "customer", ageHours: 63, body: "Photo attached. The mesh has a bent area that still traps sediment." },
         { type: "note", author: "CS3 Sean", ageHours: 62, body: "Screen mesh appears damaged. Receipt registered; replacement screen is reasonable." },
-        { type: "timeline", author: "System", ageHours: 61.5, body: "Status changed to Pending Parts." },
+        { type: "timeline", author: "CS3 Sean", ageHours: 61.5, body: "Status changed to Pending Parts." },
         { type: "timeline", author: "System", ageHours: 60, body: "Parts sent and follow-up due after delivery." },
         { type: "rep", author: "CS3 Sean", ageHours: 59, body: "We are sending a replacement screen. After installing it, flush until the bowl runs clear." },
         { type: "customer", ageHours: 14, body: "The new screen is installed and flow is back to normal." },
-        { type: "timeline", author: "System", ageHours: 13.5, body: "Status changed to Resolved." }
+        { type: "timeline", author: "CS3 Sean", ageHours: 13.5, body: "Status changed to Resolved." }
       ]
     }),
     buildLongThreadTicket({
@@ -3107,9 +3285,9 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS5 Michelle", ageHours: 88, body: "Please drain the tank, check empty tank pressure, and send a short video showing water from the production line before the tank." },
         { type: "customer", ageHours: 67, body: "Pressure is 8 PSI empty. The video shows water coming from the line, but the tank stays light." },
         { type: "note", author: "CS5 Michelle", ageHours: 66.5, body: "Production flow confirmed and tank pressure corrected. Possible tank valve/bladder fault." },
-        { type: "timeline", author: "System", ageHours: 66, body: "Warranty receipt verified: ispring-receipt-91020.pdf." },
+        { type: "timeline", author: "CS5 Michelle", ageHours: 66, body: "Warranty receipt verified: ispring-receipt-91020.pdf." },
         { type: "rep", author: "CS5 Michelle", ageHours: 62, body: "Thanks. Since production flow is confirmed and tank pressure is correct, we are reviewing the tank under warranty." },
-        { type: "timeline", author: "System", ageHours: 58, body: "Replacement tank approved by CS14 Robert." },
+        { type: "timeline", author: "Morgan Lee", ageHours: 58, body: "Replacement tank approved by Morgan Lee." },
         { type: "timeline", author: "System", ageHours: 57.5, body: "Parts sent and follow-up due after delivery." },
         { type: "rep", author: "CS5 Michelle", ageHours: 56, body: "A replacement tank is being sent. Please keep the current tank installed until the replacement arrives so we can compare behavior." },
         { type: "customer", ageHours: 18, body: "Thank you. I will update once the replacement arrives." }
@@ -3187,7 +3365,7 @@ function generateLongThreadMockTickets() {
         { type: "rep", author: "CS2 Julius", ageHours: 45, body: "The raw test helps. We still need treated manganese numbers after the system to understand how much reduction is happening." },
         { type: "customer", ageHours: 20, body: "The lab can run treated water tomorrow. Should we stop using the system?" },
         { type: "rep", author: "CS2 Julius", ageHours: 18, body: "You can continue using it unless there is a pressure or leak issue. The test will help determine whether pre-treatment or flow adjustment is needed." },
-        { type: "timeline", author: "System", ageHours: 17.5, body: "Status changed to Waiting Customer." }
+        { type: "timeline", author: "CS2 Julius", ageHours: 17.5, body: "Status changed to Waiting Customer." }
       ]
     }),
     buildLongThreadTicket({
@@ -3226,7 +3404,7 @@ function generateLongThreadMockTickets() {
         { type: "timeline", author: "System", ageHours: 60, body: "Parts sent and follow-up due after delivery." },
         { type: "rep", author: "CS5 Michelle", ageHours: 59, body: "We are sending a brushed nickel replacement faucet. You can continue the rest of the installation when it arrives." },
         { type: "customer", ageHours: 16, body: "Replacement arrived and looks good. Thank you." },
-        { type: "timeline", author: "System", ageHours: 15.5, body: "Status changed to Resolved." }
+        { type: "timeline", author: "CS5 Michelle", ageHours: 15.5, body: "Status changed to Resolved." }
       ]
     }),
     buildLongThreadTicket({
@@ -3260,11 +3438,11 @@ function generateLongThreadMockTickets() {
         { type: "timeline", author: "System", ageHours: 119.6, body: "System detected possible purchase source from attachment: Amazon. Needs rep review." },
         { type: "rep", ageHours: 118, body: "I can check. Please confirm the email you want tied to the warranty record." },
         { type: "customer", ageHours: 98, body: "Use this email address. The invoice is attached to the ticket." },
-        { type: "timeline", author: "System", ageHours: 97.8, body: "Receipt verified: amazon-ro500ak-invoice.pdf." },
+        { type: "timeline", author: "Morgan Lee", ageHours: 97.8, body: "Receipt verified: amazon-ro500ak-invoice.pdf." },
         { type: "note", author: lead, ageHours: 97, body: "Receipt shows eligible seller/date/model. Register warranty under customer email." },
-        { type: "timeline", author: "System", ageHours: 96, body: "Warranty registered by CS14 Robert." },
+        { type: "timeline", author: "Morgan Lee", ageHours: 96, body: "Warranty registered by Morgan Lee." },
         { type: "rep", ageHours: 94, body: "Your RO500AK warranty registration is complete under this email address." },
-        { type: "timeline", author: "System", ageHours: 93.8, body: "Status changed to Closed." }
+        { type: "timeline", author: "Morgan Lee", ageHours: 93.8, body: "Status changed to Closed." }
       ]
     })
   ];
@@ -4202,12 +4380,298 @@ function normalizeTickets(sourceTickets, options = {}) {
     changed = normalizeTicketStatusTimelineOwnership(ticket) || changed;
     return ticket;
   });
-  if (changed && options.persist !== false) localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+  if (changed && options.persist !== false) setStoredValue(STORAGE_KEY, JSON.stringify(normalized));
   return normalized;
 }
 
 function defaultTicketSeed() {
   return JSON.parse(JSON.stringify(workspaceConfig.tickets));
+}
+
+function demoTicketSeed() {
+  return isGenericDemoWorkspace() ? genericDemoTicketSeed() : defaultTicketSeed();
+}
+
+function demoUserSeed() {
+  return isGenericDemoWorkspace()
+    ? [
+        { id: "morgan-lee", name: "Morgan Lee", role: "rep", assignmentEligible: true, removed: false },
+        { id: "avery-chen", name: "Avery Chen", role: "rep", assignmentEligible: true, removed: false },
+        { id: "jordan-blake", name: "Jordan Blake", role: "rep", assignmentEligible: true, removed: false }
+      ]
+    : JSON.parse(JSON.stringify(seedUsers));
+}
+
+function demoProfileSeed() {
+  if (!isGenericDemoWorkspace()) return { ...seedProfile };
+  return {
+    ...seedProfile,
+    firstName: "Morgan",
+    lastName: "Lee",
+    displayName: "Morgan Lee",
+    email: "morgan.lee@northstar.example",
+    phone: "555-0144",
+    extension: "100",
+    username: "morgan.lee",
+    role: "Support Rep",
+    twoFactorEnabled: false,
+    mySignature: "Thanks,\nMorgan",
+    departmentSignature: "Northstar Support\nCustomer Care",
+    notifyReceiptsWarranty: false
+  };
+}
+
+function demoWorkspaceSettingsSeed() {
+  if (!isGenericDemoWorkspace()) return { ...seedWorkspaceSettings };
+  return {
+    ...seedWorkspaceSettings,
+    workspaceName: "Northstar Support",
+    workspaceLabel: "Workspace: Northstar Support",
+    supportEmail: "support@northstar.example",
+    currentUserName: "Morgan Lee",
+    currentUserRole: "rep",
+    defaultAssignee: "Morgan Lee",
+    allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
+  };
+}
+
+function demoKnowledgeSeed() {
+  return isGenericDemoWorkspace() ? [] : JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
+}
+
+function demoProductLinkSeed() {
+  return isGenericDemoWorkspace() ? [] : JSON.parse(JSON.stringify(seedProductLinks));
+}
+
+function genericSessionUser() {
+  return {
+    id: "generic-demo-morgan-lee",
+    email: "morgan.lee@northstar.example",
+    name: "Morgan Lee",
+    displayName: "Morgan Lee",
+    repName: "Morgan Lee",
+    assignmentName: "Morgan Lee",
+    role: "rep",
+    active: true
+  };
+}
+
+function genericDemoTicketSeed() {
+  const firstNames = ["Casey", "Riley", "Taylor", "Jamie", "Alex", "Sam", "Drew", "Ari", "Cameron", "Morgan", "Quinn", "Reese", "Parker", "Avery", "Jordan", "Rowan", "Dakota", "Skyler", "Emerson", "Hayden"];
+  const lastNames = ["Morgan", "Patel", "Brooks", "Rivera", "Kim", "Torres", "Nguyen", "Carter", "Lewis", "Bennett", "Reed", "Parker", "Stone", "Chen", "Blake", "Diaz", "Foster", "Gray", "Hale", "Morris"];
+  const sources = ["Email", "Web Form", "Phone", "Chat"];
+  const assignees = ["Morgan Lee", "Avery Chen", "Jordan Blake"];
+  const priorities = ["High", "Normal", "Normal", "Low"];
+  const statuses = ["Open", "Open", "Open", "Closed, Waiting On Response", "Closed"];
+  const issueTemplates = [
+    {
+      subject: "Damaged shipment replacement request",
+      tag: "shipment",
+      missing: ["Needs Photos"],
+      message: "My order arrived with the outer box crushed and one item cracked. Can you help with a replacement?",
+      reply: "Thanks for reaching out. Please send a photo of the damaged item and the packing slip so we can confirm the replacement details.",
+      note: "Customer included order number but no photos yet. Keep the next step simple and confirm shipping address after photos arrive."
+    },
+    {
+      subject: "Billing question on recent order",
+      tag: "billing",
+      missing: [],
+      message: "I see two pending charges for the same order. Is this a duplicate billing issue?",
+      reply: "I checked the order activity and one charge appears to be an authorization hold. We are confirming with billing and will update you today.",
+      note: "Likely pending authorization. Ask billing to verify before saying it will fall off."
+    },
+    {
+      subject: "Missing part from delivery",
+      tag: "missing-part",
+      missing: ["Needs Packing Slip"],
+      message: "The delivery arrived today but one part listed in the guide was not in the box.",
+      reply: "Sorry about that. Please send a photo of the packing slip and everything received, and we will confirm the missing part for replacement.",
+      note: "No return needed if the part is confirmed missing. Confirm customer shipping address after document review."
+    },
+    {
+      subject: "Setup help needed",
+      tag: "setup",
+      missing: ["Waiting Customer"],
+      message: "I am stuck on the setup step where the app asks for a verification code.",
+      reply: "Please try the code again from the latest email and let us know whether it expires before you can submit it.",
+      note: "Likely stale verification email. Waiting on customer result before escalating."
+    },
+    {
+      subject: "Return request follow-up",
+      tag: "return",
+      missing: [],
+      message: "I submitted a return request last week and wanted to confirm the next step.",
+      reply: "Your return request has been approved. The return label was sent to your email, and the case is closed unless you need anything else.",
+      note: "Return label issued. No further action unless customer replies."
+    },
+    {
+      subject: "Account access issue",
+      tag: "account",
+      missing: [],
+      message: "I cannot access my account after resetting my password.",
+      reply: "We confirmed the reset link worked after clearing the old session. Your account access is restored.",
+      note: "Resolved after session reset. Customer confirmed they could log in."
+    },
+    {
+      subject: "Address change before shipment",
+      tag: "address-change",
+      missing: ["Needs Confirmation"],
+      message: "I entered the wrong shipping address and need to update it before the order goes out.",
+      reply: "Please confirm the full corrected shipping address. We will check whether the order can still be updated before fulfillment.",
+      note: "Time sensitive. Do not promise the carrier can be changed until fulfillment confirms status."
+    },
+    {
+      subject: "Subscription renewal question",
+      tag: "subscription",
+      missing: [],
+      message: "I received a renewal notice and want to understand what is included before it renews.",
+      reply: "I can help clarify the renewal. The notice covers the upcoming service period; I am checking the account terms now.",
+      note: "Customer is not asking to cancel yet. Explain renewal plainly and offer options."
+    },
+    {
+      subject: "Order status check",
+      tag: "order-status",
+      missing: [],
+      message: "Can you tell me whether my order has shipped? I have not received tracking yet.",
+      reply: "I found the order and it is queued for fulfillment. We will send tracking as soon as the carrier scan is available.",
+      note: "Simple status request. No escalation unless tracking remains missing after next business day."
+    },
+    {
+      subject: "Exchange request for wrong item",
+      tag: "exchange",
+      missing: ["Needs Item Photo"],
+      message: "I ordered one item but received a different version. I would like to exchange it.",
+      reply: "Please send a photo of the item received and the packing slip so we can compare it with the order record.",
+      note: "Potential warehouse pick issue. Gather photo evidence before approving exchange."
+    }
+  ];
+
+  const cases = Array.from({ length: 100 }, (_, index) => {
+    const template = issueTemplates[index % issueTemplates.length];
+    const firstName = firstNames[index % firstNames.length];
+    const lastName = lastNames[(index * 7) % lastNames.length];
+    const customer = `${firstName} ${lastName}`;
+    const ticketNumber = 100001 + index;
+    const status = statuses[index % statuses.length];
+    const closed = status === "Closed";
+    const waiting = status === "Closed, Waiting On Response";
+    const ageHours = 4 + index * 3;
+    const messageCount = (index % 20) + 1;
+    return {
+      id: `NST-${ticketNumber}`,
+      subject: template.subject,
+      customer,
+      email: `${firstName}.${lastName}.${index + 1}@example.com`.toLowerCase(),
+      phone: `555-${String(1000 + index).slice(-4)}`,
+      source: sources[index % sources.length],
+      assignee: assignees[index % assignees.length],
+      status,
+      priority: priorities[index % priorities.length],
+      ageHours,
+      dueInHours: closed ? 0 : waiting ? 24 + (index % 18) : 6 + (index % 42),
+      tags: [template.tag, status === "Open" ? "active" : closed ? "closed" : "waiting"],
+      missing: waiting ? ["Waiting Customer"] : template.missing,
+      order: template.tag === "account" ? "" : `NS-${48200 + index}`,
+      customerMessage: template.message,
+      repReply: template.reply,
+      internalNote: template.note,
+      conversation: genericDemoConversation({
+        index,
+        messageCount,
+        customer,
+        assignee: assignees[index % assignees.length],
+        status,
+        ageHours,
+        customerMessage: template.message,
+        repReply: template.reply,
+        internalNote: template.note
+      })
+    };
+  });
+
+  return cases.map((item) => buildTicket({
+    model: "General Support",
+    family: "Customer Support",
+    purchaseSource: "Unknown",
+    purchaseSourceMode: "",
+    detectedPurchaseSource: "",
+    receipt: false,
+    warranty: "Not applicable",
+    previousTickets: [],
+    attachments: [],
+    issue: "General support request",
+    firstTest: "Confirm the customer goal, current blocker, and next needed artifact.",
+    confirms: "Customer has the next step or the case is resolved.",
+    ...item
+  }));
+}
+
+function genericDemoConversation(config) {
+  const messages = [];
+  const count = Math.max(1, Math.min(20, Number(config.messageCount) || 1));
+  const stepHours = Math.max(0.45, config.ageHours / Math.max(1, count));
+  const timestampFor = (position) => hoursAgo(Math.max(0.2, config.ageHours - position * stepHours));
+  const customerFollowUps = [
+    "Thanks for the quick reply. I can send the details you need.",
+    "I uploaded the requested information and wanted to confirm it came through.",
+    "Please let me know if anything else is needed from me.",
+    "I am checking in because this is holding up my next step.",
+    "That makes sense. I will wait for the update."
+  ];
+  const repFollowUps = [
+    "Thanks, I received it and am reviewing the case details now.",
+    "I added the update to the ticket and will keep the next step clear.",
+    "I am checking the order record and will follow up with the result.",
+    "The information helps. I am confirming the safest next action.",
+    "I appreciate the patience. I will update this thread as soon as it is confirmed."
+  ];
+  const notes = [
+    config.internalNote,
+    "Keep the response concise and avoid asking for details already provided.",
+    "Customer has a clear next-step expectation. Preserve that context in the reply.",
+    "No escalation needed yet; monitor for the next customer response.",
+    "If the customer replies again, summarize the known facts before asking a new question."
+  ];
+  let position = 0;
+
+  const push = (type, author, body) => {
+    if (messages.length >= count) return;
+    messages.push({
+      type,
+      author,
+      timestamp: timestampFor(position),
+      body
+    });
+    position += 1;
+  };
+
+  push("customer", config.customer, config.customerMessage);
+  if (count === 1) return messages;
+  push("timeline", "System", `Assigned to ${config.assignee}.`);
+  if (count === 2) return messages;
+  push("rep", config.assignee, config.repReply);
+  if (count === 3) return messages;
+  push("note", config.assignee, config.internalNote);
+
+  while (messages.length < count) {
+    const remaining = count - messages.length;
+    const cycle = messages.length % 5;
+    if (remaining === 1 && config.status !== "Open") {
+      push("timeline", config.assignee, `Status changed to ${config.status}.`);
+    } else if (cycle === 0) {
+      push("customer", config.customer, customerFollowUps[(config.index + messages.length) % customerFollowUps.length]);
+    } else if (cycle === 1) {
+      push("rep", config.assignee, repFollowUps[(config.index + messages.length) % repFollowUps.length]);
+    } else if (cycle === 2) {
+      push("note", config.assignee, notes[(config.index + messages.length) % notes.length]);
+    } else if (cycle === 3) {
+      push("timeline", "System", "Customer update recorded.");
+    } else {
+      push("rep", config.assignee, "I am keeping this ticket open while we confirm the remaining detail.");
+    }
+  }
+
+  return messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
 function reopenClosedWaitingTicketsWithCustomerReply() {
@@ -4231,13 +4695,14 @@ function reopenClosedWaitingTicketsWithCustomerReply() {
 }
 
 function resetTicketDataFromSeed() {
-  tickets = normalizeTickets(defaultTicketSeed());
+  tickets = normalizeTickets(demoTicketSeed());
   selectedTicketIds.clear();
   closingTicketIds.clear();
   pendingStatusChanges.clear();
   selectedTicketId = "";
   queueDebugState.recoveredTickets = true;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
+  if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
   lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 }
 
@@ -4373,19 +4838,38 @@ function highestExistingTicketNumber(sourceTickets = tickets) {
   return sourceTickets.reduce((highest, ticket) => Math.max(highest, ticketNumberFromId(ticket)), 0);
 }
 
+function safeDemoWorkspaceId(value) {
+  const id = String(value || "").trim().toLowerCase();
+  return demoWorkspaceIds.has(id) ? id : ISPRING_DEMO_ID;
+}
+
+function isGenericDemoWorkspace() {
+  return activeDemoWorkspaceId === GENERIC_DEMO_ID;
+}
+
+function scopedStorageKey(primaryKey) {
+  return isGenericDemoWorkspace() ? `${primaryKey}.generic` : primaryKey;
+}
+
+function setStoredValue(primaryKey, value) {
+  localStorage.setItem(scopedStorageKey(primaryKey), value);
+}
+
 function storedValue(primaryKey, legacyKey = "") {
-  const primary = localStorage.getItem(primaryKey);
-  if (primary !== null || !legacyKey) return primary;
+  const scopedKey = scopedStorageKey(primaryKey);
+  const primary = localStorage.getItem(scopedKey);
+  if (primary !== null || !legacyKey || isGenericDemoWorkspace()) return primary;
   const legacy = localStorage.getItem(legacyKey);
-  if (legacy !== null) localStorage.setItem(primaryKey, legacy);
+  if (legacy !== null) localStorage.setItem(scopedKey, legacy);
   return legacy;
 }
 
 function storedTicketState() {
-  if (localStorage.getItem(STORAGE_KEY) !== null) {
-    return { key: STORAGE_KEY, found: true };
+  const scopedTicketKey = scopedStorageKey(STORAGE_KEY);
+  if (localStorage.getItem(scopedTicketKey) !== null) {
+    return { key: scopedTicketKey, found: true };
   }
-  if (localStorage.getItem(LEGACY_STORAGE_KEY) !== null) {
+  if (!isGenericDemoWorkspace() && localStorage.getItem(LEGACY_STORAGE_KEY) !== null) {
     return { key: LEGACY_STORAGE_KEY, found: true };
   }
   return { key: "none", found: false };
@@ -4400,7 +4884,7 @@ function loadLastUsedTicketNumber(sourceTickets) {
 }
 
 function persistLastUsedTicketNumber(value) {
-  localStorage.setItem(TICKET_COUNTER_STORAGE_KEY, String(value));
+  setStoredValue(TICKET_COUNTER_STORAGE_KEY, String(value));
   scheduleBackendSync("lastTicketNumber", value);
 }
 
@@ -4414,10 +4898,19 @@ function nextTicketNumber() {
 }
 
 function loadTickets() {
+  if (isGenericDemoWorkspace() && localStorage.getItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY) !== GENERIC_DEMO_SEED_VERSION) {
+    const seeded = demoTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
+    localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    return seeded;
+  }
+
   const stored = storedValue(STORAGE_KEY, LEGACY_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceConfig.tickets));
-    return defaultTicketSeed();
+    const seeded = demoTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
+    if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    return seeded;
   }
 
   try {
@@ -4426,19 +4919,23 @@ function loadTickets() {
       const normalized = normalizeTickets(parsed);
       if (normalized.some(isOpen)) return normalized;
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceConfig.tickets));
-    return defaultTicketSeed();
+    const seeded = demoTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
+    if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    return seeded;
   } catch {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceConfig.tickets));
-    return defaultTicketSeed();
+    const seeded = demoTicketSeed();
+    setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
+    if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    return seeded;
   }
 }
 
 function loadUsers() {
   const stored = storedValue(USERS_STORAGE_KEY, LEGACY_USERS_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(seedUsers));
-    return JSON.parse(JSON.stringify(seedUsers));
+    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(demoUserSeed()));
+    return JSON.parse(JSON.stringify(demoUserSeed()));
   }
 
   try {
@@ -4446,15 +4943,15 @@ function loadUsers() {
     if (Array.isArray(parsed)) {
       const normalized = parsed.map((user) => ({ ...user, name: normalizeRepName(user.name) || user.name }));
       if (hasValidUserData(normalized)) {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(normalized));
+        setStoredValue(USERS_STORAGE_KEY, JSON.stringify(normalized));
         return normalized;
       }
     }
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(seedUsers));
-    return JSON.parse(JSON.stringify(seedUsers));
+    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(demoUserSeed()));
+    return JSON.parse(JSON.stringify(demoUserSeed()));
   } catch {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(seedUsers));
-    return JSON.parse(JSON.stringify(seedUsers));
+    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(demoUserSeed()));
+    return JSON.parse(JSON.stringify(demoUserSeed()));
   }
 }
 
@@ -4463,85 +4960,85 @@ function loadKnowledgeDocs() {
 
   const stored = storedValue(KNOWLEDGE_STORAGE_KEY, LEGACY_KNOWLEDGE_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(workspaceConfig.knowledgeVault));
-    return JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
+    setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(demoKnowledgeSeed()));
+    return JSON.parse(JSON.stringify(demoKnowledgeSeed()));
   }
 
   try {
     const parsed = JSON.parse(stored);
     const normalized = normalizeKnowledgeDocs(parsed);
     if (normalized) {
-      localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(normalized));
+      setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(normalized));
       return normalized;
     }
-    localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(workspaceConfig.knowledgeVault));
-    return JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
+    setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(demoKnowledgeSeed()));
+    return JSON.parse(JSON.stringify(demoKnowledgeSeed()));
   } catch {
-    localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(workspaceConfig.knowledgeVault));
-    return JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
+    setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(demoKnowledgeSeed()));
+    return JSON.parse(JSON.stringify(demoKnowledgeSeed()));
   }
 }
 
 function loadProductLinks() {
   const stored = storedValue(PRODUCT_LINK_STORAGE_KEY, LEGACY_PRODUCT_LINK_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(seedProductLinks));
-    return JSON.parse(JSON.stringify(seedProductLinks));
+    setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(demoProductLinkSeed()));
+    return JSON.parse(JSON.stringify(demoProductLinkSeed()));
   }
 
   try {
     const parsed = JSON.parse(stored);
     const normalized = normalizeProductLinks(parsed);
-    if (normalized?.length) {
-      localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(normalized));
+    if (normalized && (normalized.length || isGenericDemoWorkspace())) {
+      setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(normalized || []));
       return normalized;
     }
-    localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(seedProductLinks));
-    return JSON.parse(JSON.stringify(seedProductLinks));
+    setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(demoProductLinkSeed()));
+    return JSON.parse(JSON.stringify(demoProductLinkSeed()));
   } catch {
-    localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(seedProductLinks));
-    return JSON.parse(JSON.stringify(seedProductLinks));
+    setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(demoProductLinkSeed()));
+    return JSON.parse(JSON.stringify(demoProductLinkSeed()));
   }
 }
 
 function loadProfile() {
   const stored = storedValue(PROFILE_STORAGE_KEY, LEGACY_PROFILE_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(seedProfile));
-    return { ...seedProfile };
+    setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(demoProfileSeed()));
+    return { ...demoProfileSeed() };
   }
 
   try {
     const parsed = JSON.parse(stored);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(seedProfile));
-      return { ...seedProfile };
+      setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(demoProfileSeed()));
+      return { ...demoProfileSeed() };
     }
-    return normalizeProfile({ ...seedProfile, ...parsed });
+    return normalizeProfile({ ...demoProfileSeed(), ...parsed });
   } catch {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(seedProfile));
-    return { ...seedProfile };
+    setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(demoProfileSeed()));
+    return { ...demoProfileSeed() };
   }
 }
 
 function loadWorkspaceSettings() {
   const stored = storedValue(SETTINGS_STORAGE_KEY, LEGACY_SETTINGS_STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(seedWorkspaceSettings));
-    return { ...seedWorkspaceSettings };
+    setStoredValue(SETTINGS_STORAGE_KEY, JSON.stringify(demoWorkspaceSettingsSeed()));
+    return { ...demoWorkspaceSettingsSeed() };
   }
 
   try {
     const parsed = JSON.parse(stored);
     return normalizeWorkspaceSettings(parsed);
   } catch {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(seedWorkspaceSettings));
-    return { ...seedWorkspaceSettings };
+    setStoredValue(SETTINGS_STORAGE_KEY, JSON.stringify(demoWorkspaceSettingsSeed()));
+    return { ...demoWorkspaceSettingsSeed() };
   }
 }
 
 function normalizeWorkspaceSettings(source = {}) {
-  const defaults = seedWorkspaceSettings;
+  const defaults = demoWorkspaceSettingsSeed();
   const value = source && typeof source === "object" && !Array.isArray(source) ? source : {};
   const role = String(value.currentUserRole || "").trim().toLowerCase();
   const supportedStatuses = new Set(defaults.allowedStatuses);
@@ -4569,18 +5066,54 @@ function cleanWorkspaceSetting(value, fallback) {
 }
 
 function applyWorkspaceSettings() {
+  applyDemoWorkspaceMetadata();
   workspaceConfig.workspaceName = workspaceSettings.workspaceName;
   workspaceConfig.workspaceLabel = workspaceSettings.workspaceLabel;
   workspaceConfig.supportMailbox = workspaceSettings.supportEmail;
   if (workspaceSettings.allowedStatuses?.length) workspaceConfig.statuses = workspaceSettings.allowedStatuses;
 }
 
+function applyDemoWorkspaceMetadata() {
+  if (isGenericDemoWorkspace()) {
+    workspaceConfig.workspaceShortName = "Northstar";
+    workspaceConfig.workspaceLogoSrc = "./assets/repos-mark.png";
+    workspaceConfig.workspaceInitials = "NS";
+    workspaceConfig.supportMailboxLabel = "Northstar Support";
+    workspaceConfig.ticketPrefix = "NST";
+    workspaceConfig.tagline = "Support made clear.";
+    workspaceConfig.workspaceNote = "Northstar Support is the active public demo workspace in this RepOS session.";
+    workspaceConfig.sourceChannels = ["Email", "Phone", "Web Form", "Chat"];
+    workspaceConfig.orderPlaceholder = "Order number";
+    workspaceConfig.modelPlaceholder = "General support item";
+    productFamilies = ["Customer Support", "Orders", "Billing", "Delivery", "Returns", "Account"];
+    issueTypes = ["Shipment", "Billing", "Missing Part", "Setup Help", "Return", "Account Access"];
+    macroCategories = [];
+    macroLibrary = [];
+    return;
+  }
+
+  workspaceConfig.workspaceShortName = "iSpring";
+  workspaceConfig.workspaceLogoSrc = "./assets/ispring-logo.png";
+  workspaceConfig.workspaceInitials = "iS";
+  workspaceConfig.supportMailboxLabel = "iSpring Support";
+  workspaceConfig.ticketPrefix = "ISP";
+  workspaceConfig.tagline = "Ticketing made clear.";
+  workspaceConfig.workspaceNote = "iSpring Water Systems is the active workspace in this RepOS session.";
+  workspaceConfig.sourceChannels = ["Email", "Phone", "Web Form", "Amazon", "Home Depot"];
+  workspaceConfig.orderPlaceholder = "Amazon or iSpring order";
+  workspaceConfig.modelPlaceholder = "RCC7P-AK, RO500AK, WGB32B";
+  productFamilies = ispringProductFamilies.slice();
+  issueTypes = ispringIssueTypes.slice();
+  macroCategories = ispringMacroCategories.slice();
+  macroLibrary = ispringMacroLibrary.slice();
+}
+
 function normalizeProfile(sourceProfile) {
   const normalized = { ...sourceProfile };
   normalized.displayName = normalizeRepName(normalized.displayName) || currentDemoUserName();
-  normalized.firstName = normalized.firstName || "Robert";
-  normalized.lastName = "";
-  normalized.mySignature = normalized.mySignature || "Thanks,\nRobert";
+  normalized.firstName = normalized.firstName || "Morgan";
+  normalized.lastName = normalized.lastName || "Lee";
+  normalized.mySignature = normalized.mySignature || "Thanks,\nMorgan";
   return normalized;
 }
 
@@ -4588,7 +5121,7 @@ function loadNotifications(sourceTickets) {
   const stored = storedValue(NOTIFICATIONS_STORAGE_KEY, LEGACY_NOTIFICATIONS_STORAGE_KEY);
   if (!stored) {
     const seeded = seedNotifications(sourceTickets);
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
+    setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
     return seeded;
   }
 
@@ -4597,11 +5130,11 @@ function loadNotifications(sourceTickets) {
     const normalized = normalizeNotifications(parsed);
     if (normalized) return normalized;
     const seeded = seedNotifications(sourceTickets);
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
+    setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
     return seeded;
   } catch {
     const seeded = seedNotifications(sourceTickets);
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
+    setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(seeded));
     return seeded;
   }
 }
@@ -4623,6 +5156,8 @@ function normalizeNotifications(value) {
 }
 
 function seedNotifications(sourceTickets) {
+  if (isGenericDemoWorkspace()) return [];
+
   const ticketById = (id) => sourceTickets.find((ticket) => ticket.id === id || ticketDisplayId(ticket) === id) || sourceTickets.find(assignedToCurrentDemoUser) || sourceTickets[0];
   const examples = [
     { category: "assigned", ticket: ticketById("ISP-28501"), title: "Ticket assigned to you", description: "RCC7P-AK tank not filling was routed to your queue.", hours: 0.4, read: false },
@@ -4651,7 +5186,7 @@ function loadCustomerAccounts(sourceTickets) {
   const stored = storedValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, LEGACY_CUSTOMER_ACCOUNTS_STORAGE_KEY);
   if (!stored) {
     const derived = safeDeriveCustomerAccounts(sourceTickets);
-    localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
+    setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
     return derived;
   }
 
@@ -4660,12 +5195,12 @@ function loadCustomerAccounts(sourceTickets) {
     const normalized = normalizeCustomerAccounts(parsed);
     if (normalized) return normalized;
     const derived = safeDeriveCustomerAccounts(sourceTickets);
-    localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
+    setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
     return derived;
   } catch (error) {
     console.warn("Customer account data could not be loaded. Continuing with ticket rendering.", error);
     const derived = safeDeriveCustomerAccounts(sourceTickets);
-    localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
+    setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(derived));
     return derived;
   }
 }
@@ -4991,7 +5526,7 @@ function productLinkPlatformFromSource(source) {
 }
 
 function persistTickets(options = {}) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
   if (options.skipBackendSync) return;
   scheduleBackendSync("tickets", tickets);
 }
@@ -5001,36 +5536,44 @@ function persistTicketsLocalOnly() {
 }
 
 function persistUsers() {
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  setStoredValue(USERS_STORAGE_KEY, JSON.stringify(users));
   scheduleBackendSync("users", users);
 }
 
 function persistProfile() {
-  localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+  setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(profile));
   scheduleBackendSync("profile", profile);
 }
 
 function persistNotifications() {
-  localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+  setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
   scheduleBackendSync("notifications", notifications);
 }
 
 function persistKnowledgeDocs() {
-  localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(knowledgeDocs));
+  setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(knowledgeDocs));
   scheduleBackendSync("knowledgeDocs", knowledgeDocs);
 }
 
 function persistProductLinks() {
-  localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(productLinks));
+  setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(productLinks));
   scheduleBackendSync("productLinks", productLinks);
 }
 
 function persistCustomerAccounts() {
-  localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(customerAccounts));
+  setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(customerAccounts));
   scheduleBackendSync("customerAccounts", customerAccounts);
 }
 
 async function hydrateBackendState() {
+  if (isGenericDemoWorkspace()) {
+    sessionUser = genericSessionUser();
+    backendSyncReady = true;
+    backendSyncAvailable = false;
+    backendAssignmentUsers = [];
+    return;
+  }
+
   if (!window.fetch) {
     backendSyncReady = true;
     backendSyncAvailable = false;
@@ -5049,49 +5592,49 @@ async function hydrateBackendState() {
     if (hasValidTicketData(state.tickets)) {
       tickets = normalizeTickets(state.tickets);
       rebaselineOpenTicketSla(tickets);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+      setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
       hydrated = true;
     }
     if (Array.isArray(state.users)) {
       users = state.users.map((user) => ({ ...user, name: normalizeRepName(user.name) || user.name }));
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      setStoredValue(USERS_STORAGE_KEY, JSON.stringify(users));
       hydrated = true;
     }
     if (isBackendPlainObject(state.profile)) {
       profile = state.profile;
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(profile));
       hydrated = true;
     }
     if (isBackendPlainObject(state.settings)) {
       workspaceSettings = normalizeWorkspaceSettings(state.settings);
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(workspaceSettings));
+      setStoredValue(SETTINGS_STORAGE_KEY, JSON.stringify(workspaceSettings));
       applyWorkspaceSettings();
       applyWorkspaceBranding();
       hydrated = true;
     }
     if (Array.isArray(state.notifications)) {
       notifications = state.notifications;
-      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+      setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
       hydrated = true;
     }
     if (Array.isArray(state.knowledgeDocs)) {
       knowledgeDocs = state.knowledgeDocs;
-      localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(knowledgeDocs));
+      setStoredValue(KNOWLEDGE_STORAGE_KEY, JSON.stringify(knowledgeDocs));
       hydrated = true;
     }
     if (Array.isArray(state.productLinks)) {
       productLinks = state.productLinks;
-      localStorage.setItem(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(productLinks));
+      setStoredValue(PRODUCT_LINK_STORAGE_KEY, JSON.stringify(productLinks));
       hydrated = true;
     }
     if (isBackendPlainObject(state.customerAccounts)) {
       customerAccounts = normalizeCustomerAccounts(state.customerAccounts) || {};
-      localStorage.setItem(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(customerAccounts));
+      setStoredValue(CUSTOMER_ACCOUNTS_STORAGE_KEY, JSON.stringify(customerAccounts));
       hydrated = true;
     }
     if (Number.isInteger(state.lastTicketNumber)) {
       lastUsedTicketNumber = Math.max(state.lastTicketNumber, highestExistingTicketNumber(tickets), MIN_TICKET_NUMBER);
-      localStorage.setItem(TICKET_COUNTER_STORAGE_KEY, String(lastUsedTicketNumber));
+      setStoredValue(TICKET_COUNTER_STORAGE_KEY, String(lastUsedTicketNumber));
       hydrated = true;
     }
     if (applySessionUserToWorkspace()) {
@@ -5148,6 +5691,7 @@ function syncBackendSnapshot() {
 }
 
 function scheduleBackendSync(resource, value) {
+  if (isGenericDemoWorkspace()) return;
   if (!backendSyncReady || !window.fetch) return;
   backendSyncQueue.set(resource, value);
   window.clearTimeout(backendSyncTimer);
@@ -5280,7 +5824,7 @@ function replaceLocalTicketFromBackend(serverTicket, options = {}) {
   } else {
     tickets[index] = normalized;
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
   return normalized;
 }
 
@@ -5410,7 +5954,7 @@ function applyBackendMergeResponse(primaryTicketId, secondaryTicketIds, payload)
 
   selectedTicketIds.clear();
   selectedTicketId = primaryTicket.id;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+  setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
   render();
   showToast(`Merged ${secondaryTicketIds.length + 1} tickets into ${ticketDisplayId(primaryTicket)}.`);
   return true;
@@ -5750,7 +6294,7 @@ function sourceTicketForReceipt(receipt, candidates = tickets) {
 
 function reconcileReceiptUploadersForAccount(account, history = tickets) {
   if (!account || !Array.isArray(account.receipts)) return false;
-  const defaultUploaderNames = new Set([CURRENT_USER, currentDemoUserName(), profileDisplayName(), "Robert"].map(normalizeRepName).filter(Boolean));
+  const defaultUploaderNames = new Set([CURRENT_USER, currentDemoUserName(), profileDisplayName(), "Morgan"].map(normalizeRepName).filter(Boolean));
   let changed = false;
   account.receipts.forEach((receipt) => {
     const sourceTicket = sourceTicketForReceipt(receipt, history);
@@ -6108,13 +6652,14 @@ function setTicketPurchaseSource(ticket, source, actor = "System", manual = fals
   ticket.purchaseSource = nextSource;
   ticket.purchaseSourceMode = "manual";
   ticket.detectedPurchaseSource = "";
+  const actorName = actor || currentDemoUserName();
   const account = accountForTicket(ticket);
   if (isVerifiedPurchaseSource(nextSource)) account.purchaseSource = nextSource;
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
-    body: `Purchase source updated to ${nextSource} by ${actor}.`
+    body: `Purchase source updated to ${nextSource} by ${actorName}.`
   });
   persistCustomerAccounts();
   persistTickets();
@@ -6172,7 +6717,7 @@ function saveTicketReceiptToAccount(ticket) {
   }
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: uploadedBy,
     timestamp: new Date().toISOString(),
     body: added
       ? `Receipt saved to customer account by ${uploadedBy}.`
@@ -6212,7 +6757,7 @@ function saveUploadedReceiptToAccount(ticket, file) {
   const added = addReceiptToAccount(account, ticket, `Uploaded from Customer History for ${ticketDisplayId(ticket)} by ${uploadedBy}`, fileMeta);
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: uploadedBy,
     timestamp: uploadedAt,
     body: added
       ? `Receipt ${file.name} uploaded by ${uploadedBy} and saved to customer history.`
@@ -6239,13 +6784,14 @@ function registerTicketWarranty(ticket) {
   ticket.warranty = "Registered";
   ticket.warrantyReviewStatus = "";
   const receipt = receiptRecordFor(ticket);
-  const added = addWarrantyToAccount(account, ticket, `Registered from ${ticketDisplayId(ticket)} by ${profileDisplayName()}`, receipt);
+  const actorName = currentDemoUserName();
+  const added = addWarrantyToAccount(account, ticket, `Registered from ${ticketDisplayId(ticket)} by ${actorName}`, receipt);
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
     body: added
-      ? `Warranty registered by ${profileDisplayName()}${receipt?.fileName ? ` for receipt ${receipt.fileName}` : ""}.`
+      ? `Warranty registered by ${actorName}${receipt?.fileName ? ` for receipt ${receipt.fileName}` : ""}.`
       : `Warranty registration already on file.`
   });
   persistCustomerAccounts();
@@ -6264,17 +6810,18 @@ function registerWarrantyForReceipt(ticket, receiptId) {
   const account = accountForTicket(ticket);
   const receipt = account.receipts.find((record) => record.id === receiptId);
   if (!receipt) return;
-  const added = addWarrantyToAccount(account, ticket, `Registered from Customer History by ${profileDisplayName()}`, receipt);
+  const actorName = currentDemoUserName();
+  const added = addWarrantyToAccount(account, ticket, `Registered from Customer History by ${actorName}`, receipt);
   if (recordMatchesTicket(receipt, ticket)) {
     ticket.warranty = "Registered";
     ticket.warrantyReviewStatus = "";
   }
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
     body: added
-      ? `Warranty registered by ${profileDisplayName()} for receipt ${receipt.fileName}.`
+      ? `Warranty registered by ${actorName} for receipt ${receipt.fileName}.`
       : `Warranty registration already on file for receipt ${receipt.fileName}.`
   });
   persistCustomerAccounts();
@@ -6324,13 +6871,14 @@ function openUnregisterWarrantyConfirmModal(ticketId, warrantyId) {
   bindWorkflowCloseButtons();
   el.workflowConfirmModal.querySelector("#unregisterWarrantyConfirmForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    const removed = unregisterWarrantyRecord(account, warranty, ticket, `Registration removed by ${profileDisplayName()}`);
+    const actorName = currentDemoUserName();
+    const removed = unregisterWarrantyRecord(account, warranty, ticket, `Registration removed by ${actorName}`);
     if (removed) {
       ticket.conversation.push({
         type: "timeline",
-        author: "System",
+        author: actorName,
         timestamp: new Date().toISOString(),
-        body: `Warranty registration removed by ${profileDisplayName()}${warranty.receiptFileName ? ` for receipt ${warranty.receiptFileName}` : ""}.`
+        body: `Warranty registration removed by ${actorName}${warranty.receiptFileName ? ` for receipt ${warranty.receiptFileName}` : ""}.`
       });
     }
     persistCustomerAccounts();
@@ -6644,6 +7192,7 @@ function renderProfileModal() {
         ${currentUserIsAdmin() ? renderWorkspaceTab(workload) : ""}
       </div>
       <div class="profile-actions">
+        <button class="secondary-button" id="signOutButton" type="button">Sign out</button>
         <button class="secondary-button" id="cancelProfileButton" type="button">Close</button>
         <button class="primary-button" type="submit">Save settings</button>
       </div>
@@ -6652,6 +7201,7 @@ function renderProfileModal() {
 
   el.profileModal.querySelector("#closeProfileButton").addEventListener("click", closeProfileModal);
   el.profileModal.querySelector("#cancelProfileButton").addEventListener("click", closeProfileModal);
+  el.profileModal.querySelector("#signOutButton").addEventListener("click", handleSignOut);
   el.profileModal.querySelector("#profileForm").addEventListener("submit", handleProfileSave);
   el.profileModal.querySelectorAll("[data-profile-tab]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -7094,6 +7644,17 @@ function showToast(message) {
       el.toast.classList.remove("toast-leaving");
     }, cssDurationMs("--motion-normal", 200) + 40);
   }, 2200);
+}
+
+function copyTextToClipboard(text, successMessage) {
+  if (!navigator.clipboard?.writeText) {
+    showToast("Clipboard access is not available in this browser.");
+    return;
+  }
+
+  navigator.clipboard.writeText(text)
+    .then(() => showToast(successMessage))
+    .catch(() => showToast("Clipboard permission blocked the copy action."));
 }
 
 function rawStatusValue(value) {
@@ -11819,6 +12380,8 @@ function finishWorkspaceSidebarGlide() {
 
 function applyUiState() {
   const profileSettingsOpen = isProfileSettingsOpen();
+  document.body.classList.toggle("home-active", !workspaceEntered);
+  document.body.classList.toggle("workspace-active", workspaceEntered);
   document.body.classList.toggle("sidebar-layout-collapsed", sidebarLayoutCollapsed);
   document.body.classList.toggle("sidebar-collapsed", uiState.sidebarCollapsed);
   document.body.classList.toggle("sidebar-motioning", sidebarMotioning);
@@ -11850,6 +12413,7 @@ function applyUiState() {
   el.toggleContextButton?.setAttribute("aria-expanded", String(!uiState.contextCollapsed));
   el.adminNavButton?.classList.toggle("active", !profileSettingsOpen && uiState.activeScreen === "admin");
   el.settingsNavButton.classList.toggle("active", profileSettingsOpen);
+  el.homeNavButton?.classList.toggle("active", !workspaceEntered);
   el.knowledgeVaultNavButton?.classList.toggle("active", uiState.activeScreen === "knowledge");
   el.dashboardNavButton.classList.toggle("active", !profileSettingsOpen && uiState.activeScreen === "dashboard");
   el.ticketsNavButton?.classList.toggle("active", !profileSettingsOpen && (uiState.activeScreen === "queue" || uiState.activeScreen === "detail"));
@@ -11932,16 +12496,18 @@ function approvedKnowledgeSources() {
 }
 
 function resetDemoData() {
-  const confirmed = window.confirm("Restore seeded iSpring demo data? This overwrites tickets, assignment pool, profile preferences, Knowledge Vault metadata, product links, customer accounts, and notifications saved in this local demo state. Uploaded files are not deleted.");
+  const demoName = isGenericDemoWorkspace() ? "Northstar Support" : "iSpring";
+  const confirmed = window.confirm(`Restore seeded ${demoName} demo data? This overwrites tickets, assignment pool, profile preferences, Knowledge Vault metadata, product links, customer accounts, and notifications saved in this local demo state. Uploaded files are not deleted.`);
   if (!confirmed) return false;
-  tickets = normalizeTickets(JSON.parse(JSON.stringify(workspaceConfig.tickets)));
+  tickets = normalizeTickets(demoTicketSeed());
   lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
-  profile = JSON.parse(JSON.stringify(seedProfile));
+  profile = JSON.parse(JSON.stringify(demoProfileSeed()));
   customerAccounts = deriveCustomerAccounts(tickets);
-  users = JSON.parse(JSON.stringify(seedUsers));
-  knowledgeDocs = JSON.parse(JSON.stringify(workspaceConfig.knowledgeVault));
-  productLinks = JSON.parse(JSON.stringify(seedProductLinks));
+  users = JSON.parse(JSON.stringify(demoUserSeed()));
+  knowledgeDocs = JSON.parse(JSON.stringify(demoKnowledgeSeed()));
+  productLinks = JSON.parse(JSON.stringify(demoProductLinkSeed()));
   notifications = seedNotifications(tickets);
+  if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
   activeView = "open";
   uiState.activeScreen = "queue";
   uiState.activeQuickControl = "open";
@@ -12049,6 +12615,7 @@ function handleComposerAttachmentSelection(event) {
   if (!ticket) return;
   const fileNames = files.map((file) => file.name).join(", ");
   const uploadedAt = new Date().toISOString();
+  const actorName = currentDemoUserName();
   const newAttachments = files.map((file) => ({
     type: composerAttachmentType(file),
     file: file.name,
@@ -12057,15 +12624,15 @@ function handleComposerAttachmentSelection(event) {
     sizeBytes: file.size || 0,
     uploaded: dateTimeLabel(uploadedAt),
     uploadedAt,
-    uploadedBy: profileDisplayName(),
+    uploadedBy: actorName,
     status: "Attached by rep"
   }));
   ticket.attachments = [...(ticket.attachments || []), ...newAttachments];
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: uploadedAt,
-    body: `${profileDisplayName()} attached ${fileNames}.`
+    body: `${actorName} attached ${fileNames}.`
   });
   const proofAttachments = newAttachments.filter(attachmentLooksLikeOrderProof);
   if (proofAttachments.length) {
@@ -12277,8 +12844,7 @@ function copyMacro(macroId) {
   const ticket = selectedTicket();
   const macro = macroLibrary.find((item) => item.id === macroId);
   if (!macro) return;
-  navigator.clipboard?.writeText(applyVariables(macro.body, ticket));
-  showToast("Macro copied.");
+  copyTextToClipboard(applyVariables(macro.body, ticket), "Macro copied.");
 }
 
 function insertProductLink(ticket) {
@@ -12306,15 +12872,13 @@ function insertProductLink(ticket) {
 function copyProductLink(ticket) {
   const link = suggestedProductLink(ticket);
   if (!link) return;
-  navigator.clipboard?.writeText(link.url);
-  showToast("Product link copied.");
+  copyTextToClipboard(link.url, "Product link copied.");
 }
 
 function copyReviewLink(linkId) {
   const link = productLinks.find((item) => item.id === linkId && item.active);
   if (!link) return;
-  navigator.clipboard?.writeText(link.url);
-  showToast(`${link.label} copied.`);
+  copyTextToClipboard(link.url, `${link.label} copied.`);
 }
 
 function escalateTicket(ticketId) {
@@ -12325,11 +12889,12 @@ function escalateTicket(ticketId) {
     return;
   }
   ticket.escalated = true;
+  const actorName = currentDemoUserName();
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
-    body: `${profileDisplayName()} escalated this ticket.`
+    body: `${actorName} escalated this ticket.`
   });
   persistTickets();
   render();
@@ -12338,7 +12903,7 @@ function escalateTicket(ticketId) {
 
 function addTimeline(body) {
   const ticket = selectedTicket();
-  ticket.conversation.push({ type: "timeline", author: "System", timestamp: new Date().toISOString(), body });
+  ticket.conversation.push({ type: "timeline", author: currentDemoUserName(), timestamp: new Date().toISOString(), body });
   persistTickets();
   renderConversation(ticket);
 }
@@ -12701,7 +13266,7 @@ function reassignTicket(ticketId, nextAssignee, timelineBody, shouldRender = tru
   ticket.assignee = nextAssignee;
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
     body: timelineBody || `${actorName} reassigned this ticket from ${previousAssignee} to ${nextAssignee}.`
   });
@@ -12736,7 +13301,7 @@ function bulkReassignTickets(ticketIds, nextAssignee, internalNote = "") {
     ticket.assignee = nextAssignee;
     ticket.conversation.push({
       type: "timeline",
-      author: "System",
+      author: actorName,
       timestamp: new Date().toISOString(),
       body: previousAssignee === nextAssignee
         ? `${actorName} bulk confirmed assignment to ${nextAssignee}.`
@@ -12836,7 +13401,7 @@ function mergeSelectedTicketsLocally(ticketIds, primaryTicketId, internalNote = 
   // Record the merge on the primary ticket and flag it for the queue badge.
   primaryTicket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: mergedAt,
     body: `${actorName} merged ${relatedLabels.join(", ")} into this ticket.`
   });
@@ -12848,7 +13413,7 @@ function mergeSelectedTicketsLocally(ticketIds, primaryTicketId, internalNote = 
   relatedTickets.forEach((ticket) => {
     ticket.conversation.push({
       type: "timeline",
-      author: "System",
+      author: actorName,
       timestamp: mergedAt,
       body: `${actorName} merged this ticket into ${ticketDisplayId(primaryTicket)}.`
     });
@@ -12870,8 +13435,10 @@ function copyQueueTicketLink() {
     return;
   }
   const urls = linkTickets.map((ticket) => `${location.origin}${location.pathname}#${ticket.id}`);
-  navigator.clipboard?.writeText(urls.join("\n")).catch(() => {});
-  showToast(linkTickets.length === 1 ? `Copied link for ${ticketDisplayId(linkTickets[0])}.` : `Copied ${linkTickets.length} ticket links.`);
+  copyTextToClipboard(
+    urls.join("\n"),
+    linkTickets.length === 1 ? `Copied link for ${ticketDisplayId(linkTickets[0])}.` : `Copied ${linkTickets.length} ticket links.`
+  );
 }
 
 function refreshQueueFromToolbar() {
@@ -13060,8 +13627,7 @@ function openMockReceiptFile(details) {
 }
 
 function copyReceiptInfo(details) {
-  navigator.clipboard?.writeText(receiptInfoText(details)).catch(() => {});
-  showToast("Receipt info copied.");
+  copyTextToClipboard(receiptInfoText(details), "Receipt info copied.");
 }
 
 function openReceiptPreviewModal(ticketId, receiptIdOrFileName) {
@@ -13165,8 +13731,7 @@ function openAttachmentPreview(ticketId, fileName) {
 function copyTicketLink() {
   const ticket = selectedTicket();
   const url = `${location.origin}${location.pathname}#${ticket.id}`;
-  navigator.clipboard?.writeText(url).catch(() => {});
-  showToast(`Copied link for ${ticketDisplayId(ticket)}.`);
+  copyTextToClipboard(url, `Copied link for ${ticketDisplayId(ticket)}.`);
 }
 
 function openCustomerHistory(ticketId, _section = "", editMode = false) {
@@ -13763,11 +14328,12 @@ function applyReceiptToCurrentTicket(ticketId, receiptId) {
     ticket.warranty = "Registered";
     ticket.warrantyReviewStatus = "";
   }
+  const actorName = currentDemoUserName();
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
-    body: `${profileDisplayName()} applied receipt ${receipt.fileName || "metadata"} to this ticket.`
+    body: `${actorName} applied receipt ${receipt.fileName || "metadata"} to this ticket.`
   });
   persistCustomerAccounts();
   persistTickets();
@@ -13788,11 +14354,12 @@ function applyWarrantyToCurrentTicket(ticketId, warrantyId) {
   ticket.purchaseSourceMode = isVerifiedPurchaseSource(warranty.source) ? "manual" : ticket.purchaseSourceMode || "";
   ticket.warranty = isRegisteredWarrantyRecord(warranty) ? "Registered" : "Not registered";
   ticket.warrantyReviewStatus = "";
+  const actorName = currentDemoUserName();
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: actorName,
     timestamp: new Date().toISOString(),
-    body: `${profileDisplayName()} applied warranty record ${warranty.receiptFileName || warranty.id} to this ticket.`
+    body: `${actorName} applied warranty record ${warranty.receiptFileName || warranty.id} to this ticket.`
   });
   persistCustomerAccounts();
   persistTickets();
@@ -13933,7 +14500,7 @@ function replacementPartFor(ticket) {
 }
 
 function macroRepName() {
-  return profileDisplayName().split(" ")[0] || profile.firstName || "Robert";
+  return profileDisplayName().split(" ")[0] || profile.firstName || "Morgan";
 }
 
 function reviewLinkFor(ticket) {
@@ -14185,7 +14752,7 @@ function handleCreateTicket(event) {
   ticket.conversation = [
     {
       type: "timeline",
-      author: "System",
+      author: createdBy,
       timestamp: createdAt,
       body: `${createdBy} created this ticket manually.`
     },
@@ -14204,14 +14771,14 @@ function handleCreateTicket(event) {
     },
     {
       type: "timeline",
-      author: "System",
+      author: createdBy,
       timestamp: createdAt,
       body: "Customer notification email generated."
     }
   ];
   ticket.conversation.push({
     type: "timeline",
-    author: "System",
+    author: assignment.source === "manual-create" ? createdBy : "System",
     timestamp: createdAt,
     body: assignment.note
   });

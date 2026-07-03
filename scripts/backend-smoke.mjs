@@ -45,7 +45,7 @@ try {
 
   const settingsRead = await fetch(`http://127.0.0.1:${port}/api/settings`);
   const settingsPayload = await settingsRead.json();
-  if (!settingsRead.ok || settingsPayload.settings?.workspaceName !== "iSpring Water Systems" || settingsPayload.settings?.currentUserName !== "CS14 Robert") {
+  if (!settingsRead.ok || settingsPayload.settings?.workspaceName !== "iSpring Water Systems" || settingsPayload.settings?.currentUserName !== "Morgan Lee") {
     throw new Error("Settings read did not return the expected iSpring workspace defaults.");
   }
 
@@ -246,7 +246,7 @@ try {
         id: "SMOKE-CUSTOMEREMAIL",
         subject: "Smoke customerEmail linking",
         status: "Open",
-        assignee: "CS14 Robert",
+        assignee: "Morgan Lee",
         customerEmail: "Smoke@Example.com",
         dueAt: dueSoonAt
       },
@@ -261,7 +261,7 @@ try {
         id: "SMOKE-PENDING",
         subject: "Smoke pending queue",
         status: "Closed, Waiting On Response",
-        assignee: "CS14 Robert",
+        assignee: "Morgan Lee",
         customerEmail: "pending@example.com",
         dueAt: normalDueAt
       }
@@ -497,7 +497,7 @@ try {
   const repLogin = await fetch(`http://127.0.0.1:${port}/api/auth/dev-login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "robbybradley@gmail.com" })
+    body: JSON.stringify({ email: "morgan.lee@demo.repos" })
   });
   if (!repLogin.ok) throw new Error(`Rep dev login failed: ${repLogin.status}`);
   const repCookie = repLogin.headers.get("set-cookie")?.split(";")[0];
@@ -579,7 +579,6 @@ async function waitForHealth(targetPort) {
 async function runStrictAuthSmoke() {
   const strictPort = 4200;
   const strictDataDir = await mkdtemp(join(tmpdir(), "tessario-strict-smoke-"));
-  const strictSessionToken = "strict-smoke-session";
   await writeFile(join(strictDataDir, "state.json"), `${JSON.stringify({
     version: 1,
     settings: {
@@ -595,33 +594,32 @@ async function runStrictAuthSmoke() {
       overdueGraceHours: 0,
       allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
     },
-    authUsers: [{
-      id: "cs14-robert",
-      email: "robbybradley@gmail.com",
-      displayName: "CS14 Robert",
-      repName: "CS14 Robert",
-      role: "admin",
-      active: true
-    }],
-    authSessions: [{
-      token: strictSessionToken,
-      userId: "cs14-robert",
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
-    }]
+    authUsers: [],
+    authSessions: []
   }, null, 2)}\n`, "utf8");
   const strictServer = spawn(process.execPath, ["server.mjs"], {
     env: {
       ...process.env,
       PORT: String(strictPort),
       TESSARIO_AUTH_MODE: "strict",
-      TESSARIO_DATA_FILE: join(strictDataDir, "state.json")
+      TESSARIO_DISABLE_DEV_LOGIN: "1",
+      TESSARIO_DATA_FILE: join(strictDataDir, "state.json"),
+      REPOS_ADMIN_EMAIL: "strict-admin@example.com",
+      REPOS_ADMIN_PASSWORD: "correct-horse-battery-staple",
+      REPOS_ADMIN_NAME: "Strict Admin",
+      REPOS_ADMIN_ROLE: "owner"
     },
     stdio: "pipe"
   });
 
   try {
     await waitForHealth(strictPort);
+    const health = await fetch(`http://127.0.0.1:${strictPort}/api/health`);
+    const healthPayload = await health.json();
+    if (!health.ok || healthPayload.auth?.mode !== "strict" || healthPayload.auth?.automaticSession || healthPayload.auth?.devLogin || !healthPayload.auth?.productionAdminConfigured) {
+      throw new Error(`Strict health auth metadata was not locked down as expected: ${JSON.stringify(healthPayload.auth)}`);
+    }
+
     const unauthenticated = await fetch(`http://127.0.0.1:${strictPort}/api/tickets`);
     if (unauthenticated.status !== 401) {
       throw new Error(`Strict mode should require auth, got ${unauthenticated.status}.`);
@@ -654,10 +652,29 @@ async function runStrictAuthSmoke() {
     const login = await fetch(`http://127.0.0.1:${strictPort}/api/auth/dev-login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "robbybradley@gmail.com" })
+      body: JSON.stringify({ email: "strict-admin@example.com" })
     });
     if (login.status !== 403) throw new Error(`Strict dev login should be disabled, got ${login.status}.`);
-    const cookie = `tessario_session=${strictSessionToken}`;
+
+    const invalidLogin = await fetch(`http://127.0.0.1:${strictPort}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "strict-admin@example.com", password: "wrong-password" })
+    });
+    if (invalidLogin.status !== 401) {
+      throw new Error(`Strict invalid production login should fail, got ${invalidLogin.status}.`);
+    }
+
+    const validLogin = await fetch(`http://127.0.0.1:${strictPort}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "strict-admin@example.com", password: "correct-horse-battery-staple" })
+    });
+    const validLoginPayload = await validLogin.json();
+    const cookie = validLogin.headers.get("set-cookie")?.split(";")[0];
+    if (!validLogin.ok || validLoginPayload.user?.role !== "owner" || !cookie) {
+      throw new Error(`Strict valid production login failed: ${validLogin.status} ${JSON.stringify(validLoginPayload)}`);
+    }
 
     const authenticated = await fetch(`http://127.0.0.1:${strictPort}/api/tickets`, {
       headers: { Cookie: cookie }
@@ -680,6 +697,13 @@ async function runStrictAuthSmoke() {
       throw new Error(`Strict authenticated queue views failed: ${authenticatedQueueViews.status}`);
     }
 
+    const authenticatedAdminUsers = await fetch(`http://127.0.0.1:${strictPort}/api/auth/users`, {
+      headers: { Cookie: cookie }
+    });
+    if (!authenticatedAdminUsers.ok) {
+      throw new Error(`Strict authenticated admin users failed: ${authenticatedAdminUsers.status}`);
+    }
+
     const authenticatedBootstrap = await fetch(`http://127.0.0.1:${strictPort}/api/bootstrap`, {
       headers: { Cookie: cookie }
     });
@@ -687,12 +711,25 @@ async function runStrictAuthSmoke() {
     if (
       !authenticatedBootstrap.ok ||
       !authenticatedBootstrapPayload.session?.authenticated ||
-      authenticatedBootstrapPayload.session?.user?.role !== "admin" ||
+      authenticatedBootstrapPayload.session?.user?.role !== "owner" ||
       authenticatedBootstrapPayload.state?.settings?.workspaceName !== "iSpring Water Systems" ||
       !Object.hasOwn(authenticatedBootstrapPayload.state || {}, "knowledgeDocs") ||
       !Object.hasOwn(authenticatedBootstrapPayload.state || {}, "fileRecords")
     ) {
       throw new Error("Strict authenticated bootstrap did not return the expected admin workspace state.");
+    }
+
+    const logout = await fetch(`http://127.0.0.1:${strictPort}/api/auth/logout`, {
+      method: "POST",
+      headers: { Cookie: cookie }
+    });
+    if (!logout.ok) throw new Error(`Strict logout failed: ${logout.status}`);
+
+    const afterLogout = await fetch(`http://127.0.0.1:${strictPort}/api/tickets`, {
+      headers: { Cookie: cookie }
+    });
+    if (afterLogout.status !== 401) {
+      throw new Error(`Strict logged-out session should lose access, got ${afterLogout.status}.`);
     }
   } finally {
     strictServer.kill();

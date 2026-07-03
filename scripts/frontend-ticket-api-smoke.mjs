@@ -45,6 +45,12 @@ function createHarness(fetchResponses = []) {
         return storage.get(key) || null;
       }
     },
+    setStoredValue(key, value) {
+      storage.set(key, value);
+    },
+    isGenericDemoWorkspace() {
+      return false;
+    },
     window: {
       fetch: true,
       clearTimeout() {},

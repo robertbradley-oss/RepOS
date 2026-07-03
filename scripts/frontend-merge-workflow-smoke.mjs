@@ -263,6 +263,9 @@ function createContext(options = {}) {
         context.localStorage.values[key] = value;
       }
     },
+    setStoredValue(key, value) {
+      context.localStorage.setItem(key, value);
+    },
     async fetch(url, init = {}) {
       context.fetchCalls.push({ url, init });
       if (options.fetchError) throw options.fetchError;

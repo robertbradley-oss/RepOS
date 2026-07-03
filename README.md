@@ -64,9 +64,26 @@ Auth mode is controlled by `TESSARIO_AUTH_MODE`:
 
 - `development` keeps local convenience by auto-authenticating the seeded admin user.
 - `demo` requires an explicit demo sign-in and does not silently create an admin session.
-- `strict` only accepts existing sessions and disables dev/demo login.
+- `strict` disables dev/demo login, accepts valid existing sessions, and can issue sessions through `/api/auth/login` for configured users.
 
-When `NODE_ENV=production` and no auth mode is set, RepOS defaults to `strict`. The `/api/health` and `/api/session` responses include the active auth mode and whether automatic session or dev/demo login behavior is enabled.
+When `NODE_ENV=production` and no auth mode is set, RepOS defaults to `strict`. The `/api/health` and `/api/session` responses include the active auth mode and whether automatic session, dev/demo login, password login, and production admin configuration are enabled.
+
+Strict production login uses existing persisted auth users with `passwordHash` or an environment-provisioned initial admin:
+
+```bash
+TESSARIO_AUTH_MODE=strict
+TESSARIO_DISABLE_DEV_LOGIN=1
+TESSARIO_SESSION_DAYS=7
+REPOS_SECURE_COOKIES=1
+REPOS_ADMIN_EMAIL=admin@example.com
+REPOS_ADMIN_NAME="RepOS Admin"
+REPOS_ADMIN_ROLE=admin
+REPOS_ADMIN_PASSWORD="use-a-long-private-password"
+```
+
+`REPOS_ADMIN_PASSWORD` is hashed with Node's built-in `scrypt` before it is persisted. For stricter secret handling, provision `REPOS_ADMIN_PASSWORD_HASH` instead and omit the plain password from the runtime environment. Do not use `development`, `demo`, or the default demo password for a real production workspace.
+
+For Railway, set `NODE_ENV=production`, `TESSARIO_AUTH_MODE=strict`, `TESSARIO_DISABLE_DEV_LOGIN=1`, `REPOS_SECURE_COOKIES=1`, and the `REPOS_ADMIN_*` variables in Railway environment variables. Keep `TESSARIO_DATA_FILE` and `TESSARIO_UPLOAD_DIR` pointed at durable storage if the deployment should retain JSON state and uploads across restarts.
 
 JSON-file persistence remains the default and writes through a queued temp-file replace with a `.bak` backup. Postgres is supported through `DATABASE_URL`, but it should not become the default until production auth, migrations, backup/restore operations, and managed file storage are completed.
 

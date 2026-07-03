@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-06-29 (Homepage hero wave + At a Glance chart)
+
+- Replaced the flat CSS dotted hero wave with a canvas-rendered 3D dot mesh: a perspective grid of dots displaced by a rolling sine surface, brightening on crests and fading at the edges, with a subtle drift animation and a reduced-motion static fallback.
+- Rebuilt the "At a Glance" mini chart on canvas with a glowing area+line, per-day point markers, y/x axis labels, a highlighted day with a dashed guide line and a value badge, and a left-to-right draw-in animation (reduced-motion safe).
+
+## 2026-06-27 (RepOS Home entry screen)
+
+- Added a RepOS Home screen so opening the app lands on a product-level entry page instead of going directly into the iSpring workspace.
+- Added a compact sign-in/continue form, a visible iSpring Water Systems workspace card, and a sidebar Home control for returning to the RepOS entry point.
+- Wired the home flow to the existing local dev-login/session path when available, while preserving the browser-local workspace fallback.
+- Refined the home screen into a light, white, professional RepOS product entry with restrained brand treatment, feature summaries, and a clean workspace access card.
+
+## 2026-06-27 (clipboard feedback)
+
+- Added a shared clipboard helper so copy actions only show success after the browser accepts the clipboard write.
+- Updated macro copy, product/review links, ticket links, queue bulk ticket links, and receipt info copy actions to show clear feedback when clipboard access is unavailable or permission is blocked.
+- Verified `app.js` syntax plus backend, backend multi-user, frontend admin-role, frontend merge-workflow, frontend multi-user, and frontend ticket API smoke checks.
+
 ## 2026-05-12 (Profile Settings modal tabs)
 
 - Fixed Profile Settings so the modal keeps one stable Account-sized width/height across Account, Preferences, Signature, Notifications, Assist, and Workspace tabs.

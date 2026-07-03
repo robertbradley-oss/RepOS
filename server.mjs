@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { buildAnalyticsSummary } from "./lib/activity-analytics.mjs";
 import { createJsonStore, normalizeEmail } from "./lib/json-store.mjs";
 import {
@@ -29,6 +29,36 @@ const sessionDays = Number(process.env.TESSARIO_SESSION_DAYS || 7);
 const automaticSessionAuthEnabled = authMode === "development";
 const devLoginEnabled = process.env.TESSARIO_DISABLE_DEV_LOGIN !== "1" && ["development", "demo"].includes(authMode);
 const adminRoles = ["admin", "owner"];
+const secureSessionCookies = process.env.REPOS_SECURE_COOKIES === "1" ||
+  (process.env.REPOS_SECURE_COOKIES !== "0" && (process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL)));
+const demoPassword = authMode === "strict" ? "" : process.env.REPOS_DEMO_PASSWORD || "repos-demo";
+const productionAdminEmail = normalizeEmail(process.env.REPOS_ADMIN_EMAIL || process.env.TESSARIO_ADMIN_EMAIL || "");
+const productionAdminPassword = process.env.REPOS_ADMIN_PASSWORD || process.env.TESSARIO_ADMIN_PASSWORD || "";
+const productionAdminPasswordHash = process.env.REPOS_ADMIN_PASSWORD_HASH || process.env.TESSARIO_ADMIN_PASSWORD_HASH || "";
+const productionAdminRole = normalizeAuthRole(process.env.REPOS_ADMIN_ROLE || process.env.TESSARIO_ADMIN_ROLE || "admin", "admin");
+const productionAdminConfigured = Boolean(productionAdminEmail && (productionAdminPassword || productionAdminPasswordHash));
+
+// Password hashing: scrypt with a per-user random salt, stored as
+// "scrypt$<saltHex>$<hashHex>". Verification is constant-time.
+function hashPassword(password) {
+  const salt = randomBytes(16);
+  const derived = scryptSync(String(password), salt, 64);
+  return `scrypt$${salt.toString("hex")}$${derived.toString("hex")}`;
+}
+
+function verifyPassword(password, stored) {
+  if (typeof stored !== "string") return false;
+  const [scheme, saltHex, hashHex] = stored.split("$");
+  if (scheme !== "scrypt" || !saltHex || !hashHex) return false;
+  const expected = Buffer.from(hashHex, "hex");
+  let derived;
+  try {
+    derived = scryptSync(String(password), Buffer.from(saltHex, "hex"), expected.length);
+  } catch {
+    return false;
+  }
+  return expected.length === derived.length && timingSafeEqual(expected, derived);
+}
 const allowedUploadTypes = new Map([
   [".pdf", "application/pdf"],
   [".png", "image/png"],
@@ -154,6 +184,30 @@ async function handleApi(request, response, url) {
     const input = await readJsonBody(request);
     const email = isPlainObject(input) && input.email ? String(input.email) : defaultAuthUser().email;
     const user = await store.findAuthUserByEmail(email) || await store.ensureAuthUser(defaultAuthUser());
+    const session = await createSessionForUser(response, user);
+    sendJson(response, 200, { authenticated: true, user: publicUser(user), expiresAt: session.expiresAt });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/auth/login") {
+    const input = await readJsonBody(request);
+    const email = normalizeEmail(isPlainObject(input) ? input.email : "");
+    const password = isPlainObject(input) && input.password != null ? String(input.password) : "";
+    if (!email || !password) {
+      sendJson(response, 400, { error: "missing_credentials" });
+      return;
+    }
+    const fallback = defaultAuthUser();
+    let user = (await store.listAuthUsers()).find((item) => normalizeEmail(item.email) === email) || null;
+    if (!user && authMode !== "strict" && demoPassword && email === normalizeEmail(fallback.email)) {
+      user = await store.ensureAuthUser({ ...fallback, passwordHash: hashPassword(demoPassword) });
+    } else if (user && authMode !== "strict" && demoPassword && !user.passwordHash && normalizeEmail(user.email) === normalizeEmail(fallback.email)) {
+      user = await store.ensureAuthUser({ ...user, passwordHash: hashPassword(demoPassword) });
+    }
+    if (!user || user.active === false || !verifyPassword(password, user.passwordHash)) {
+      sendJson(response, 401, { error: "invalid_credentials" });
+      return;
+    }
     const session = await createSessionForUser(response, user);
     sendJson(response, 200, { authenticated: true, user: publicUser(user), expiresAt: session.expiresAt });
     return;
@@ -685,6 +739,8 @@ function authRuntimeInfo() {
     mode: authMode,
     automaticSession: automaticSessionAuthEnabled,
     devLogin: devLoginEnabled,
+    passwordLogin: true,
+    productionAdminConfigured,
     production: process.env.NODE_ENV === "production"
   };
 }
@@ -994,9 +1050,9 @@ function defaultWorkspaceSettings() {
     workspaceName: "iSpring Water Systems",
     workspaceLabel: "Workspace: iSpring Water Systems",
     supportEmail: "support@ispringfilters.com",
-    currentUserName: "CS14 Robert",
+    currentUserName: "Morgan Lee",
     currentUserRole: "admin",
-    defaultAssignee: "CS14 Robert",
+    defaultAssignee: "Morgan Lee",
     timezone: "America/New_York",
     demoMode: true,
     defaultSlaHours: 48,
@@ -1010,7 +1066,43 @@ async function workspaceSettings() {
 }
 
 async function ensureConfiguredAuthUser(settings = null) {
-  return store.ensureAuthUser(defaultAuthUser(settings || await workspaceSettings()));
+  const currentSettings = settings || await workspaceSettings();
+  const defaultUser = await store.ensureAuthUser(defaultAuthUser(currentSettings));
+  const productionUser = await configuredProductionAuthUser(currentSettings);
+  if (productionUser) await store.ensureAuthUser(productionUser);
+  return defaultUser;
+}
+
+async function configuredProductionAuthUser(settings = null) {
+  if (!productionAdminConfigured) return null;
+  const existing = await store.findAuthUserByEmail(productionAdminEmail);
+  const passwordHash = productionAdminPasswordHash ||
+    (existing?.passwordHash && verifyPassword(productionAdminPassword, existing.passwordHash)
+      ? existing.passwordHash
+      : hashPassword(productionAdminPassword));
+  const displayName = cleanSettingText(
+    process.env.REPOS_ADMIN_NAME || process.env.TESSARIO_ADMIN_NAME || existing?.displayName || existing?.repName,
+    "RepOS Admin",
+    80
+  );
+  return {
+    ...(existing || {}),
+    id: existing?.id || process.env.REPOS_ADMIN_ID || authUserIdFromEmail(productionAdminEmail),
+    email: productionAdminEmail,
+    displayName,
+    repName: displayName,
+    role: productionAdminRole,
+    active: true,
+    passwordHash
+  };
+}
+
+function authUserIdFromEmail(email) {
+  return String(email || "repos-admin")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "repos-admin";
 }
 
 function ticketResultWithSla(result, settings) {
@@ -1109,6 +1201,10 @@ function normalizeSettingsEmail(value, fallback) {
 }
 
 function normalizeSettingsRole(value, fallback) {
+  return normalizeAuthRole(value, fallback);
+}
+
+function normalizeAuthRole(value, fallback) {
   const role = String(value || "").trim().toLowerCase();
   return ["admin", "manager", "rep", "owner"].includes(role) ? role : fallback;
 }
@@ -1278,8 +1374,8 @@ async function createSessionForUser(response, user) {
 function defaultAuthUser(settings = defaultWorkspaceSettings()) {
   const currentSettings = normalizeWorkspaceSettings(settings);
   return {
-    id: "cs14-robert",
-    email: "robbybradley@gmail.com",
+    id: "morgan-lee",
+    email: "morgan.lee@demo.repos",
     displayName: currentSettings.currentUserName,
     repName: currentSettings.currentUserName,
     role: currentSettings.currentUserRole,
@@ -1316,11 +1412,12 @@ function parseCookies(cookieHeader) {
 }
 
 function sessionCookie(token, expiresAt) {
-  return `${sessionCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Expires=${new Date(expiresAt).toUTCString()}`;
+  const maxAge = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  return `${sessionCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; Expires=${new Date(expiresAt).toUTCString()}${secureSessionCookies ? "; Secure" : ""}`;
 }
 
 function expiredSessionCookie() {
-  return `${sessionCookieName}=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  return `${sessionCookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secureSessionCookies ? "; Secure" : ""}`;
 }
 
 function setCookie(response, cookie) {
