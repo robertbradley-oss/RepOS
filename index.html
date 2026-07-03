@@ -36,17 +36,13 @@
           </span>
         </a>
         <div class="home-nav-links" aria-label="Product links">
-          <button type="button">Features <span aria-hidden="true">⌄</span></button>
-          <button type="button">For Teams</button>
-          <button type="button">Resources <span aria-hidden="true">⌄</span></button>
-          <button type="button">Pricing</button>
-          <button type="button">About</button>
+          <a href="#homeFeatures">Features <span aria-hidden="true">⌄</span></a>
+          <a href="#homeTeams">For Teams</a>
+          <a href="#homeResources">Resources <span aria-hidden="true">⌄</span></a>
+          <a href="#homePricing">Pricing</a>
+          <a href="#homeAbout">About</a>
         </div>
         <div class="home-nav-actions">
-          <div class="home-demo-switch" aria-label="Choose demo workspace">
-            <button class="active" id="homeIspringDemoButton" type="button" data-demo-workspace="ispring">iSpring Demo</button>
-            <button id="homeGenericDemoButton" type="button" data-demo-workspace="generic">Generic Demo</button>
-          </div>
           <button class="home-login-link" id="homeLoginButton" type="button">Log in</button>
           <button class="home-signin-button" id="homeSignInButton" type="button">Sign in to RepOS <span aria-hidden="true">→</span></button>
         </div>
@@ -57,13 +53,6 @@
           <p class="home-eyebrow">REP OPERATING SYSTEM</p>
           <h1 id="homeTitle">Support work starts <span>here.</span></h1>
           <p>RepOS gives support teams a clean operating system for queues, customer context, assignments, notes, and knowledge — all in one place.</p>
-          <div class="home-cta-row">
-            <button class="home-primary-cta" id="homePrimaryCta" type="button">Start your free demo <span aria-hidden="true">→</span></button>
-            <button class="home-secondary-cta" type="button" id="homeOverviewButton">
-              <span aria-hidden="true">▷</span>
-              Watch overview
-            </button>
-          </div>
           <div class="home-trust-row" aria-label="RepOS highlights">
             <span><b>✓</b><strong>Easy to set up</strong><small>Get started in minutes</small></span>
             <span><b>∞</b><strong>Loved by teams</strong><small>Built for real support</small></span>
@@ -157,10 +146,10 @@
                   </div>
                   <small><b></b> Tickets Created</small>
                 </section>
-                <section class="home-assist-card">
+                <section class="home-quick-card">
                   <b>✦</b>
-                  <span><strong>RepOS Assist</strong><small>Smart suggestions. Faster answers.</small></span>
-                  <button type="button">Open Assist →</button>
+                  <span><strong>Quick Actions</strong><small>Shortcuts that keep reps moving.</small></span>
+                  <button type="button">Open Workspace →</button>
                 </section>
               </div>
             </div>
@@ -188,6 +177,111 @@
             <b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M4 19a5.2 5.2 0 0 1 10 0"></path><path d="M15.5 5.2a3 3 0 0 1 0 5.6"></path><path d="M16.6 13.6a5.2 5.2 0 0 1 3.4 5.4"></path></svg></b>
             <span><strong>Built for Teams</strong><small>Designed by support pros for support pros.</small></span>
           </article>
+        </div>
+      </section>
+
+      <section class="home-section" id="homeFeatures" aria-labelledby="homeFeaturesTitle">
+        <div class="home-section-head">
+          <p class="home-section-kicker">FEATURES</p>
+          <h2 id="homeFeaturesTitle">Everything reps need to keep support moving.</h2>
+          <p>RepOS brings the daily support workflow into one clean workspace, from queue triage to customer context and team visibility.</p>
+        </div>
+        <div class="home-card-grid home-card-grid--four">
+          <article class="home-info-card">
+            <b aria-hidden="true">01</b>
+            <h3>Ticket Queues</h3>
+            <p>Open, assigned, and closed work stays organized in one clear queue.</p>
+          </article>
+          <article class="home-info-card">
+            <b aria-hidden="true">02</b>
+            <h3>Customer Context</h3>
+            <p>See customer history, notes, timeline, and ticket details together.</p>
+          </article>
+          <article class="home-info-card">
+            <b aria-hidden="true">03</b>
+            <h3>Macros &amp; Product Links</h3>
+            <p>Keep repeat answers and product resources close to the ticket.</p>
+          </article>
+          <article class="home-info-card">
+            <b aria-hidden="true">04</b>
+            <h3>Manager Dashboard</h3>
+            <p>Track workload, activity, queue health, and team visibility.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="home-section" id="homeTeams" aria-labelledby="homeTeamsTitle">
+        <div class="home-section-head">
+          <p class="home-section-kicker">FOR TEAMS</p>
+          <h2 id="homeTeamsTitle">Built for every role on the support floor.</h2>
+          <p>Reps, managers, and admins get the same shared operating system without losing the details each role depends on.</p>
+        </div>
+        <div class="home-card-grid home-card-grid--three">
+          <article class="home-info-card home-info-card--team">
+            <b aria-hidden="true">R</b>
+            <h3>For Reps</h3>
+            <p>Faster ticket handling with context, notes, macros, and simple queues.</p>
+          </article>
+          <article class="home-info-card home-info-card--team">
+            <b aria-hidden="true">M</b>
+            <h3>For Managers</h3>
+            <p>Clear visibility into assignments, workload, closed work, and team activity.</p>
+          </article>
+          <article class="home-info-card home-info-card--team">
+            <b aria-hidden="true">A</b>
+            <h3>For Admins</h3>
+            <p>Workspace settings, knowledge resources, products, and macros in one place.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="home-section" id="homeResources" aria-labelledby="homeResourcesTitle">
+        <div class="home-section-head">
+          <p class="home-section-kicker">RESOURCES</p>
+          <h2 id="homeResourcesTitle">Reusable support resources, kept close to the work.</h2>
+          <p>RepOS keeps operational knowledge inside the workspace so answers, product context, and reporting are easier to find.</p>
+        </div>
+        <div class="home-resource-grid">
+          <article class="home-resource-card">
+            <strong>Knowledge Vault</strong>
+            <span>Internal answers and support references for repeat questions.</span>
+          </article>
+          <article class="home-resource-card">
+            <strong>Product Link Library</strong>
+            <span>Product resources and customer-facing links organized by the team.</span>
+          </article>
+          <article class="home-resource-card">
+            <strong>Macros</strong>
+            <span>Reusable reply starters for consistent, faster ticket handling.</span>
+          </article>
+          <article class="home-resource-card">
+            <strong>Reports</strong>
+            <span>Workspace views for queue health, activity, and team performance.</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="home-section home-pricing-section" id="homePricing" aria-labelledby="homePricingTitle">
+        <div class="home-section-head">
+          <p class="home-section-kicker">PRICING</p>
+          <h2 id="homePricingTitle">Simple pricing for support teams.</h2>
+          <p>RepOS is currently available as a demo workspace while the product is being shaped for real support teams.</p>
+        </div>
+        <article class="home-pricing-card">
+          <div>
+            <span>Demo Workspace</span>
+            <h3>Explore RepOS in a working support environment.</h3>
+            <p>Explore queues, customer context, notes, macros, reports, and admin tools.</p>
+          </div>
+          <a class="home-section-cta" href="#homeScreen">Open Workspace <span aria-hidden="true">→</span></a>
+        </article>
+      </section>
+
+      <section class="home-section home-about-section" id="homeAbout" aria-labelledby="homeAboutTitle">
+        <div class="home-section-head">
+          <p class="home-section-kicker">ABOUT</p>
+          <h2 id="homeAboutTitle">RepOS is a cleaner way to run support work.</h2>
+          <p>RepOS is a rep operating system designed to make support work cleaner, faster, and easier to manage. It brings queues, customer history, notes, knowledge, product links, macros, and visibility into one workspace.</p>
         </div>
       </section>
 
