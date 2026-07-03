@@ -266,6 +266,7 @@ const workspaceConfig = {
   reps: [
     { id: "morgan-lee", name: "Morgan Lee", role: "admin", assignmentEligible: true, removed: false },
     { id: "robert-bradley", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
+    { id: "test-rep", name: "Test Rep", role: "rep", assignmentEligible: true, removed: false, email: "rep-test@repos.local" },
     { id: "nick-lawrence", name: "CS1 Nick", role: "rep", assignmentEligible: true, removed: false },
     { id: "julius-francis", name: "CS2 Julius", role: "rep", assignmentEligible: true, removed: false },
     { id: "sean-carter", name: "CS3 Sean", role: "rep", assignmentEligible: true, removed: false },
@@ -1385,7 +1386,7 @@ seedTickets.push(...generateExtendedLongThreadMockTickets());
 seedTickets.push(...generateLongThreadMockTickets());
 seedTickets.push(...generateReceiptTestTickets());
 seedTickets.push(...generateFreshDemoTickets());
-workspaceConfig.tickets = alignRepeatCustomerAssignments(seedTickets);
+workspaceConfig.tickets = applyDemoStoryPolish(alignRepeatCustomerAssignments(seedTickets));
 
 const seedWorkspaceSettings = workspaceConfig.defaultSettings;
 let workspaceSettings = normalizeWorkspaceSettings(loadWorkspaceSettings());
@@ -4503,6 +4504,59 @@ function alignRepeatCustomerAssignments(sourceTickets) {
   return sourceTickets;
 }
 
+function applyDemoStoryPolish(sourceTickets) {
+  const storyAssignments = new Map([
+    ["ISP-28501", "Receipt, install photo, tank-pressure troubleshooting, and product-link context are ready for next reply."],
+    ["ISP-28718", "Tankless RO reset loop has video evidence and a clear macro-supported next reply."],
+    ["ISP-28618", "Urgent whole-house pressure drop has gauge/install photos and escalation context."],
+    ["ISP-28615", "Frustrated return-policy case needs guardrails and manager-ready notes."]
+  ]);
+
+  sourceTickets.forEach((ticket) => {
+    const storyNote = storyAssignments.get(ticket.id);
+    if (!storyNote) return;
+    assignStoryTicketToTestRep(ticket, storyNote);
+  });
+  return sourceTickets;
+}
+
+function assignStoryTicketToTestRep(ticket, storyNote) {
+  const previousAssignee = ticket.assignee || "Unassigned";
+  ticket.assignee = "Test Rep";
+  ticket.tags = [...new Set([...(Array.isArray(ticket.tags) ? ticket.tags : []), "priority-follow-up"])];
+  const timestamp = lastUpdatedAt(ticket) || ticket.createdAt || new Date().toISOString();
+  const alreadyAssigned = visibleThreadMessages(ticket).some((message) =>
+    message.type === "timeline" && /assigned to test rep|reassigned .* to test rep/i.test(message.body)
+  );
+  if (!alreadyAssigned) {
+    ticket.conversation.push({
+      type: "timeline",
+      author: "System",
+      timestamp,
+      body: previousAssignee === "Test Rep"
+        ? "Assigned to Test Rep for active support follow-up."
+        : `Reassigned from ${previousAssignee} to Test Rep for active support follow-up.`
+    });
+  }
+  const hasStoryNote = visibleThreadMessages(ticket).some((message) =>
+    message.type === "note" && /Priority follow-up focus/i.test(message.body)
+  );
+  if (!hasStoryNote) {
+    ticket.conversation.push({
+      type: "note",
+      author: "Test Rep",
+      timestamp,
+      body: `Priority follow-up focus: ${storyNote}`
+    });
+  }
+  ticket.aiAssignment = {
+    assignedTo: "Test Rep",
+    assignedAt: timestamp,
+    reason: "Prioritized for active support follow-up with complete ticket context.",
+    workloadAtAssignment: 0
+  };
+}
+
 function activeAssignmentUsersFromSeed() {
   return seedUsers.filter((user) => !user.removed && user.assignmentEligible).map((user) => user.name);
 }
@@ -5610,11 +5664,18 @@ function normalizeCustomerAccounts(value) {
       phone: typeof account.phone === "string" ? account.phone : "",
       mobile: typeof account.mobile === "string" ? account.mobile : "",
       address: typeof account.address === "string" ? account.address : "",
+      ticketIds: normalizeAccountTicketIds(account.ticketIds),
       notes: typeof account.notes === "string" ? account.notes : "",
       accountNotes: normalizeAccountNotes(account.accountNotes, account.notes)
     };
     return accounts;
   }, {});
+}
+
+function normalizeAccountTicketIds(value) {
+  return Array.isArray(value)
+    ? [...new Set(value.map((item) => String(item || "").trim()).filter(Boolean))]
+    : [];
 }
 
 function normalizeAccountNotes(value, legacyNotes = "") {
@@ -5710,6 +5771,8 @@ function deriveCustomerAccounts(sourceTickets) {
     account.phone = account.phone || ticket.customer.phone || "";
     account.mobile = account.mobile || ticket.customer.mobile || "";
     account.address = account.address || ticket.customer.address || "";
+    account.ticketIds = normalizeAccountTicketIds([...(account.ticketIds || []), ticket.id]);
+    addRepeatCustomerAccountNote(account, ticket, sourceTickets);
     if (ticket.receipt || ticket.attachments?.some((file) => file.type === "receipt")) {
       addReceiptToAccount(account, ticket, "Seeded from ticket history");
     }
@@ -5718,6 +5781,30 @@ function deriveCustomerAccounts(sourceTickets) {
     }
     return accounts;
   }, {});
+}
+
+function addRepeatCustomerAccountNote(account, ticket, sourceTickets) {
+  const repeatStoryEmails = new Set([
+    "harper.stone@example.com",
+    "dana.mitchell@example.com",
+    "parker.lane@example.com",
+    "olivia.carter@example.com",
+    "demo.warranty.customer@example.com"
+  ]);
+  const email = String(ticket.customer?.email || "").trim().toLowerCase();
+  if (!repeatStoryEmails.has(email)) return;
+  const related = sourceTickets.filter((item) => String(item.customer?.email || "").trim().toLowerCase() === email);
+  if (related.length < 2) return;
+  account.accountNotes = normalizeAccountNotes(account.accountNotes, account.notes);
+  const noteId = `repeat-story-${stableNumber(email)}`;
+  if (account.accountNotes.some((note) => note.id === noteId)) return;
+  const models = [...new Set(related.map((item) => item.model).filter(Boolean))].slice(0, 3).join(", ");
+  account.accountNotes.push({
+    id: noteId,
+    body: `Repeat customer history: ${related.length} related tickets${models ? ` across ${models}` : ""}. Review prior outcomes before asking for duplicate troubleshooting.`,
+    timestamp: lastUpdatedAt(ticket) || ticket.createdAt || new Date().toISOString(),
+    rep: ticket.assignee || "System"
+  });
 }
 
 function ensureCustomerAccount(accounts, email) {
@@ -5736,6 +5823,7 @@ function ensureCustomerAccount(accounts, email) {
       phone: "",
       mobile: "",
       address: "",
+      ticketIds: [],
       notes: "",
       accountNotes: []
     };
@@ -6641,6 +6729,7 @@ function createEmptyCustomerAccount(email = "") {
     phone: "",
     mobile: "",
     address: "",
+    ticketIds: [],
     notes: "",
     accountNotes: []
   };
