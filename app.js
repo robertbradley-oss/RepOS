@@ -1543,6 +1543,13 @@ async function handleHomeLogin(event) {
 
 function handleHomeLoginButtonClick(event) {
   event.preventDefault();
+  const email = String(el.homeEmailInput?.value || "").trim();
+  const password = String(el.homePasswordInput?.value || "");
+  if (!email && !password) {
+    activateDemoWorkspace(selectedHomeDemoId);
+    enterStaticDemoWorkspace();
+    return;
+  }
   handleHomeLogin(event);
 }
 
