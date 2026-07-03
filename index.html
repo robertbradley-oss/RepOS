@@ -114,7 +114,7 @@
               </div>
               <div class="home-product-user">
                 <b>ML</b>
-                <span>Morgan Lee<small>Administrator · Online</small></span>
+                <span>Morgan Lee<small>Administrator</small></span>
               </div>
             </aside>
 
@@ -188,7 +188,6 @@
               </div>
             </div>
           </section>
-          <img class="home-floating-mark" src="./assets/repos-mark.png" alt="" aria-hidden="true">
         </div>
       </section>
 
@@ -622,27 +621,6 @@
           btn.setAttribute('aria-label', label);
           btn.setAttribute('title', label);
         });
-      })();
-    </script>
-    <script>
-      /* Perch the floating logo badge on the preview card's bottom-right
-         corner. The shell is CSS-scaled, so its visual box is measured at
-         runtime; the badge's CSS transform tucks it onto that corner. */
-      (function () {
-        var wrap = document.querySelector('.home-product-wrap');
-        var shell = document.querySelector('.home-product-shell');
-        var mark = document.querySelector('.home-floating-mark');
-        if (!wrap || !shell || !mark) return;
-        function place() {
-          var w = wrap.getBoundingClientRect();
-          var s = shell.getBoundingClientRect();
-          if (!s.width || !s.height) return;
-          mark.style.left = (s.right - w.left) + 'px';
-          mark.style.top = (s.bottom - w.top) + 'px';
-        }
-        place();
-        window.addEventListener('resize', place);
-        window.addEventListener('load', place);
       })();
     </script>
     <script>
