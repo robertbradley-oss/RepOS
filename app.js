@@ -1187,6 +1187,7 @@ let backendSyncAvailable = false;
 const backendSyncQueue = new Map();
 let sessionUser = null;
 let enterpriseSsoConfig = { enabled: false, configured: false };
+let homeDevLoginEnabled = false;
 let backendAssignmentUsers = [];
 let lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 let profile = loadProfile();
@@ -1405,10 +1406,54 @@ function toggleHomePassword() {
 }
 
 function setHomeLoginControlsDisabled(disabled) {
-  document.querySelectorAll("#homeSignInButton, #homePrimaryCta, [data-demo-workspace]").forEach((button) => {
+  document.querySelectorAll("#homeSignInButton, [data-demo-workspace]").forEach((button) => {
     button.disabled = disabled;
   });
+  if (el.homePrimaryCta) el.homePrimaryCta.disabled = disabled || !homeDevLoginEnabled;
   if (el.homeSsoButton) el.homeSsoButton.disabled = disabled || !enterpriseSsoConfig.enabled;
+}
+
+function updateHomeAccessCopy() {
+  const demoEnabled = Boolean(homeDevLoginEnabled);
+  if (el.homePrimaryCta) {
+    el.homePrimaryCta.hidden = !demoEnabled;
+    el.homePrimaryCta.disabled = !demoEnabled;
+  }
+  if (el.homeDemoLink) {
+    const demoLine = el.homeDemoLink.closest(".home-login-alt");
+    if (demoLine) demoLine.hidden = !demoEnabled;
+    el.homeDemoLink.disabled = !demoEnabled;
+  }
+  if (el.homeLoginHelper) {
+    el.homeLoginHelper.textContent = demoEnabled
+      ? "Use your demo credentials, or open the demo workspace."
+      : "Use your workspace credentials to continue.";
+  }
+  if (el.homeEnterpriseButton) {
+    el.homeEnterpriseButton.textContent = enterpriseSsoConfig.enabled ? "Log in with Enterprise SSO" : "Enterprise SSO";
+    el.homeEnterpriseButton.disabled = !enterpriseSsoConfig.enabled;
+  }
+}
+
+function applyHomeAuthConfig(config = {}) {
+  homeDevLoginEnabled = config.devLogin !== false;
+  updateHomeAccessCopy();
+}
+
+async function loadHomeAuthConfig() {
+  if (!window.fetch) {
+    applyHomeAuthConfig({ devLogin: true });
+    return;
+  }
+  try {
+    const response = await fetch("/api/health", { cache: "no-store" });
+    if (!response.ok) throw new Error(`Auth config failed: ${response.status}`);
+    const payload = await response.json();
+    applyHomeAuthConfig({ devLogin: payload?.auth?.devLogin });
+  } catch (error) {
+    console.warn("RepOS auth config is unavailable.", error);
+    applyHomeAuthConfig({ devLogin: true });
+  }
 }
 
 function applyEnterpriseSsoConfig(config = {}) {
@@ -1416,9 +1461,6 @@ function applyEnterpriseSsoConfig(config = {}) {
     enabled: Boolean(config.enabled),
     configured: Boolean(config.configured)
   };
-  if (el.homeLoginHelper) {
-    el.homeLoginHelper.textContent = "Use your demo credentials, or open the demo workspace.";
-  }
   if (el.homeSsoButton) {
     el.homeSsoButton.textContent = enterpriseSsoConfig.enabled ? "Log in with Enterprise SSO" : "Enterprise SSO";
     el.homeSsoButton.disabled = !enterpriseSsoConfig.enabled;
@@ -1429,6 +1471,7 @@ function applyEnterpriseSsoConfig(config = {}) {
       ? "Use your company account to access RepOS."
       : "Enterprise SSO can be enabled for production workspaces.";
   }
+  updateHomeAccessCopy();
 }
 
 async function loadEnterpriseSsoConfig() {
@@ -1646,16 +1689,24 @@ function handleHomeSignInButtonClick(event) {
 
 function handleHomeDemoCta(event) {
   event.preventDefault();
+  if (!homeDevLoginEnabled) {
+    setHomeStatus("Sign in with your RepOS account.", true);
+    return;
+  }
   activateDemoWorkspace(GENERIC_DEMO_ID);
   enterStaticDemoWorkspace();
 }
 
 function handleHomeEnterpriseLogin() {
-  setHomeStatus("Enterprise SSO isn't configured in this demo. Use email and password, or open the demo workspace.");
+  if (enterpriseSsoConfig.enabled) {
+    window.location.assign("/api/auth/sso/start");
+    return;
+  }
+  setHomeStatus("Enterprise SSO can be enabled for production workspaces. Sign in with your RepOS account.");
 }
 
 function handleHomeForgotPassword() {
-  setHomeStatus("Password reset isn't available in this demo. Open the demo workspace to explore RepOS.");
+  setHomeStatus("Password reset isn't available yet. Contact your workspace admin for access.");
 }
 
 function enterWorkspace() {
@@ -1739,6 +1790,7 @@ function init() {
   el.homePasswordToggle?.addEventListener("click", toggleHomePassword);
   el.homeSsoButton?.addEventListener("click", handleEnterpriseSsoLogin);
   applyEnterpriseSsoConfig();
+  loadHomeAuthConfig();
   loadEnterpriseSsoConfig();
   consumeSsoQueryParams();
   el.homeNavButton?.addEventListener("click", showHomeScreen);

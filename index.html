@@ -49,7 +49,7 @@
             <button class="home-login-submit" type="submit">Sign in</button>
             <p class="home-status" id="homeStatus" role="status" aria-live="polite"></p>
           </form>
-          <p class="home-login-alt">New to RepOS? <button id="homeDemoLink" type="button">Open the demo</button></p>
+          <p class="home-login-alt" hidden>New to RepOS? <button id="homeDemoLink" type="button">Open the demo</button></p>
           <div class="home-login-divider" aria-hidden="true"><span>Or with</span></div>
           <button class="home-login-sso" id="homeEnterpriseButton" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20.5V5A1.5 1.5 0 0 1 5.5 3.5h8A1.5 1.5 0 0 1 15 5v15.5"></path><path d="M15 9.5h3.5A1.5 1.5 0 0 1 20 11v9.5"></path><path d="M2.5 20.5h19"></path><path d="M7.5 7.5H9"></path><path d="M10.5 7.5H12"></path><path d="M7.5 11H9"></path><path d="M10.5 11H12"></path><path d="M7.5 14.5H9"></path><path d="M10.5 14.5H12"></path></svg>
@@ -84,11 +84,11 @@
           <h1 id="homeTitle">Support work starts <span>here.</span></h1>
           <p>RepOS gives support teams a clean operating system for queues, customer context, assignments, notes, and knowledge — all in one place.</p>
           <div class="home-cta-row">
-            <button class="home-primary-cta" id="homePrimaryCta" type="button">Open the demo <span aria-hidden="true">→</span></button>
+            <button class="home-primary-cta" id="homePrimaryCta" type="button" hidden>Open the demo <span aria-hidden="true">→</span></button>
             <a class="home-secondary-cta" href="#homeFeatures">See features <span aria-hidden="true">↓</span></a>
           </div>
           <div class="home-access-panel" aria-label="RepOS sign in options">
-            <p id="homeLoginHelper">Use your demo credentials, or open the demo workspace.</p>
+            <p id="homeLoginHelper">Use your workspace credentials to continue.</p>
             <button class="home-sso-button" id="homeSsoButton" type="button" disabled>Enterprise SSO</button>
             <small id="homeSsoHelper">Enterprise SSO can be enabled for production workspaces.</small>
           </div>
