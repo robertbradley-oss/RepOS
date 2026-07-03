@@ -58,6 +58,18 @@ Useful smoke check:
 npm run smoke
 ```
 
+## Runtime Safety
+
+Auth mode is controlled by `TESSARIO_AUTH_MODE`:
+
+- `development` keeps local convenience by auto-authenticating the seeded admin user.
+- `demo` requires an explicit demo sign-in and does not silently create an admin session.
+- `strict` only accepts existing sessions and disables dev/demo login.
+
+When `NODE_ENV=production` and no auth mode is set, RepOS defaults to `strict`. The `/api/health` and `/api/session` responses include the active auth mode and whether automatic session or dev/demo login behavior is enabled.
+
+JSON-file persistence remains the default and writes through a queued temp-file replace with a `.bak` backup. Postgres is supported through `DATABASE_URL`, but it should not become the default until production auth, migrations, backup/restore operations, and managed file storage are completed.
+
 ## Current Status
 
 RepOS is an active prototype for exploring customer support workflows and internal tooling.

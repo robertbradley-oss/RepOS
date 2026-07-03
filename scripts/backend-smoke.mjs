@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -579,6 +579,37 @@ async function waitForHealth(targetPort) {
 async function runStrictAuthSmoke() {
   const strictPort = 4200;
   const strictDataDir = await mkdtemp(join(tmpdir(), "tessario-strict-smoke-"));
+  const strictSessionToken = "strict-smoke-session";
+  await writeFile(join(strictDataDir, "state.json"), `${JSON.stringify({
+    version: 1,
+    settings: {
+      workspaceName: "iSpring Water Systems",
+      workspaceLabel: "Workspace: iSpring Water Systems",
+      supportEmail: "support@ispringfilters.com",
+      currentUserName: "CS14 Robert",
+      currentUserRole: "admin",
+      defaultAssignee: "CS14 Robert",
+      timezone: "America/New_York",
+      demoMode: true,
+      defaultSlaHours: 48,
+      overdueGraceHours: 0,
+      allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
+    },
+    authUsers: [{
+      id: "cs14-robert",
+      email: "robbybradley@gmail.com",
+      displayName: "CS14 Robert",
+      repName: "CS14 Robert",
+      role: "admin",
+      active: true
+    }],
+    authSessions: [{
+      token: strictSessionToken,
+      userId: "cs14-robert",
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+    }]
+  }, null, 2)}\n`, "utf8");
   const strictServer = spawn(process.execPath, ["server.mjs"], {
     env: {
       ...process.env,
@@ -625,9 +656,8 @@ async function runStrictAuthSmoke() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: "robbybradley@gmail.com" })
     });
-    if (!login.ok) throw new Error(`Strict dev login failed: ${login.status}`);
-    const cookie = login.headers.get("set-cookie")?.split(";")[0];
-    if (!cookie) throw new Error("Strict dev login did not return a session cookie.");
+    if (login.status !== 403) throw new Error(`Strict dev login should be disabled, got ${login.status}.`);
+    const cookie = `tessario_session=${strictSessionToken}`;
 
     const authenticated = await fetch(`http://127.0.0.1:${strictPort}/api/tickets`, {
       headers: { Cookie: cookie }

@@ -157,7 +157,7 @@ try {
   server.kill();
 }
 
-async function writeSeedState(targetFile) {
+async function writeSeedState(targetFile, authSessions = []) {
   const now = new Date().toISOString();
   const state = {
     version: 1,
@@ -185,7 +185,7 @@ async function writeSeedState(targetFile) {
       authUser("cs4-disabled-auth-duplicate", "disabled@example.com", "CS4 Disabled", "rep", now),
       authUser("cs9-inactive", "inactive@example.com", "CS9 Inactive", "rep", now, false)
     ],
-    authSessions: [],
+    authSessions,
     users: [
       { id: "cs2-julius", name: "CS2 Julius", role: "rep", assignmentEligible: true, removed: false },
       { id: "cs3-sean", name: "CS3 Sean", role: "rep", assignmentEligible: true, removed: true },
@@ -294,7 +294,13 @@ async function runStrictUsersSmoke() {
   const strictPort = 4211;
   const strictDataDir = await mkdtemp(join(tmpdir(), "tessario-multi-user-strict-smoke-"));
   const strictDataFile = join(strictDataDir, "state.json");
-  await writeSeedState(strictDataFile);
+  const strictSessionToken = "strict-owner-session";
+  await writeSeedState(strictDataFile, [{
+    token: strictSessionToken,
+    userId: "owner-olivia",
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+  }]);
 
   const strictServer = spawn(process.execPath, ["server.mjs"], {
     env: {
@@ -312,8 +318,14 @@ async function runStrictUsersSmoke() {
     assert(unauthenticatedCurrent.status === 401, `Strict users/current should require auth, got ${unauthenticatedCurrent.status}.`);
     const unauthenticatedUsers = await fetch(`http://127.0.0.1:${strictPort}/api/users`);
     assert(unauthenticatedUsers.status === 401, `Strict users should require auth, got ${unauthenticatedUsers.status}.`);
+    const strictDevLogin = await fetch(`http://127.0.0.1:${strictPort}/api/auth/dev-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "owner@example.com" })
+    });
+    assert(strictDevLogin.status === 403, `Strict dev login should be disabled, got ${strictDevLogin.status}.`);
 
-    const cookie = await login(strictPort, "owner@example.com");
+    const cookie = `tessario_session=${strictSessionToken}`;
     const current = await getJson(strictPort, "/api/users/current", cookie);
     assert(current.response.ok && current.payload.user?.role === "owner", "Strict authenticated current user failed.");
     const users = await getJson(strictPort, "/api/users", cookie);

@@ -8,6 +8,7 @@ const roleGateSource = [
   "sessionUserRole",
   "currentUserIsAdmin",
   "currentUserCanUseMacros",
+  "showAdminPermissionMessage",
   "showAdminScreen",
   "showKnowledgeVaultScreen",
   "showMacroLibrary"
@@ -72,8 +73,12 @@ for (const role of ["rep", "manager"]) {
   context.showKnowledgeVaultScreen();
   context.showMacroLibrary();
 
-  assert.deepEqual(context.calls, [], `${role} should not navigate to admin, knowledge, or macros`);
-  assert.deepEqual(context.toasts, [], `${role} macro shortcut should not reveal macro availability`);
+  assert.deepEqual(context.calls, [["render"], ["render"]], `${role} should not navigate to admin, knowledge, or macros`);
+  assert.deepEqual(context.toasts, [
+    "Admin Hub is available to admins and owners only.",
+    "Knowledge Vault is available to admins and owners only.",
+    "Macros are available to admins and owners only."
+  ], `${role} should see permission messages for admin-only surfaces`);
   assert.equal(context.uiState.activeScreen, "queue", `${role} should remain on the current screen`);
 }
 

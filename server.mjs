@@ -23,9 +23,12 @@ const uploadDir = process.env.TESSARIO_UPLOAD_DIR || join(root, ".uploads");
 const schemaPath = join(root, "db", "schema.sql");
 const maxJsonBytes = 12 * 1024 * 1024;
 const maxUploadBytes = Number(process.env.TESSARIO_MAX_UPLOAD_BYTES || 20 * 1024 * 1024);
-const authMode = process.env.TESSARIO_AUTH_MODE || "development";
+const authMode = resolveAuthMode();
 const sessionCookieName = "tessario_session";
 const sessionDays = Number(process.env.TESSARIO_SESSION_DAYS || 7);
+const automaticSessionAuthEnabled = authMode === "development";
+const devLoginEnabled = process.env.TESSARIO_DISABLE_DEV_LOGIN !== "1" && ["development", "demo"].includes(authMode);
+const adminRoles = ["admin", "owner"];
 const allowedUploadTypes = new Map([
   [".pdf", "application/pdf"],
   [".png", "image/png"],
@@ -94,6 +97,7 @@ const server = createServer(async (request, response) => {
 server.listen(port, host, () => {
   console.log(`RepOS running at http://${host}:${port}`);
   console.log(`Persistence: ${store.mode}`);
+  console.log(`Auth mode: ${authMode}${devLoginEnabled ? " (dev/demo login enabled)" : ""}`);
 });
 
 async function handleApi(request, response, url) {
@@ -103,7 +107,9 @@ async function handleApi(request, response, url) {
       app: "RepOS",
       mode: "mvp-backend",
       persistence: store.mode,
-      authMode
+      persistenceMode: store.mode,
+      authMode,
+      auth: authRuntimeInfo()
     });
     return;
   }
@@ -113,7 +119,8 @@ async function handleApi(request, response, url) {
     sendJson(response, 200, {
       authenticated: Boolean(user),
       user: user ? publicUser(user) : null,
-      authMode
+      authMode,
+      auth: authRuntimeInfo()
     });
     return;
   }
@@ -133,15 +140,15 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "GET" && url.pathname === "/api/auth/users") {
-    const user = await requireRole(request, response, ["admin", "owner"]);
+    const user = await requireAdmin(request, response);
     if (!user) return;
     sendJson(response, 200, { users: (await store.listAuthUsers()).map(publicUser) });
     return;
   }
 
   if (request.method === "POST" && url.pathname === "/api/auth/dev-login") {
-    if (process.env.TESSARIO_DISABLE_DEV_LOGIN === "1") {
-      sendJson(response, 403, { error: "dev_login_disabled" });
+    if (!devLoginEnabled) {
+      sendJson(response, 403, { error: "dev_login_disabled", authMode });
       return;
     }
     const input = await readJsonBody(request);
@@ -169,7 +176,8 @@ async function handleApi(request, response, url) {
       session: {
         authenticated: Boolean(user),
         user: user ? publicUser(user) : null,
-        authMode
+        authMode,
+        auth: authRuntimeInfo()
       }
     });
     return;
@@ -183,7 +191,7 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "PATCH" && url.pathname === "/api/settings") {
-    const user = await requireRole(request, response, ["admin", "owner"]);
+    const user = await requireAdmin(request, response);
     if (!user) return;
     const patch = await readJsonBody(request);
     const current = await workspaceSettings();
@@ -312,7 +320,7 @@ async function handleApi(request, response, url) {
     }
 
     if (request.method === "POST" && childRoute === "merge") {
-      const user = await requireRole(request, response, ["admin", "owner"]);
+      const user = await requireAdmin(request, response);
       if (!user) return;
       const input = await readJsonBody(request);
       const result = await store.mergeTickets(ticketId, input, { actor: user });
@@ -487,7 +495,7 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "POST" && url.pathname === "/api/knowledge/files/upload") {
-    const user = await requireRole(request, response, ["admin", "owner"]);
+    const user = await requireAdmin(request, response);
     if (!user) return;
     const upload = await parseUploadRequest(request);
     if (!upload.file) {
@@ -535,8 +543,8 @@ async function handleApi(request, response, url) {
       sendJson(response, 404, { error: "file_not_found" });
       return;
     }
-    if (fileRequiresAdminAccess(record) && !userHasRole(user, ["admin", "owner"])) {
-      sendJson(response, 403, { error: "insufficient_role", required: ["admin", "owner"] });
+    if (fileRequiresAdminAccess(record) && !userHasRole(user, adminRoles)) {
+      sendJson(response, 403, { error: "insufficient_role", required: adminRoles });
       return;
     }
     await sendStoredFile(response, record);
@@ -553,7 +561,7 @@ async function handleApi(request, response, url) {
 
     if (request.method === "GET") {
       const user = adminStateResources.has(resource)
-        ? await requireRole(request, response, ["admin", "owner"])
+        ? await requireAdmin(request, response)
         : await requireAuth(request, response);
       if (!user) return;
       sendJson(response, 200, { resource, value: await store.getResource(resource) });
@@ -562,7 +570,7 @@ async function handleApi(request, response, url) {
 
     if (request.method === "PUT") {
       const user = adminStateResources.has(resource)
-        ? await requireRole(request, response, ["admin", "owner"])
+        ? await requireAdmin(request, response)
         : await requireAuth(request, response);
       if (!user) return;
       const value = await readJsonBody(request);
@@ -577,7 +585,7 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "POST" && url.pathname === "/api/reset") {
-    const user = await requireRole(request, response, ["admin", "owner"]);
+    const user = await requireAdmin(request, response);
     if (!user) return;
     sendJson(response, 200, { ok: true, state: await store.resetState() });
     return;
@@ -632,7 +640,7 @@ function defaultState() {
 }
 
 function stateForUser(state, user) {
-  if (userHasRole(user, ["admin", "owner"])) return state;
+  if (userHasRole(user, adminRoles)) return state;
   const filtered = { ...state };
   for (const resource of nonAdminBootstrapHiddenResources) {
     delete filtered[resource];
@@ -657,6 +665,28 @@ async function createStore() {
     });
   }
   return createJsonStore({ dataFile, defaultState });
+}
+
+function resolveAuthMode() {
+  const requested = String(process.env.TESSARIO_AUTH_MODE || "").trim().toLowerCase();
+  const normalized = ["development", "demo", "strict"].includes(requested)
+    ? requested
+    : process.env.NODE_ENV === "production"
+      ? "strict"
+      : "development";
+  if (process.env.NODE_ENV === "production" && normalized === "development") {
+    return process.env.TESSARIO_ALLOW_DEVELOPMENT_AUTH_IN_PRODUCTION === "1" ? "development" : "strict";
+  }
+  return normalized;
+}
+
+function authRuntimeInfo() {
+  return {
+    mode: authMode,
+    automaticSession: automaticSessionAuthEnabled,
+    devLogin: devLoginEnabled,
+    production: process.env.NODE_ENV === "production"
+  };
 }
 
 async function readJsonBody(request) {
@@ -1209,6 +1239,10 @@ async function requireRole(request, response, roles) {
   return user;
 }
 
+async function requireAdmin(request, response) {
+  return requireRole(request, response, adminRoles);
+}
+
 function userHasRole(user, roles) {
   return roles.includes(String(user?.role || "").toLowerCase());
 }
@@ -1227,7 +1261,7 @@ async function getCurrentUser(request, response) {
     const result = await store.getAuthSession(token);
     if (result?.user) return result.user;
   }
-  if (authMode === "strict") return null;
+  if (!automaticSessionAuthEnabled) return null;
   const user = await store.ensureAuthUser(defaultAuthUser());
   await createSessionForUser(response, user);
   return user;

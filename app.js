@@ -6389,6 +6389,7 @@ function render({ preserveQueueList = uiState.activeScreen !== "queue", suppress
   queueDebugState.renderTableCalled = false;
   queueDebugState.renderError = "";
   queueDebugState.recoveredTickets = false;
+  enforceAuthorizedScreen();
   ensureUsableTicketData();
   reopenClosedWaitingTicketsWithCustomerReply();
   const ticketStorage = storedTicketState();
@@ -6589,6 +6590,7 @@ function renderQueuePreview(ticket) {
 function openProfileModal(tab = activeProfileTab) {
   activeProfileTab = typeof tab === "string" ? tab : activeProfileTab || "account";
   if (!["account", "preferences", "signature", "notifications", "workspace"].includes(activeProfileTab)) activeProfileTab = "account";
+  if (activeProfileTab === "workspace" && !currentUserIsAdmin()) activeProfileTab = "account";
   renderProfileModal();
   el.profileModal.hidden = false;
   el.profileModal.removeAttribute("hidden");
@@ -6632,14 +6634,14 @@ function renderProfileModal() {
         ${profileTabButton("preferences", "Preferences")}
         ${profileTabButton("signature", "Signature")}
         ${profileTabButton("notifications", "Notifications")}
-        ${profileTabButton("workspace", "Workspace")}
+        ${currentUserIsAdmin() ? profileTabButton("workspace", "Workspace") : ""}
       </div>
       <div class="profile-tab-panels">
         ${renderAccountTab()}
         ${renderPreferencesTab()}
         ${renderSignatureTab()}
         ${renderNotificationsTab()}
-        ${renderWorkspaceTab(workload)}
+        ${currentUserIsAdmin() ? renderWorkspaceTab(workload) : ""}
       </div>
       <div class="profile-actions">
         <button class="secondary-button" id="cancelProfileButton" type="button">Close</button>
@@ -6654,6 +6656,10 @@ function renderProfileModal() {
   el.profileModal.querySelectorAll("[data-profile-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       const nextTab = button.dataset.profileTab;
+      if (nextTab === "workspace" && !currentUserIsAdmin()) {
+        showAdminPermissionMessage("Workspace settings");
+        return;
+      }
       if (nextTab === activeProfileTab) return;
       const panelScroller = el.profileModal.querySelector(".profile-tab-panels");
       if (panelScroller) panelScroller.scrollTop = 0;
@@ -10164,14 +10170,37 @@ function currentUserCanUseMacros() {
   return currentUserIsAdmin();
 }
 
+function enforceAuthorizedScreen() {
+  if (currentUserIsAdmin()) return;
+  if (!["admin", "knowledge"].includes(uiState.activeScreen)) return;
+  const label = uiState.activeScreen === "knowledge" ? "Knowledge Vault" : "Admin Hub";
+  uiState.activeScreen = "queue";
+  showAdminPermissionMessage(label);
+}
+
+function showAdminPermissionMessage(area = "This area") {
+  const verb = area === "Macros" ? "are" : "is";
+  showToast(`${area} ${verb} available to admins and owners only.`);
+}
+
 function showAdminScreen() {
-  if (!currentUserIsAdmin()) return;
+  if (!currentUserIsAdmin()) {
+    showAdminPermissionMessage("Admin Hub");
+    uiState.activeScreen = "queue";
+    render();
+    return;
+  }
   uiState.activeScreen = "admin";
   render();
 }
 
 function showKnowledgeVaultScreen() {
-  if (!currentUserIsAdmin()) return;
+  if (!currentUserIsAdmin()) {
+    showAdminPermissionMessage("Knowledge Vault");
+    uiState.activeScreen = "queue";
+    render();
+    return;
+  }
   uiState.activeScreen = "knowledge";
   render();
 }
@@ -11575,7 +11604,10 @@ function openDashboardFilteredQueue(query) {
 }
 
 function showMacroLibrary() {
-  if (!currentUserIsAdmin()) return;
+  if (!currentUserCanUseMacros()) {
+    showAdminPermissionMessage("Macros");
+    return;
+  }
   const ticket = selectedTicket();
   if (ticket) {
     openTicketDetail(ticket.id);
