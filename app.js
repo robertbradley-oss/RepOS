@@ -11121,7 +11121,6 @@ function renderConversation(ticket) {
     </div>
     ${renderAppFooter("detail-footer")}
     </div>
-    <button class="reply-float-btn" id="replyFloatBtn" type="button" aria-label="Jump to reply composer">Reply</button>
   `;
 
   document.querySelector("#backToQueueButton").addEventListener("click", showQueueScreen);
@@ -11187,25 +11186,16 @@ function renderConversation(ticket) {
   requestAnimationFrame(() => positionReplyTabPill(false, 0));
 
   const scrollArea = document.querySelector("#conversationScrollArea");
-  const floatBtn = document.querySelector("#replyFloatBtn");
-  if (scrollArea && floatBtn) {
-    const syncFloatBtn = () => {
-      const composer = scrollArea.querySelector(".reply-dock");
-      const areaRect = scrollArea.getBoundingClientRect();
-      const composerRect = composer?.getBoundingClientRect();
-      const composerBelowArea = composerRect ? composerRect.top > areaRect.bottom - 120 : false;
-      floatBtn.classList.toggle("visible", composerBelowArea);
+  if (scrollArea) {
+    const syncDetailScrollState = () => {
       // Past a small scroll, collapse the ticket header to a slim sticky bar
       // (ticket # + status + assignee) so the thread gets the vertical room.
       document.body.classList.toggle("detail-condensed", scrollArea.scrollTop > 24);
     };
-    detailFloatScrollHandler = syncFloatBtn;
+    detailFloatScrollHandler = syncDetailScrollState;
     detailFloatScrollRoot = scrollArea;
     scrollArea.addEventListener("scroll", detailFloatScrollHandler, { passive: true });
-    floatBtn.addEventListener("click", () => {
-      scrollConversationToBottom("smooth");
-    });
-    syncFloatBtn();
+    syncDetailScrollState();
   }
 }
 
@@ -12268,6 +12258,7 @@ function openTicketDetail(ticketId, context = {}) {
     return;
   }
   uiState.activeScreen = "detail";
+  uiState.contextCollapsed = false;
   shouldScrollToLatestOnOpen = true;
   render({ preserveQueueList: true });
 }
