@@ -604,6 +604,7 @@ async function runStrictAuthSmoke() {
       TESSARIO_AUTH_MODE: "strict",
       TESSARIO_DISABLE_DEV_LOGIN: "1",
       TESSARIO_DATA_FILE: join(strictDataDir, "state.json"),
+      REPOS_SESSION_SECRET: "backend-smoke-session-secret-minimum-32-chars",
       REPOS_ADMIN_EMAIL: "strict-admin@example.com",
       REPOS_ADMIN_PASSWORD: "correct-horse-battery-staple",
       REPOS_ADMIN_NAME: "Strict Admin",
@@ -616,7 +617,17 @@ async function runStrictAuthSmoke() {
     await waitForHealth(strictPort);
     const health = await fetch(`http://127.0.0.1:${strictPort}/api/health`);
     const healthPayload = await health.json();
-    if (!health.ok || healthPayload.auth?.mode !== "strict" || healthPayload.auth?.automaticSession || healthPayload.auth?.devLogin || !healthPayload.auth?.productionAdminConfigured) {
+    if (
+      !health.ok ||
+      healthPayload.auth?.mode !== "strict" ||
+      healthPayload.auth?.automaticSession ||
+      healthPayload.auth?.devLogin ||
+      !healthPayload.auth?.productionAdminConfigured ||
+      !healthPayload.auth?.strictLoginConfigured ||
+      !healthPayload.auth?.sessionSecretConfigured ||
+      healthPayload.storage?.dataFile?.type !== "absolute" ||
+      healthPayload.database?.enabled !== false
+    ) {
       throw new Error(`Strict health auth metadata was not locked down as expected: ${JSON.stringify(healthPayload.auth)}`);
     }
 
@@ -672,7 +683,7 @@ async function runStrictAuthSmoke() {
     });
     const validLoginPayload = await validLogin.json();
     const cookie = validLogin.headers.get("set-cookie")?.split(";")[0];
-    if (!validLogin.ok || validLoginPayload.user?.role !== "owner" || !cookie) {
+    if (!validLogin.ok || validLoginPayload.user?.role !== "owner" || !cookie?.includes(".")) {
       throw new Error(`Strict valid production login failed: ${validLogin.status} ${JSON.stringify(validLoginPayload)}`);
     }
 

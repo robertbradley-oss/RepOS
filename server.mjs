@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { buildAnalyticsSummary } from "./lib/activity-analytics.mjs";
 import { createJsonStore, normalizeEmail } from "./lib/json-store.mjs";
 import {
@@ -18,6 +18,7 @@ import { ValidationError, normalizeTicketStatus } from "./lib/ticket-workflow.mj
 const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || "127.0.0.1";
+const nodeEnv = process.env.NODE_ENV || "development";
 const dataFile = process.env.TESSARIO_DATA_FILE || join(root, ".data", "tessario-state.json");
 const uploadDir = process.env.TESSARIO_UPLOAD_DIR || join(root, ".uploads");
 const schemaPath = join(root, "db", "schema.sql");
@@ -25,18 +26,22 @@ const maxJsonBytes = 12 * 1024 * 1024;
 const maxUploadBytes = Number(process.env.TESSARIO_MAX_UPLOAD_BYTES || 20 * 1024 * 1024);
 const authMode = resolveAuthMode();
 const sessionCookieName = "tessario_session";
-const sessionDays = Number(process.env.TESSARIO_SESSION_DAYS || 7);
+const sessionSecret = process.env.REPOS_SESSION_SECRET || process.env.TESSARIO_SESSION_SECRET || "";
+const sessionSecretConfigured = Boolean(sessionSecret);
+const sessionSecretStrong = sessionSecret.length >= 32;
+const sessionDays = normalizeSessionDays(process.env.TESSARIO_SESSION_DAYS, 7);
 const automaticSessionAuthEnabled = authMode === "development";
 const devLoginEnabled = process.env.TESSARIO_DISABLE_DEV_LOGIN !== "1" && ["development", "demo"].includes(authMode);
 const adminRoles = ["admin", "owner"];
 const secureSessionCookies = process.env.REPOS_SECURE_COOKIES === "1" ||
-  (process.env.REPOS_SECURE_COOKIES !== "0" && (process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL)));
+  (process.env.REPOS_SECURE_COOKIES !== "0" && (nodeEnv === "production" || Boolean(process.env.VERCEL)));
 const demoPassword = authMode === "strict" ? "" : process.env.REPOS_DEMO_PASSWORD || "repos-demo";
 const productionAdminEmail = normalizeEmail(process.env.REPOS_ADMIN_EMAIL || process.env.TESSARIO_ADMIN_EMAIL || "");
 const productionAdminPassword = process.env.REPOS_ADMIN_PASSWORD || process.env.TESSARIO_ADMIN_PASSWORD || "";
 const productionAdminPasswordHash = process.env.REPOS_ADMIN_PASSWORD_HASH || process.env.TESSARIO_ADMIN_PASSWORD_HASH || "";
 const productionAdminRole = normalizeAuthRole(process.env.REPOS_ADMIN_ROLE || process.env.TESSARIO_ADMIN_ROLE || "admin", "admin");
 const productionAdminConfigured = Boolean(productionAdminEmail && (productionAdminPassword || productionAdminPasswordHash));
+const appInfo = await loadAppInfo();
 
 // Password hashing: scrypt with a per-user random salt, stored as
 // "scrypt$<saltHex>$<hashHex>". Verification is constant-time.
@@ -98,6 +103,12 @@ const adminStateResources = new Set(["users", "profile", "settings", "queueViews
 const nonAdminBootstrapHiddenResources = new Set(["knowledgeDocs", "authUsers", "authSessions", "fileRecords", "macros"]);
 
 const store = await createStore();
+const startupDiagnostics = await buildStartupDiagnostics();
+reportStartupDiagnostics(startupDiagnostics);
+if (!startupDiagnostics.ready) {
+  console.error("RepOS startup blocked by unsafe production configuration.");
+  process.exit(1);
+}
 await ensureConfiguredAuthUser();
 
 const server = createServer(async (request, response) => {
@@ -126,8 +137,6 @@ const server = createServer(async (request, response) => {
 
 server.listen(port, host, () => {
   console.log(`RepOS running at http://${host}:${port}`);
-  console.log(`Persistence: ${store.mode}`);
-  console.log(`Auth mode: ${authMode}${devLoginEnabled ? " (dev/demo login enabled)" : ""}`);
 });
 
 async function handleApi(request, response, url) {
@@ -135,11 +144,21 @@ async function handleApi(request, response, url) {
     sendJson(response, 200, {
       ok: true,
       app: "RepOS",
+      version: appInfo.version,
+      commit: appInfo.commit,
       mode: "mvp-backend",
+      nodeEnv,
       persistence: store.mode,
       persistenceMode: store.mode,
+      storage: startupDiagnostics.storage,
+      database: startupDiagnostics.database,
       authMode,
-      auth: authRuntimeInfo()
+      auth: authRuntimeInfo(),
+      readiness: {
+        ready: startupDiagnostics.ready,
+        errors: startupDiagnostics.errors,
+        warnings: startupDiagnostics.warnings
+      }
     });
     return;
   }
@@ -214,7 +233,7 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "POST" && url.pathname === "/api/auth/logout") {
-    const token = parseCookies(request.headers.cookie || "")[sessionCookieName];
+    const token = sessionTokenFromCookie(parseCookies(request.headers.cookie || "")[sessionCookieName]);
     if (token) await store.deleteAuthSession(token);
     setCookie(response, expiredSessionCookie());
     sendJson(response, 200, { ok: true });
@@ -725,24 +744,210 @@ function resolveAuthMode() {
   const requested = String(process.env.TESSARIO_AUTH_MODE || "").trim().toLowerCase();
   const normalized = ["development", "demo", "strict"].includes(requested)
     ? requested
-    : process.env.NODE_ENV === "production"
+    : nodeEnv === "production"
       ? "strict"
       : "development";
-  if (process.env.NODE_ENV === "production" && normalized === "development") {
+  if (nodeEnv === "production" && normalized === "development") {
     return process.env.TESSARIO_ALLOW_DEVELOPMENT_AUTH_IN_PRODUCTION === "1" ? "development" : "strict";
   }
   return normalized;
 }
 
 function authRuntimeInfo() {
+  const loginReadiness = startupDiagnostics?.auth || {};
   return {
     mode: authMode,
     automaticSession: automaticSessionAuthEnabled,
     devLogin: devLoginEnabled,
     passwordLogin: true,
     productionAdminConfigured,
-    production: process.env.NODE_ENV === "production"
+    strictLoginConfigured: Boolean(loginReadiness.strictLoginConfigured),
+    strictCredentialSource: loginReadiness.strictCredentialSource || "none",
+    sessionSecretConfigured,
+    sessionSecretStrong,
+    secureCookies: secureSessionCookies,
+    sessionDays,
+    production: nodeEnv === "production"
   };
+}
+
+async function loadAppInfo() {
+  let version = "0.0.0";
+  try {
+    const packageJson = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
+    version = String(packageJson.version || version);
+  } catch {
+    // Keep health usable even if package metadata is unavailable.
+  }
+  const commit = firstNonEmptyEnv([
+    "REPOS_COMMIT_SHA",
+    "RAILWAY_GIT_COMMIT_SHA",
+    "VERCEL_GIT_COMMIT_SHA",
+    "GIT_COMMIT",
+    "SOURCE_VERSION"
+  ]);
+  return {
+    version,
+    commit: commit ? commit.slice(0, 40) : null
+  };
+}
+
+async function buildStartupDiagnostics() {
+  const warnings = [];
+  const errors = [];
+  const persistedUsers = await store.listAuthUsers().catch(() => []);
+  const persistedPasswordUsers = persistedUsers.filter((user) => user?.active !== false && isValidPasswordHash(user?.passwordHash));
+  const productionAdminHashValid = !productionAdminPasswordHash || isValidPasswordHash(productionAdminPasswordHash);
+  const strictCredentialSource = productionAdminPasswordHash
+    ? "env-password-hash"
+    : productionAdminPassword
+      ? "env-password"
+      : persistedPasswordUsers.length
+        ? "persisted-password-user"
+        : "none";
+  const strictLoginConfigured = productionAdminConfigured || persistedPasswordUsers.length > 0;
+  const production = nodeEnv === "production";
+
+  if (authMode === "strict") {
+    if (!strictLoginConfigured) {
+      const message = "Strict mode has no env admin credentials and no active persisted password user.";
+      if (production) errors.push(message);
+      else warnings.push(message);
+    }
+    if (productionAdminPasswordHash && !productionAdminHashValid) {
+      const message = "Configured admin password hash must use scrypt$saltHex$hashHex format.";
+      if (production) errors.push(message);
+      else warnings.push(message);
+    }
+    if (production && !sessionSecretStrong) {
+      errors.push("Production strict mode requires REPOS_SESSION_SECRET or TESSARIO_SESSION_SECRET with at least 32 characters.");
+    } else if (!sessionSecretConfigured) {
+      warnings.push("No session secret configured; local sessions use unsigned random tokens.");
+    } else if (!sessionSecretStrong) {
+      warnings.push("Session secret is configured but shorter than the recommended 32 characters.");
+    }
+  }
+
+  if (production && devLoginEnabled) {
+    errors.push("Production must not expose development/demo login.");
+  }
+  if (production && authMode !== "strict") {
+    warnings.push("Production should use TESSARIO_AUTH_MODE=strict for real deployments.");
+  }
+  if (production && !secureSessionCookies) {
+    errors.push("Production requires secure session cookies; set REPOS_SECURE_COOKIES=1 or leave it unset.");
+  }
+  if (!Number.isFinite(sessionDays) || sessionDays <= 0) {
+    errors.push("TESSARIO_SESSION_DAYS must be a positive number.");
+  }
+
+  const storage = storageRuntimeInfo();
+  if (production && store.mode === "json-file" && !storage.dataFile.durable) {
+    warnings.push("JSON persistence is not pointed at a known durable Railway volume such as /data.");
+  }
+  if (production && !storage.uploads.durable) {
+    warnings.push("Uploads are not pointed at a known durable Railway volume such as /data/uploads.");
+  }
+
+  return {
+    ready: errors.length === 0,
+    errors,
+    warnings,
+    auth: {
+      strictLoginConfigured,
+      strictCredentialSource,
+      persistedPasswordUsers: persistedPasswordUsers.length,
+      productionAdminHashValid
+    },
+    database: databaseRuntimeInfo(),
+    storage
+  };
+}
+
+function reportStartupDiagnostics(diagnostics) {
+  const auth = diagnostics.auth || {};
+  console.log("RepOS startup diagnostics:");
+  console.log(`- version: ${appInfo.version}${appInfo.commit ? ` (${appInfo.commit.slice(0, 12)})` : ""}`);
+  console.log(`- NODE_ENV: ${nodeEnv}`);
+  console.log(`- auth mode: ${authMode}`);
+  console.log(`- dev/demo login: ${devLoginEnabled ? "enabled" : "disabled"}`);
+  console.log(`- strict login configured: ${auth.strictLoginConfigured ? "yes" : "no"} (${auth.strictCredentialSource || "none"})`);
+  console.log(`- session secret: ${sessionSecretConfigured ? (sessionSecretStrong ? "configured" : "configured but short") : "not configured"}`);
+  console.log(`- secure cookies: ${secureSessionCookies ? "enabled" : "disabled"}`);
+  console.log(`- persistence: ${store.mode}`);
+  console.log(`- data path: ${diagnostics.storage.dataFile.location}`);
+  console.log(`- uploads path: ${diagnostics.storage.uploads.location}`);
+  console.log(`- postgres: ${diagnostics.database.enabled ? `enabled ssl=${diagnostics.database.sslMode}` : "disabled"}`);
+  for (const warning of diagnostics.warnings) console.warn(`RepOS config warning: ${warning}`);
+  for (const error of diagnostics.errors) console.error(`RepOS config error: ${error}`);
+}
+
+function storageRuntimeInfo() {
+  return {
+    dataFile: pathRuntimeInfo(dataFile, { file: true }),
+    uploads: pathRuntimeInfo(uploadDir, { file: false })
+  };
+}
+
+function pathRuntimeInfo(inputPath, { file }) {
+  const raw = String(inputPath || "");
+  const resolved = resolve(raw);
+  const relative = !isAbsoluteRuntimePath(raw);
+  const underAppRoot = isPathInside(resolved, root);
+  const durable = isKnownDurablePath(resolved);
+  return {
+    configured: Boolean(raw),
+    type: relative ? "relative" : "absolute",
+    scope: durable ? "durable-volume" : underAppRoot ? "app-local" : "external",
+    durable,
+    location: safeStorageLocation(raw, resolved, { relative, underAppRoot, durable, file })
+  };
+}
+
+function databaseRuntimeInfo() {
+  return {
+    enabled: Boolean(process.env.DATABASE_URL),
+    mode: process.env.DATABASE_URL ? "postgres" : "none",
+    sslMode: process.env.PGSSLMODE || "default",
+    autoMigrate: process.env.TESSARIO_AUTO_MIGRATE !== "0"
+  };
+}
+
+function safeStorageLocation(raw, resolved, { relative, underAppRoot, durable, file }) {
+  if (durable) return resolved.replace(/\\/g, "/").replace(/^\/data(\/.*)?$/, "/data$1");
+  if (relative) return raw.replace(/\\/g, "/");
+  if (underAppRoot) return file ? "app-local-file" : "app-local-dir";
+  return file ? "external-file" : "external-dir";
+}
+
+function isKnownDurablePath(inputPath) {
+  const normalizedPath = inputPath.replace(/\\/g, "/");
+  return normalizedPath === "/data" || normalizedPath.startsWith("/data/");
+}
+
+function isAbsoluteRuntimePath(inputPath) {
+  return /^([A-Za-z]:[\\/]|[/\\])/.test(String(inputPath || ""));
+}
+
+function firstNonEmptyEnv(names) {
+  for (const name of names) {
+    const value = String(process.env[name] || "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+function normalizeSessionDays(value, fallback) {
+  const number = Number(value || fallback);
+  return Number.isFinite(number) && number > 0 ? number : NaN;
+}
+
+function isValidPasswordHash(value) {
+  if (typeof value !== "string") return false;
+  const [scheme, saltHex, hashHex] = value.split("$");
+  return scheme === "scrypt" &&
+    /^[a-f0-9]{16,}$/i.test(saltHex || "") &&
+    /^[a-f0-9]{64,}$/i.test(hashHex || "");
 }
 
 async function readJsonBody(request) {
@@ -1352,7 +1557,7 @@ function userWithAssignmentName(user) {
 }
 
 async function getCurrentUser(request, response) {
-  const token = parseCookies(request.headers.cookie || "")[sessionCookieName];
+  const token = sessionTokenFromCookie(parseCookies(request.headers.cookie || "")[sessionCookieName]);
   if (token) {
     const result = await store.getAuthSession(token);
     if (result?.user) return result.user;
@@ -1367,7 +1572,7 @@ async function createSessionForUser(response, user) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + sessionDays * 24 * 60 * 60 * 1000).toISOString();
   const session = await store.createAuthSession(user.id, { token, expiresAt });
-  setCookie(response, sessionCookie(token, expiresAt));
+  setCookie(response, sessionCookie(cookieValueForSessionToken(token), expiresAt));
   return session;
 }
 
@@ -1411,9 +1616,36 @@ function parseCookies(cookieHeader) {
   );
 }
 
-function sessionCookie(token, expiresAt) {
+function sessionTokenFromCookie(value) {
+  if (!value) return "";
+  const token = String(value);
+  if (!sessionSecretConfigured) return token;
+  const separator = token.lastIndexOf(".");
+  if (separator === -1) return "";
+  const rawToken = token.slice(0, separator);
+  const signature = token.slice(separator + 1);
+  const expected = signSessionToken(rawToken);
+  if (!constantTimeEqual(signature, expected)) return "";
+  return rawToken;
+}
+
+function cookieValueForSessionToken(token) {
+  return sessionSecretConfigured ? `${token}.${signSessionToken(token)}` : token;
+}
+
+function signSessionToken(token) {
+  return createHmac("sha256", sessionSecret).update(String(token)).digest("base64url");
+}
+
+function constantTimeEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left || ""));
+  const rightBuffer = Buffer.from(String(right || ""));
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function sessionCookie(value, expiresAt) {
   const maxAge = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
-  return `${sessionCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; Expires=${new Date(expiresAt).toUTCString()}${secureSessionCookies ? "; Secure" : ""}`;
+  return `${sessionCookieName}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; Expires=${new Date(expiresAt).toUTCString()}${secureSessionCookies ? "; Secure" : ""}`;
 }
 
 function expiredSessionCookie() {

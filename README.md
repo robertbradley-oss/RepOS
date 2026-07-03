@@ -66,24 +66,65 @@ Auth mode is controlled by `TESSARIO_AUTH_MODE`:
 - `demo` requires an explicit demo sign-in and does not silently create an admin session.
 - `strict` disables dev/demo login, accepts valid existing sessions, and can issue sessions through `/api/auth/login` for configured users.
 
-When `NODE_ENV=production` and no auth mode is set, RepOS defaults to `strict`. The `/api/health` and `/api/session` responses include the active auth mode and whether automatic session, dev/demo login, password login, and production admin configuration are enabled.
+When `NODE_ENV=production` and no auth mode is set, RepOS defaults to `strict`. Production strict mode validates startup configuration before listening. It blocks startup when a strong session secret is missing, when dev/demo login would be exposed, or when neither an environment admin nor an active persisted password user is available.
+
+The `/api/health` and `/api/session` responses include safe runtime flags for the active auth mode, automatic session behavior, dev/demo login availability, strict login readiness, session secret presence, secure cookie behavior, persistence mode, storage path classification, and Postgres mode. They do not expose admin emails, password hashes, session secrets, or database URLs.
 
 Strict production login uses existing persisted auth users with `passwordHash` or an environment-provisioned initial admin:
 
 ```bash
+NODE_ENV=production
 TESSARIO_AUTH_MODE=strict
 TESSARIO_DISABLE_DEV_LOGIN=1
 TESSARIO_SESSION_DAYS=7
 REPOS_SECURE_COOKIES=1
+REPOS_SESSION_SECRET="use-at-least-32-random-characters"
 REPOS_ADMIN_EMAIL=admin@example.com
 REPOS_ADMIN_NAME="RepOS Admin"
 REPOS_ADMIN_ROLE=admin
 REPOS_ADMIN_PASSWORD="use-a-long-private-password"
 ```
 
-`REPOS_ADMIN_PASSWORD` is hashed with Node's built-in `scrypt` before it is persisted. For stricter secret handling, provision `REPOS_ADMIN_PASSWORD_HASH` instead and omit the plain password from the runtime environment. Do not use `development`, `demo`, or the default demo password for a real production workspace.
+`REPOS_ADMIN_PASSWORD` is hashed with Node's built-in `scrypt` before it is persisted. For stricter secret handling, provision `REPOS_ADMIN_PASSWORD_HASH` instead and omit the plain password from the runtime environment. `REPOS_SESSION_SECRET` or `TESSARIO_SESSION_SECRET` signs session cookies in strict deployments and must be a long random value with at least 32 characters. Do not use `development`, `demo`, or the default demo password for a real production workspace.
 
-For Railway, set `NODE_ENV=production`, `TESSARIO_AUTH_MODE=strict`, `TESSARIO_DISABLE_DEV_LOGIN=1`, `REPOS_SECURE_COOKIES=1`, and the `REPOS_ADMIN_*` variables in Railway environment variables. Keep `TESSARIO_DATA_FILE` and `TESSARIO_UPLOAD_DIR` pointed at durable storage if the deployment should retain JSON state and uploads across restarts.
+### Railway JSON Deployment
+
+For Railway, set `NODE_ENV=production`, `TESSARIO_AUTH_MODE=strict`, `TESSARIO_DISABLE_DEV_LOGIN=1`, `REPOS_SECURE_COOKIES=1`, `REPOS_SESSION_SECRET`, and the `REPOS_ADMIN_*` variables in Railway environment variables. Mount a Railway volume and point JSON state and uploads at it:
+
+```bash
+TESSARIO_DATA_FILE=/data/tessario-state.json
+TESSARIO_UPLOAD_DIR=/data/uploads
+```
+
+If these paths are left at `.data` and `.uploads`, Railway can restart on ephemeral filesystem state. RepOS will warn through startup logs and `/api/health`, but it will not migrate JSON state to Postgres in this pass.
+
+Confirm a deployment with:
+
+```bash
+curl https://your-repos-app.example.com/api/health
+```
+
+Check that `auth.mode` is `strict`, `auth.devLogin` is `false`, `auth.strictLoginConfigured` is `true`, `auth.sessionSecretStrong` is `true`, `readiness.ready` is `true`, and `storage.dataFile.durable` is `true` when using a Railway volume.
+
+### First Admin Setup And Rotation
+
+For the first production boot, set `REPOS_ADMIN_EMAIL`, `REPOS_ADMIN_NAME`, `REPOS_ADMIN_ROLE`, and either `REPOS_ADMIN_PASSWORD` or `REPOS_ADMIN_PASSWORD_HASH`. Start RepOS once so the admin user is written to persistent state, sign in, then rotate away from plain env passwords when possible:
+
+1. Set a new long `REPOS_ADMIN_PASSWORD` temporarily, restart, and sign in.
+2. Remove the plain password from Railway variables after the persisted admin hash has been updated, or replace it with `REPOS_ADMIN_PASSWORD_HASH`.
+3. Keep `REPOS_SESSION_SECRET` stable across restarts so signed sessions remain valid.
+
+If you are locked out of JSON mode and have server-side access to the mounted state file, use the local helper instead of adding any public reset endpoint:
+
+```bash
+REPOS_CONFIRM_ADMIN_RESET=reset-strict-admin \
+TESSARIO_DATA_FILE=/data/tessario-state.json \
+REPOS_ADMIN_EMAIL=admin@example.com \
+REPOS_ADMIN_PASSWORD="new-long-private-password" \
+node scripts/reset-strict-admin.mjs
+```
+
+The helper only edits the configured JSON state file, creates a backup next to it, updates or creates the admin user, and clears existing sessions. It intentionally refuses to run for `DATABASE_URL` deployments.
 
 JSON-file persistence remains the default and writes through a queued temp-file replace with a `.bak` backup. Postgres is supported through `DATABASE_URL`, but it should not become the default until production auth, migrations, backup/restore operations, and managed file storage are completed.
 
