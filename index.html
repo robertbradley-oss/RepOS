@@ -29,23 +29,28 @@
           <h2 id="homeLoginTitle">Sign in to RepOS</h2>
           <p class="home-login-sub">Use your workspace credentials to continue.</p>
           <form class="home-login-form" id="homeLoginForm" novalidate>
-            <label class="home-login-field">
-              <span>Email</span>
+            <label class="home-login-label" for="homeEmailInput">Email</label>
+            <div class="home-login-inputwrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"></rect><path d="m4.5 7.5 7.5 5.5 7.5-5.5"></path></svg>
               <input id="homeEmailInput" name="email" type="email" autocomplete="username" placeholder="morgan.lee@demo.repos" aria-label="Email">
-            </label>
-            <label class="home-login-field">
-              <span>Password</span>
-              <span class="home-login-password">
-                <input id="homePasswordInput" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" aria-label="Password">
-                <button type="button" id="homePasswordToggle" aria-label="Show password" aria-pressed="false">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
-                </button>
-              </span>
-            </label>
-            <button class="home-login-submit" type="submit">Sign in <span aria-hidden="true">→</span></button>
+            </div>
+            <label class="home-login-label" for="homePasswordInput">Password</label>
+            <div class="home-login-inputwrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9" rx="2"></rect><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"></path></svg>
+              <input id="homePasswordInput" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" aria-label="Password">
+              <button type="button" id="homePasswordToggle" aria-label="Show password" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
+              </button>
+            </div>
+            <div class="home-login-row">
+              <label class="home-login-remember"><input type="checkbox" id="homeRememberMe"> Remember me</label>
+              <button class="home-login-forgot" id="homeForgotPassword" type="button">Forgot password?</button>
+            </div>
+            <button class="home-login-submit" type="submit">Sign in</button>
             <p class="home-status" id="homeStatus" role="status" aria-live="polite"></p>
           </form>
-          <div class="home-login-divider" aria-hidden="true"><span>or</span></div>
+          <p class="home-login-alt">New to RepOS? <button id="homeDemoLink" type="button">Open the demo</button></p>
+          <div class="home-login-divider" aria-hidden="true"><span>Or with</span></div>
           <button class="home-login-sso" id="homeEnterpriseButton" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20.5V5A1.5 1.5 0 0 1 5.5 3.5h8A1.5 1.5 0 0 1 15 5v15.5"></path><path d="M15 9.5h3.5A1.5 1.5 0 0 1 20 11v9.5"></path><path d="M2.5 20.5h19"></path><path d="M7.5 7.5H9"></path><path d="M10.5 7.5H12"></path><path d="M7.5 11H9"></path><path d="M10.5 11H12"></path><path d="M7.5 14.5H9"></path><path d="M10.5 14.5H12"></path></svg>
             Log in with Enterprise Account

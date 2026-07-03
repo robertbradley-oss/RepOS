@@ -1287,6 +1287,8 @@ const el = {
   homeLoginOverlay: document.querySelector("#homeLoginOverlay"),
   homeLoginClose: document.querySelector("#homeLoginClose"),
   homeEnterpriseButton: document.querySelector("#homeEnterpriseButton"),
+  homeForgotPassword: document.querySelector("#homeForgotPassword"),
+  homeDemoLink: document.querySelector("#homeDemoLink"),
   homeSignInButton: document.querySelector("#homeSignInButton"),
   homePrimaryCta: document.querySelector("#homePrimaryCta"),
   homeDemoButtons: document.querySelectorAll("[data-demo-workspace]"),
@@ -1568,6 +1570,10 @@ function handleHomeEnterpriseLogin() {
   setHomeStatus("Enterprise SSO isn't configured in this demo. Use email and password, or open the demo workspace.");
 }
 
+function handleHomeForgotPassword() {
+  setHomeStatus("Password reset isn't available in this demo. Open the demo workspace to explore RepOS.");
+}
+
 function enterWorkspace() {
   workspaceEntered = true;
   closeHomeLoginModal();
@@ -1636,6 +1642,8 @@ function init() {
   el.homePrimaryCta?.addEventListener("click", handleHomeDemoCta);
   el.homeLoginClose?.addEventListener("click", closeHomeLoginModal);
   el.homeEnterpriseButton?.addEventListener("click", handleHomeEnterpriseLogin);
+  el.homeForgotPassword?.addEventListener("click", handleHomeForgotPassword);
+  el.homeDemoLink?.addEventListener("click", handleHomeDemoCta);
   el.homeLoginOverlay?.addEventListener("click", (event) => {
     if (event.target === el.homeLoginOverlay) closeHomeLoginModal();
   });

@@ -302,10 +302,10 @@ body:not(.home-active) .home-screen {
 
 .home-login-modal {
   position: relative;
-  width: min(400px, 100%);
-  padding: 32px 30px 26px;
+  width: min(450px, 100%);
+  padding: 30px;
   border: 1px solid rgba(30, 32, 40, .08);
-  border-radius: 18px;
+  border-radius: 20px;
   background: #fff;
   box-shadow:
     0 1px 2px rgba(23, 20, 60, .06),
@@ -378,79 +378,131 @@ body:not(.home-active) .home-screen {
   line-height: 1.5;
 }
 
-.home-login-field {
-  display: grid;
-  gap: 6px;
+.home-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-top: 14px;
   text-align: left;
 }
 
-.home-login-field > span {
-  color: #43485a;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.home-login-field input {
-  width: 100%;
-  min-height: 42px;
-  padding: 0 13px;
-  border: 1px solid rgba(30, 32, 40, .14);
-  border-radius: 9px;
+.home-login-label {
   color: #17181d;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.home-login-inputwrap {
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding-left: 12px;
+  border: 1.5px solid #ecedec;
+  border-radius: 10px;
   background: #fff;
-  font: inherit;
-  font-size: 14px;
-  transition: border-color .15s ease, box-shadow .15s ease;
+  transition: border-color .2s ease-in-out;
 }
 
-.home-login-field input::placeholder {
-  color: #9aa0ae;
+.home-login-inputwrap > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: #7b7d87;
+  transition: color .2s ease-in-out;
 }
 
-.home-login-field input:focus {
-  outline: none;
-  border-color: rgba(124, 92, 255, .55);
-  box-shadow: 0 0 0 3px rgba(124, 92, 255, .14);
+.home-login-inputwrap:focus-within {
+  border-color: #6d3ef1;
 }
 
-.home-login-password {
-  position: relative;
-  display: block;
-}
-
-.home-login-password input {
-  padding-right: 42px;
-}
-
-.home-login-password button {
-  position: absolute;
-  top: 50%;
-  right: 6px;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: 7px;
-  color: #9aa0ae;
-  background: transparent;
-  cursor: pointer;
-  transform: translateY(-50%);
-  transition: color .15s ease;
-}
-
-.home-login-password button:hover {
-  color: #43485a;
-}
-
-.home-login-password button.is-revealed {
+.home-login-inputwrap:focus-within > svg {
   color: #6d3ef1;
 }
 
-.home-login-password button svg {
+.home-login-inputwrap input {
+  width: 100%;
+  height: 100%;
+  margin-left: 10px;
+  border: 0;
+  border-radius: 10px;
+  color: #17181d;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+}
+
+.home-login-inputwrap input::placeholder {
+  color: #9aa0ae;
+}
+
+.home-login-inputwrap input:focus {
+  outline: none;
+}
+
+.home-login-inputwrap > button {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 100%;
+  flex: none;
+  border: 0;
+  color: #9aa0ae;
+  background: transparent;
+  cursor: pointer;
+  transition: color .15s ease;
+}
+
+.home-login-inputwrap > button:hover {
+  color: #43485a;
+}
+
+.home-login-inputwrap > button.is-revealed {
+  color: #6d3ef1;
+}
+
+.home-login-inputwrap > button svg {
   width: 17px;
   height: 17px;
+}
+
+.home-login-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.home-login-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #17181d;
+  font-size: 13.5px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.home-login-remember input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #6d3ef1;
+  cursor: pointer;
+}
+
+.home-login-forgot {
+  padding: 0;
+  border: 0;
+  color: #6d3ef1;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.home-login-forgot:hover {
+  text-decoration: underline;
 }
 
 .home-login-submit {
@@ -459,17 +511,17 @@ body:not(.home-active) .home-screen {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  min-height: 42px;
-  margin-top: 16px;
+  height: 50px;
+  margin: 14px 0 0;
   border: 1px solid rgba(88, 55, 190, .5);
-  border-radius: 9px;
+  border-radius: 10px;
   color: #fff;
   background: linear-gradient(180deg, #8759ff 0%, #6d3ef1 100%);
   box-shadow:
     0 1px 2px rgba(36, 22, 90, .18),
     0 8px 20px -8px rgba(96, 52, 224, .5);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   transition: background .16s ease, border-color .16s ease;
 }
@@ -481,21 +533,43 @@ body:not(.home-active) .home-screen {
 
 .home-status {
   min-height: 16px;
-  margin: 10px 0 0;
+  margin: 0;
   color: #5c6070;
   font-size: 12.5px;
   line-height: 1.45;
+  text-align: center;
 }
 
 .home-status.is-error {
   color: var(--red);
 }
 
+.home-login-alt {
+  margin: 8px 0 0;
+  color: #17181d;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.home-login-alt button {
+  padding: 0;
+  border: 0;
+  color: #6d3ef1;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.home-login-alt button:hover {
+  text-decoration: underline;
+}
+
 .home-login-divider {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 16px 0 14px;
+  margin: 14px 0 0;
   color: #9296a3;
   font-size: 11px;
   font-weight: 720;
@@ -512,31 +586,30 @@ body:not(.home-active) .home-screen {
 }
 
 .home-login-sso {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 10px;
   width: 100%;
-  min-height: 42px;
-  border: 1px solid rgba(30, 32, 40, .12);
-  border-radius: 9px;
-  color: #33374a;
+  height: 50px;
+  margin-top: 12px;
+  border: 1px solid #ededef;
+  border-radius: 10px;
+  color: #17181d;
   background: #fff;
-  font-size: 13.5px;
-  font-weight: 640;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: border-color .16s ease, color .16s ease, box-shadow .16s ease;
+  transition: border-color .2s ease-in-out;
 }
 
 .home-login-sso:hover {
-  border-color: rgba(124, 92, 255, .35);
-  color: #17181d;
-  box-shadow: 0 6px 16px -10px rgba(80, 60, 160, .35);
+  border-color: #6d3ef1;
 }
 
 .home-login-sso svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   color: #6d3ef1;
 }
 
