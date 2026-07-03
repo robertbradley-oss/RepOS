@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+import * as oidc from "openid-client";
 import { buildAnalyticsSummary } from "./lib/activity-analytics.mjs";
 import { createJsonStore, normalizeEmail } from "./lib/json-store.mjs";
 import {
@@ -26,8 +27,10 @@ const maxJsonBytes = 12 * 1024 * 1024;
 const maxUploadBytes = Number(process.env.TESSARIO_MAX_UPLOAD_BYTES || 20 * 1024 * 1024);
 const authMode = resolveAuthMode();
 const sessionCookieName = "tessario_session";
+const ssoStateCookieName = "repos_sso_state";
 const sessionSecret = process.env.REPOS_SESSION_SECRET || process.env.TESSARIO_SESSION_SECRET || "";
 const sessionSecretConfigured = Boolean(sessionSecret);
+const ssoStateSecret = sessionSecret || randomBytes(32).toString("base64url");
 const sessionSecretStrong = sessionSecret.length >= 32;
 const sessionDays = normalizeSessionDays(process.env.TESSARIO_SESSION_DAYS, 7);
 const automaticSessionAuthEnabled = authMode === "development";
@@ -41,6 +44,8 @@ const productionAdminPassword = process.env.REPOS_ADMIN_PASSWORD || process.env.
 const productionAdminPasswordHash = process.env.REPOS_ADMIN_PASSWORD_HASH || process.env.TESSARIO_ADMIN_PASSWORD_HASH || "";
 const productionAdminRole = normalizeAuthRole(process.env.REPOS_ADMIN_ROLE || process.env.TESSARIO_ADMIN_ROLE || "admin", "admin");
 const productionAdminConfigured = Boolean(productionAdminEmail && (productionAdminPassword || productionAdminPasswordHash));
+const ssoConfig = readSsoConfig(process.env);
+let ssoClientCache = null;
 const appInfo = await loadAppInfo();
 
 // Password hashing: scrypt with a per-user random salt, stored as
@@ -192,6 +197,44 @@ async function handleApi(request, response, url) {
     const user = await requireAdmin(request, response);
     if (!user) return;
     sendJson(response, 200, { users: (await store.listAuthUsers()).map(publicUser) });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/auth/sso/config") {
+    sendJson(response, 200, publicSsoConfig());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/auth/sso/start") {
+    if (!ssoConfig.ready) {
+      sendJson(response, 400, {
+        error: ssoConfig.enabled ? "sso_not_configured" : "sso_disabled",
+        message: "Enterprise SSO is not enabled for this RepOS workspace."
+      });
+      return;
+    }
+
+    const state = oidc.randomState();
+    const nonce = oidc.randomNonce();
+    const pkceCodeVerifier = oidc.randomPKCECodeVerifier();
+    const codeChallenge = await oidc.calculatePKCECodeChallenge(pkceCodeVerifier);
+    setCookie(response, ssoStateCookie({ state, nonce, pkceCodeVerifier }));
+
+    const ssoClient = await getSsoClient();
+    const redirectTo = oidc.buildAuthorizationUrl(ssoClient, {
+      redirect_uri: ssoConfig.redirectUri,
+      scope: ssoConfig.scopes,
+      state,
+      nonce,
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256"
+    });
+    redirect(response, redirectTo.href);
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/auth/sso/callback") {
+    await handleSsoCallback(request, response, url);
     return;
   }
 
@@ -767,8 +810,154 @@ function authRuntimeInfo() {
     sessionSecretStrong,
     secureCookies: secureSessionCookies,
     sessionDays,
+    enterpriseSso: {
+      enabled: ssoConfig.ready,
+      configured: ssoConfig.ready,
+      requested: ssoConfig.enabled
+    },
     production: nodeEnv === "production"
   };
+}
+
+function readSsoConfig(env) {
+  const enabled = String(env.REPOS_SSO_ENABLED || "").trim().toLowerCase() === "true";
+  const issuer = cleanUrlEnv(env.REPOS_SSO_ISSUER);
+  const clientId = String(env.REPOS_SSO_CLIENT_ID || "").trim();
+  const clientSecret = String(env.REPOS_SSO_CLIENT_SECRET || "").trim();
+  const redirectUri = cleanUrlEnv(env.REPOS_SSO_REDIRECT_URI);
+  const scopes = String(env.REPOS_SSO_SCOPES || "openid email profile").trim() || "openid email profile";
+  const allowedDomains = String(env.REPOS_SSO_ALLOWED_DOMAINS || "")
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean);
+  const missing = [];
+  if (enabled && !issuer) missing.push("REPOS_SSO_ISSUER");
+  if (enabled && !clientId) missing.push("REPOS_SSO_CLIENT_ID");
+  if (enabled && !clientSecret) missing.push("REPOS_SSO_CLIENT_SECRET");
+  if (enabled && !redirectUri) missing.push("REPOS_SSO_REDIRECT_URI");
+  return {
+    enabled,
+    issuer,
+    clientId,
+    clientSecret,
+    redirectUri,
+    scopes,
+    allowedDomains,
+    missing,
+    ready: enabled && missing.length === 0
+  };
+}
+
+function cleanUrlEnv(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    return new URL(raw).href;
+  } catch {
+    return "";
+  }
+}
+
+function publicSsoConfig() {
+  return {
+    enabled: ssoConfig.ready,
+    configured: ssoConfig.ready,
+    requested: ssoConfig.enabled,
+    provider: ssoConfig.issuer ? safeSsoIssuerLabel(ssoConfig.issuer) : null,
+    scopes: ssoConfig.ready ? ssoConfig.scopes : "openid email profile",
+    allowedDomains: ssoConfig.allowedDomains,
+    missingRequiredConfig: ssoConfig.enabled ? ssoConfig.missing : []
+  };
+}
+
+function safeSsoIssuerLabel(issuer) {
+  try {
+    const url = new URL(issuer);
+    return url.host;
+  } catch {
+    return null;
+  }
+}
+
+async function getSsoClient() {
+  if (!ssoConfig.ready) throw new Error("Enterprise SSO is not configured.");
+  const cacheKey = JSON.stringify({
+    issuer: ssoConfig.issuer,
+    clientId: ssoConfig.clientId,
+    redirectUri: ssoConfig.redirectUri,
+    scopes: ssoConfig.scopes
+  });
+  if (ssoClientCache?.cacheKey === cacheKey) return ssoClientCache.client;
+  const client = await oidc.discovery(
+    new URL(ssoConfig.issuer),
+    ssoConfig.clientId,
+    {
+      client_secret: ssoConfig.clientSecret,
+      redirect_uris: [ssoConfig.redirectUri],
+      response_types: ["code"]
+    },
+    oidc.ClientSecretPost(ssoConfig.clientSecret)
+  );
+  ssoClientCache = { cacheKey, client };
+  return client;
+}
+
+async function handleSsoCallback(request, response, url) {
+  setCookie(response, expiredSsoStateCookie());
+  try {
+    if (!ssoConfig.ready) throw new Error("Enterprise SSO is not configured.");
+    const stored = ssoStateFromCookie(parseCookies(request.headers.cookie || "")[ssoStateCookieName]);
+    if (!stored?.state || !stored?.nonce || !stored?.pkceCodeVerifier) {
+      throw new Error("Missing SSO state.");
+    }
+
+    const currentUrl = new URL(ssoConfig.redirectUri);
+    currentUrl.search = url.search;
+    const tokens = await oidc.authorizationCodeGrant(await getSsoClient(), currentUrl, {
+      expectedState: stored.state,
+      expectedNonce: stored.nonce,
+      pkceCodeVerifier: stored.pkceCodeVerifier,
+      idTokenExpected: true
+    });
+    const claims = tokens.claims();
+    const user = await authUserFromSsoClaims(claims);
+    await createSessionForUser(response, user);
+    redirect(response, "/?sso=success");
+  } catch {
+    redirect(response, "/?sso_error=signin_failed");
+  }
+}
+
+async function authUserFromSsoClaims(claims) {
+  if (!claims || typeof claims !== "object") throw new Error("Missing ID token claims.");
+  const email = normalizeEmail(claims.email || claims.preferred_username || claims.upn || "");
+  if (!isValidCustomerLookupEmail(email)) throw new Error("SSO profile is missing an email address.");
+  if (!ssoEmailDomainAllowed(email)) throw new Error("SSO email domain is not allowed.");
+  const existing = await store.findAuthUserByEmail(email);
+  const displayName = cleanSettingText(
+    claims.name || [claims.given_name, claims.family_name].filter(Boolean).join(" ") || existing?.displayName || existing?.repName,
+    email,
+    80
+  );
+  return store.ensureAuthUser({
+    ...(existing || {}),
+    id: existing?.id || authUserIdFromEmail(email),
+    email,
+    displayName,
+    repName: existing?.repName || displayName,
+    role: existing?.role || "rep",
+    active: true,
+    sso: {
+      issuer: ssoConfig.issuer,
+      lastLoginAt: new Date().toISOString()
+    }
+  });
+}
+
+function ssoEmailDomainAllowed(email) {
+  if (!ssoConfig.allowedDomains.length) return true;
+  const domain = String(email || "").split("@").pop()?.toLowerCase() || "";
+  return ssoConfig.allowedDomains.includes(domain);
 }
 
 async function loadAppInfo() {
@@ -840,6 +1029,9 @@ async function buildStartupDiagnostics() {
   if (!Number.isFinite(sessionDays) || sessionDays <= 0) {
     errors.push("TESSARIO_SESSION_DAYS must be a positive number.");
   }
+  if (ssoConfig.enabled && !ssoConfig.ready) {
+    warnings.push(`Enterprise SSO is enabled but missing required configuration: ${ssoConfig.missing.join(", ")}.`);
+  }
 
   const storage = storageRuntimeInfo();
   if (production && store.mode === "json-file" && !storage.dataFile.durable) {
@@ -872,6 +1064,7 @@ function reportStartupDiagnostics(diagnostics) {
   console.log(`- auth mode: ${authMode}`);
   console.log(`- dev/demo login: ${devLoginEnabled ? "enabled" : "disabled"}`);
   console.log(`- strict login configured: ${auth.strictLoginConfigured ? "yes" : "no"} (${auth.strictCredentialSource || "none"})`);
+  console.log(`- enterprise SSO: ${ssoConfig.ready ? "enabled" : ssoConfig.enabled ? "misconfigured" : "disabled"}`);
   console.log(`- session secret: ${sessionSecretConfigured ? (sessionSecretStrong ? "configured" : "configured but short") : "not configured"}`);
   console.log(`- secure cookies: ${secureSessionCookies ? "enabled" : "disabled"}`);
   console.log(`- persistence: ${store.mode}`);
@@ -1637,6 +1830,10 @@ function signSessionToken(token) {
   return createHmac("sha256", sessionSecret).update(String(token)).digest("base64url");
 }
 
+function signSsoStateCookie(value) {
+  return createHmac("sha256", ssoStateSecret).update(String(value)).digest("base64url");
+}
+
 function constantTimeEqual(left, right) {
   const leftBuffer = Buffer.from(String(left || ""));
   const rightBuffer = Buffer.from(String(right || ""));
@@ -1652,6 +1849,34 @@ function expiredSessionCookie() {
   return `${sessionCookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secureSessionCookies ? "; Secure" : ""}`;
 }
 
+function ssoStateCookie(value) {
+  const body = Buffer.from(JSON.stringify({ ...value, createdAt: Date.now() }), "utf8").toString("base64url");
+  const signed = `${body}.${signSsoStateCookie(body)}`;
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  return `${ssoStateCookieName}=${encodeURIComponent(signed)}; Path=/api/auth/sso; HttpOnly; SameSite=Lax; Max-Age=600; Expires=${expiresAt.toUTCString()}${secureSessionCookies ? "; Secure" : ""}`;
+}
+
+function ssoStateFromCookie(value) {
+  if (!value) return null;
+  const cookieValue = String(value);
+  const separator = cookieValue.lastIndexOf(".");
+  if (separator === -1) return null;
+  const body = cookieValue.slice(0, separator);
+  const signature = cookieValue.slice(separator + 1);
+  if (!constantTimeEqual(signature, signSsoStateCookie(body))) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    if (!isPlainObject(parsed) || Date.now() - Number(parsed.createdAt || 0) > 10 * 60 * 1000) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function expiredSsoStateCookie() {
+  return `${ssoStateCookieName}=; Path=/api/auth/sso; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secureSessionCookies ? "; Secure" : ""}`;
+}
+
 function setCookie(response, cookie) {
   response.__tessarioHeaders = response.__tessarioHeaders || {};
   const existing = response.__tessarioHeaders["Set-Cookie"];
@@ -1660,4 +1885,13 @@ function setCookie(response, cookie) {
 
 function pendingHeaders(response) {
   return response.__tessarioHeaders || {};
+}
+
+function redirect(response, location, status = 302) {
+  response.writeHead(status, {
+    Location: location,
+    "Cache-Control": "no-store",
+    ...pendingHeaders(response)
+  });
+  response.end();
 }

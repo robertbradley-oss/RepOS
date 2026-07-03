@@ -1186,6 +1186,7 @@ let backendSyncTimer = 0;
 let backendSyncAvailable = false;
 const backendSyncQueue = new Map();
 let sessionUser = null;
+let enterpriseSsoConfig = { enabled: false, configured: false };
 let backendAssignmentUsers = [];
 let lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 let profile = loadProfile();
@@ -1296,6 +1297,9 @@ const el = {
   homePasswordInput: document.querySelector("#homePasswordInput"),
   homePasswordToggle: document.querySelector("#homePasswordToggle"),
   homeStatus: document.querySelector("#homeStatus"),
+  homeLoginHelper: document.querySelector("#homeLoginHelper"),
+  homeSsoButton: document.querySelector("#homeSsoButton"),
+  homeSsoHelper: document.querySelector("#homeSsoHelper"),
   appShell: document.querySelector(".app-shell"),
   workspace: document.querySelector(".workspace"),
   ticketWorkspace: document.querySelector(".ticket-workspace"),
@@ -1404,6 +1408,86 @@ function setHomeLoginControlsDisabled(disabled) {
   document.querySelectorAll("#homeSignInButton, #homePrimaryCta, [data-demo-workspace]").forEach((button) => {
     button.disabled = disabled;
   });
+  if (el.homeSsoButton) el.homeSsoButton.disabled = disabled || !enterpriseSsoConfig.enabled;
+}
+
+function applyEnterpriseSsoConfig(config = {}) {
+  enterpriseSsoConfig = {
+    enabled: Boolean(config.enabled),
+    configured: Boolean(config.configured)
+  };
+  if (el.homeLoginHelper) {
+    el.homeLoginHelper.textContent = "Use your demo credentials, or open the demo workspace.";
+  }
+  if (el.homeSsoButton) {
+    el.homeSsoButton.textContent = enterpriseSsoConfig.enabled ? "Log in with Enterprise SSO" : "Enterprise SSO";
+    el.homeSsoButton.disabled = !enterpriseSsoConfig.enabled;
+    el.homeSsoButton.classList.toggle("is-enabled", enterpriseSsoConfig.enabled);
+  }
+  if (el.homeSsoHelper) {
+    el.homeSsoHelper.textContent = enterpriseSsoConfig.enabled
+      ? "Use your company account to access RepOS."
+      : "Enterprise SSO can be enabled for production workspaces.";
+  }
+}
+
+async function loadEnterpriseSsoConfig() {
+  if (!window.fetch) {
+    applyEnterpriseSsoConfig();
+    return;
+  }
+  try {
+    const response = await fetch("/api/auth/sso/config", { cache: "no-store" });
+    if (!response.ok) throw new Error(`SSO config failed: ${response.status}`);
+    applyEnterpriseSsoConfig(await response.json());
+  } catch (error) {
+    console.warn("RepOS Enterprise SSO config is unavailable.", error);
+    applyEnterpriseSsoConfig();
+  }
+}
+
+function handleEnterpriseSsoLogin(event) {
+  event.preventDefault();
+  if (!enterpriseSsoConfig.enabled || el.homeSsoButton?.disabled) return;
+  setHomeStatus("Opening Enterprise SSO...");
+  window.location.assign("/api/auth/sso/start");
+}
+
+function consumeSsoQueryParams() {
+  const params = new URLSearchParams(window.location.search);
+  const ssoError = params.get("sso_error");
+  const ssoStatus = params.get("sso");
+  if (!ssoError && ssoStatus !== "success") return;
+  params.delete("sso_error");
+  params.delete("sso");
+  const nextQuery = params.toString();
+  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
+  window.history.replaceState(null, "", nextUrl);
+  if (ssoError) {
+    setHomeStatus("We couldn't finish Enterprise SSO. Please try again or use demo credentials.", true);
+    return;
+  }
+  resumeEnterpriseSsoSession();
+}
+
+async function resumeEnterpriseSsoSession() {
+  activateDemoWorkspace(ISPRING_DEMO_ID);
+  setHomeStatus("Opening RepOS...");
+  try {
+    await hydrateBackendState();
+    if (sessionUser) {
+      if (applySessionUserToWorkspace()) {
+        updateProfileButton();
+        render({ preserveQueueList: true, suppressQueueRowEnter: true });
+      }
+      enterWorkspace();
+      return;
+    }
+    setHomeStatus("Enterprise SSO completed, but RepOS could not load your session. Please try again.", true);
+  } catch (error) {
+    console.warn("RepOS Enterprise SSO session could not be loaded.", error);
+    setHomeStatus("Enterprise SSO completed, but RepOS could not load your session. Please try again.", true);
+  }
 }
 
 function setHomeDemoChoice(demoId) {
@@ -1653,6 +1737,10 @@ function init() {
   el.homeDemoButtons?.forEach((button) => button.addEventListener("click", handleHomeDemoChoice));
   setHomeDemoChoice(selectedHomeDemoId);
   el.homePasswordToggle?.addEventListener("click", toggleHomePassword);
+  el.homeSsoButton?.addEventListener("click", handleEnterpriseSsoLogin);
+  applyEnterpriseSsoConfig();
+  loadEnterpriseSsoConfig();
+  consumeSsoQueryParams();
   el.homeNavButton?.addEventListener("click", showHomeScreen);
   el.dashboardNavButton.addEventListener("click", showDashboardScreen);
   el.ticketsNavButton?.addEventListener("click", showQueueScreen);

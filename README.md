@@ -87,6 +87,29 @@ REPOS_ADMIN_PASSWORD="use-a-long-private-password"
 
 `REPOS_ADMIN_PASSWORD` is hashed with Node's built-in `scrypt` before it is persisted. For stricter secret handling, provision `REPOS_ADMIN_PASSWORD_HASH` instead and omit the plain password from the runtime environment. `REPOS_SESSION_SECRET` or `TESSARIO_SESSION_SECRET` signs session cookies in strict deployments and must be a long random value with at least 32 characters. Do not use `development`, `demo`, or the default demo password for a real production workspace.
 
+### Enterprise SSO
+
+Enterprise SSO is optional and disabled unless `REPOS_SSO_ENABLED=true`. When enabled, RepOS uses OpenID Connect / OAuth 2.0 Authorization Code flow and signs users into the existing RepOS session system. Email/password and demo login remain available when your auth mode allows them.
+
+Required environment variables:
+
+```bash
+REPOS_SSO_ENABLED=true
+REPOS_SSO_ISSUER=https://your-identity-provider.example.com
+REPOS_SSO_CLIENT_ID=your-client-id
+REPOS_SSO_CLIENT_SECRET=your-client-secret
+REPOS_SSO_REDIRECT_URI=https://your-repos-domain.com/api/auth/sso/callback
+```
+
+Optional environment variables:
+
+```bash
+REPOS_SSO_SCOPES="openid email profile"
+REPOS_SSO_ALLOWED_DOMAINS=company.com,ispringfilter.com
+```
+
+Register the redirect URI with your identity provider exactly as configured in `REPOS_SSO_REDIRECT_URI`. RepOS never exposes `REPOS_SSO_CLIENT_SECRET` to the frontend, and it does not store provider access tokens in browser storage.
+
 ### Railway JSON Deployment
 
 For Railway, set `NODE_ENV=production`, `TESSARIO_AUTH_MODE=strict`, `TESSARIO_DISABLE_DEV_LOGIN=1`, `REPOS_SECURE_COOKIES=1`, `REPOS_SESSION_SECRET`, and the `REPOS_ADMIN_*` variables in Railway environment variables. Mount a Railway volume and point JSON state and uploads at it:
