@@ -11055,7 +11055,7 @@ function currentUserIsAdmin() {
 }
 
 function currentUserCanUseMacros() {
-  return currentUserIsAdmin();
+  return isBackendPlainObject(sessionUser);
 }
 
 function enforceAuthorizedScreen() {
@@ -12485,7 +12485,7 @@ function openDashboardFilteredQueue(query) {
 
 function showMacroLibrary() {
   if (!currentUserCanUseMacros()) {
-    showAdminPermissionMessage("Macros");
+    showToast("Sign in to use macros.");
     return;
   }
   const ticket = selectedTicket();
@@ -13103,7 +13103,7 @@ function saveDraft(silent = false) {
 
 function insertMacro(macroId) {
   if (!currentUserCanUseMacros()) {
-    showToast("Macros are available to admins only.");
+    showToast("Sign in to use macros.");
     return;
   }
 
@@ -13156,7 +13156,7 @@ function positionReplyTabPill(animate = true, retry = 0) {
 
 function copyMacro(macroId) {
   if (!currentUserCanUseMacros()) {
-    showToast("Macros are available to admins only.");
+    showToast("Sign in to use macros.");
     return;
   }
 

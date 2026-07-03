@@ -65,25 +65,40 @@ function createRoleHarness(role, options = {}) {
 }
 
 for (const role of ["rep", "manager"]) {
-  const context = createRoleHarness(role, { selected: { id: "T-1" } });
+  const context = createRoleHarness(role, {
+    selected: { id: "T-1" },
+    sessionUser: { id: `${role}-user`, role, name: `${role} user`, active: true }
+  });
   assert.equal(context.currentUserIsAdmin(), false, `${role} should not be treated as admin`);
-  assert.equal(context.currentUserCanUseMacros(), false, `${role} should not be able to use macros`);
+  assert.equal(context.currentUserCanUseMacros(), true, `${role} should be able to use macros when signed in`);
 
   context.showAdminScreen();
   context.showKnowledgeVaultScreen();
   context.showMacroLibrary();
 
-  assert.deepEqual(context.calls, [["render"], ["render"]], `${role} should not navigate to admin, knowledge, or macros`);
+  assert.deepEqual(context.calls, [["render"], ["render"], ["openTicketDetail", "T-1"]], `${role} should not navigate to admin or product links, but should open ticket macros`);
   assert.deepEqual(context.toasts, [
     "Admin Hub is available to admins and owners only.",
-    "Knowledge Vault is available to admins and owners only.",
-    "Macros are available to admins and owners only."
-  ], `${role} should see permission messages for admin-only surfaces`);
+    "Product Link Library is available to admins and owners only.",
+    "Macros are available in the ticket context panel."
+  ], `${role} should see permission messages for admin-only surfaces and use macro navigation`);
   assert.equal(context.uiState.activeScreen, "queue", `${role} should remain on the current screen`);
 }
 
+{
+  const context = createRoleHarness("rep", { selected: { id: "T-0" }, sessionUser: null });
+  assert.equal(context.currentUserIsAdmin(), false, "unsigned rep context should not be admin");
+  assert.equal(context.currentUserCanUseMacros(), false, "unsigned context should not be able to use macros");
+  context.showMacroLibrary();
+  assert.deepEqual(context.calls, []);
+  assert.equal(context.toasts.at(-1), "Sign in to use macros.");
+}
+
 for (const role of ["admin", "owner"]) {
-  const context = createRoleHarness(role, { selected: { id: "T-2" } });
+  const context = createRoleHarness(role, {
+    selected: { id: "T-2" },
+    sessionUser: { id: `${role}-user`, role, name: `${role} user`, active: true }
+  });
   assert.equal(context.currentUserIsAdmin(), true, `${role} should be treated as admin`);
   assert.equal(context.currentUserCanUseMacros(), true, `${role} should be able to use macros`);
 
@@ -96,7 +111,9 @@ for (const role of ["admin", "owner"]) {
 }
 
 {
-  const context = createRoleHarness("admin");
+  const context = createRoleHarness("admin", {
+    sessionUser: { id: "admin-user", role: "admin", name: "admin user", active: true }
+  });
   context.showMacroLibrary();
   assert.equal(context.toasts.at(-1), "Select a ticket to use macros in context.");
 }
@@ -109,7 +126,7 @@ assert.match(
 assert.match(
   appSource,
   /function renderComposerMacroTool\(\) {\s+if \(!currentUserCanUseMacros\(\)\) return "";/,
-  "composer macro helper should return no UI for non-admin users"
+  "composer macro helper should return no UI for unsigned users"
 );
 assert.match(
   appSource,
@@ -128,13 +145,13 @@ assert.match(
 );
 assert.match(
   appSource,
-  /function insertMacro\(macroId\) {\s+if \(!currentUserCanUseMacros\(\)\) {\s+showToast\("Macros are available to admins only\."\);\s+return;\s+}/,
-  "insertMacro should block non-admin direct calls"
+  /function insertMacro\(macroId\) {\s+if \(!currentUserCanUseMacros\(\)\) {\s+showToast\("Sign in to use macros\."\);\s+return;\s+}/,
+  "insertMacro should block unsigned direct calls"
 );
 assert.match(
   appSource,
-  /function copyMacro\(macroId\) {\s+if \(!currentUserCanUseMacros\(\)\) {\s+showToast\("Macros are available to admins only\."\);\s+return;\s+}/,
-  "copyMacro should block non-admin direct calls"
+  /function copyMacro\(macroId\) {\s+if \(!currentUserCanUseMacros\(\)\) {\s+showToast\("Sign in to use macros\."\);\s+return;\s+}/,
+  "copyMacro should block unsigned direct calls"
 );
 
 console.log("Frontend admin role smoke test passed.");
