@@ -1284,7 +1284,9 @@ let pendingReceiptUpload = {
 const el = {
   homeScreen: document.querySelector("#homeScreen"),
   homeLoginForm: document.querySelector("#homeLoginForm"),
-  homeLoginButton: document.querySelector("#homeLoginButton"),
+  homeLoginOverlay: document.querySelector("#homeLoginOverlay"),
+  homeLoginClose: document.querySelector("#homeLoginClose"),
+  homeEnterpriseButton: document.querySelector("#homeEnterpriseButton"),
   homeSignInButton: document.querySelector("#homeSignInButton"),
   homePrimaryCta: document.querySelector("#homePrimaryCta"),
   homeDemoButtons: document.querySelectorAll("[data-demo-workspace]"),
@@ -1397,7 +1399,7 @@ function toggleHomePassword() {
 }
 
 function setHomeLoginControlsDisabled(disabled) {
-  document.querySelectorAll("#homeLoginButton, #homeSignInButton, #homePrimaryCta, [data-demo-workspace]").forEach((button) => {
+  document.querySelectorAll("#homeSignInButton, #homePrimaryCta, [data-demo-workspace]").forEach((button) => {
     button.disabled = disabled;
   });
 }
@@ -1541,20 +1543,34 @@ async function handleHomeLogin(event) {
   }
 }
 
-function handleHomeLoginButtonClick(event) {
+function openHomeLoginModal() {
+  setHomeStatus("");
+  el.homeLoginOverlay?.removeAttribute("hidden");
+  window.requestAnimationFrame(() => el.homeEmailInput?.focus({ preventScroll: true }));
+}
+
+function closeHomeLoginModal() {
+  el.homeLoginOverlay?.setAttribute("hidden", "");
+}
+
+function handleHomeSignInButtonClick(event) {
   event.preventDefault();
-  const email = String(el.homeEmailInput?.value || "").trim();
-  const password = String(el.homePasswordInput?.value || "");
-  if (!email && !password) {
-    activateDemoWorkspace(selectedHomeDemoId);
-    enterStaticDemoWorkspace();
-    return;
-  }
-  handleHomeLogin(event);
+  openHomeLoginModal();
+}
+
+function handleHomeDemoCta(event) {
+  event.preventDefault();
+  activateDemoWorkspace(GENERIC_DEMO_ID);
+  enterStaticDemoWorkspace();
+}
+
+function handleHomeEnterpriseLogin() {
+  setHomeStatus("Enterprise SSO isn't configured in this demo. Use email and password, or open the demo workspace.");
 }
 
 function enterWorkspace() {
   workspaceEntered = true;
+  closeHomeLoginModal();
   document.title = "RepOS Workspace";
   applyUiState();
   window.requestAnimationFrame(() => {
@@ -1616,9 +1632,16 @@ function init() {
   applyProfilePreferences({ initialize: true });
 
   el.homeLoginForm?.addEventListener("submit", handleHomeLogin);
-  el.homeLoginButton?.addEventListener("click", handleHomeLoginButtonClick);
-  el.homeSignInButton?.addEventListener("click", handleHomeLoginButtonClick);
-  el.homePrimaryCta?.addEventListener("click", handleHomeLoginButtonClick);
+  el.homeSignInButton?.addEventListener("click", handleHomeSignInButtonClick);
+  el.homePrimaryCta?.addEventListener("click", handleHomeDemoCta);
+  el.homeLoginClose?.addEventListener("click", closeHomeLoginModal);
+  el.homeEnterpriseButton?.addEventListener("click", handleHomeEnterpriseLogin);
+  el.homeLoginOverlay?.addEventListener("click", (event) => {
+    if (event.target === el.homeLoginOverlay) closeHomeLoginModal();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && el.homeLoginOverlay && !el.homeLoginOverlay.hidden) closeHomeLoginModal();
+  });
   el.homeDemoButtons?.forEach((button) => button.addEventListener("click", handleHomeDemoChoice));
   setHomeDemoChoice(selectedHomeDemoId);
   el.homePasswordToggle?.addEventListener("click", toggleHomePassword);

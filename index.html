@@ -20,12 +20,38 @@
         <span class="home-aura-grid"></span>
       </div>
 
-      <form class="home-login-form" id="homeLoginForm" novalidate>
-        <input id="homeEmailInput" name="email" type="email" autocomplete="username" placeholder="morgan.lee@demo.repos" aria-label="Email">
-        <input id="homePasswordInput" name="password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password">
-        <button type="button" id="homePasswordToggle" aria-label="Show password" aria-pressed="false" hidden></button>
-        <p class="home-status" id="homeStatus" role="status" aria-live="polite"></p>
-      </form>
+      <div class="home-login-overlay" id="homeLoginOverlay" hidden>
+        <section class="home-login-modal" role="dialog" aria-modal="true" aria-labelledby="homeLoginTitle">
+          <button class="home-login-close" id="homeLoginClose" type="button" aria-label="Close sign in">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </button>
+          <span class="home-login-mark" aria-hidden="true"><img src="./assets/repos-mark.png" alt=""></span>
+          <h2 id="homeLoginTitle">Sign in to RepOS</h2>
+          <p class="home-login-sub">Use your workspace credentials to continue.</p>
+          <form class="home-login-form" id="homeLoginForm" novalidate>
+            <label class="home-login-field">
+              <span>Email</span>
+              <input id="homeEmailInput" name="email" type="email" autocomplete="username" placeholder="morgan.lee@demo.repos" aria-label="Email">
+            </label>
+            <label class="home-login-field">
+              <span>Password</span>
+              <span class="home-login-password">
+                <input id="homePasswordInput" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" aria-label="Password">
+                <button type="button" id="homePasswordToggle" aria-label="Show password" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
+                </button>
+              </span>
+            </label>
+            <button class="home-login-submit" type="submit">Sign in <span aria-hidden="true">→</span></button>
+            <p class="home-status" id="homeStatus" role="status" aria-live="polite"></p>
+          </form>
+          <div class="home-login-divider" aria-hidden="true"><span>or</span></div>
+          <button class="home-login-sso" id="homeEnterpriseButton" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20.5V5A1.5 1.5 0 0 1 5.5 3.5h8A1.5 1.5 0 0 1 15 5v15.5"></path><path d="M15 9.5h3.5A1.5 1.5 0 0 1 20 11v9.5"></path><path d="M2.5 20.5h19"></path><path d="M7.5 7.5H9"></path><path d="M10.5 7.5H12"></path><path d="M7.5 11H9"></path><path d="M10.5 11H12"></path><path d="M7.5 14.5H9"></path><path d="M10.5 14.5H12"></path></svg>
+            Log in with Enterprise Account
+          </button>
+        </section>
+      </div>
 
       <nav class="home-nav" aria-label="RepOS landing navigation">
         <a class="home-brand" href="#homeScreen" aria-label="RepOS home">
@@ -43,7 +69,6 @@
           <a href="#homeAbout">About</a>
         </div>
         <div class="home-nav-actions">
-          <button class="home-login-link" id="homeLoginButton" type="button">Log in</button>
           <button class="home-signin-button" id="homeSignInButton" type="button">Sign in to RepOS <span aria-hidden="true">→</span></button>
         </div>
       </nav>
