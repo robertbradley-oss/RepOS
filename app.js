@@ -1811,7 +1811,7 @@ async function handleHomeLogin(event) {
   const password = String(el.homePasswordInput?.value || "");
 
   if (!email || !password) {
-    setHomeStatus("Enter your email and password.", true);
+    setHomeStatus("Enter your username and password.", true);
     (email ? el.homePasswordInput : el.homeEmailInput)?.focus({ preventScroll: true });
     return;
   }
@@ -1832,7 +1832,7 @@ async function handleHomeLogin(event) {
       body: JSON.stringify({ email, password })
     });
     if (response.status === 401) {
-      setHomeStatus("That email and password don't match. Try again.", true);
+      setHomeStatus("That username and password don't match. Try again.", true);
       el.homePasswordInput?.focus({ preventScroll: true });
       el.homePasswordInput?.select?.();
       return;
