@@ -22,6 +22,8 @@ const LEGACY_NOTIFICATIONS_STORAGE_KEY = `${LEGACY_STORAGE_PREFIX}.support.notif
 const DEMO_WORKSPACE_STORAGE_KEY = "repos.activeDemoWorkspace.v1";
 const GENERIC_DEMO_SEED_VERSION_STORAGE_KEY = "repos.genericDemoSeedVersion.v1";
 const GENERIC_DEMO_SEED_VERSION = "generic-demo-100-threads-v1";
+const ISPRING_DEMO_SEED_VERSION_STORAGE_KEY = "repos.ispringDemoSeedVersion.v1";
+const ISPRING_DEMO_SEED_VERSION = "ispring-demo-100-ticket-threads-v1";
 const ISPRING_DEMO_ID = "ispring";
 const GENERIC_DEMO_ID = "generic";
 const demoWorkspaceIds = new Set([ISPRING_DEMO_ID, GENERIC_DEMO_ID]);
@@ -1399,7 +1401,7 @@ seedTickets.push(...generateExtendedLongThreadMockTickets());
 seedTickets.push(...generateLongThreadMockTickets());
 seedTickets.push(...generateReceiptTestTickets());
 seedTickets.push(...generateFreshDemoTickets());
-workspaceConfig.tickets = applyDemoStoryPolish(alignRepeatCustomerAssignments(seedTickets));
+workspaceConfig.tickets = prepareIspringWorkspaceTicketSeed(applyDemoStoryPolish(alignRepeatCustomerAssignments(seedTickets)));
 
 const seedWorkspaceSettings = workspaceConfig.defaultSettings;
 let workspaceSettings = normalizeWorkspaceSettings(loadWorkspaceSettings());
@@ -2654,12 +2656,14 @@ function buildConversation(config, createdAt, lastCustomerAt, lastRepAt) {
     });
   }
 
-  messages.push({
-    type: "note",
-    author: config.assignee,
-    timestamp: hoursAgo(Math.max(0.25, config.ageHours - 3)),
-    body: config.internalNote
-  });
+  if (config.internalNote) {
+    messages.push({
+      type: "note",
+      author: config.assignee,
+      timestamp: hoursAgo(Math.max(0.25, config.ageHours - 3)),
+      body: config.internalNote
+    });
+  }
 
   if (config.partsSent) {
     messages.push({
@@ -2702,6 +2706,149 @@ function buildLongThreadTicket(config) {
   ticket.lastRepAt = ticket.conversation.filter((message) => message.type === "rep").at(-1)?.timestamp || ticket.lastRepAt;
   ticket.escalated = Boolean(config.escalated) || ticket.status === "Escalated";
   return ticket;
+}
+
+function prepareIspringWorkspaceTicketSeed(sourceTickets) {
+  const targetCount = 100;
+  const uniqueTickets = [];
+  const seenIds = new Set();
+  const appendTickets = (items) => {
+    items.forEach((ticket) => {
+      if (!ticket?.id || seenIds.has(ticket.id)) return;
+      seenIds.add(ticket.id);
+      uniqueTickets.push(ticket);
+    });
+  };
+
+  appendTickets(sourceTickets);
+  if (uniqueTickets.length < targetCount) {
+    appendTickets(generateAdditionalMockTickets(targetCount - uniqueTickets.length));
+  }
+
+  return uniqueTickets
+    .slice(0, targetCount)
+    .map((ticket, index) => rebuildIspringSeedThread(ticket, index));
+}
+
+function rebuildIspringSeedThread(ticket, index) {
+  const targetCount = 5 + ((index * 11) % 36);
+  const noteCount = index % 7 === 0 ? index % 21 === 0 && targetCount >= 14 ? 2 : 1 : 0;
+  const notePositions = new Set(
+    noteCount === 2
+      ? [Math.floor(targetCount * 0.36), Math.floor(targetCount * 0.72)]
+      : noteCount === 1
+        ? [Math.max(3, Math.floor(targetCount * 0.58))]
+        : []
+  );
+  const ageHours = Math.max(6, hoursBetween(ticket.createdAt, new Date()) || 6);
+  const stepHours = Math.max(0.25, ageHours / Math.max(1, targetCount - 1));
+  const assignee = normalizeRepName(ticket.assignee) || CURRENT_USER;
+  const customerName = ticket.customer?.name || "Customer";
+  const timelineAuthor = assignee || "System";
+  const existingMessages = visibleThreadMessages(ticket);
+  const firstCustomer = existingMessages.find((message) => message.type === "customer")?.body || seedCustomerOpening(ticket);
+  const firstRep = existingMessages.find((message) => message.type === "rep")?.body || seedRepReply(ticket);
+  const noteBody = seedInternalNote(ticket);
+  const thread = [];
+  let customerTurn = 0;
+  let repTurn = 0;
+
+  const timestampFor = (position) => hoursAgo(Math.max(0.15, ageHours - position * stepHours));
+  const push = (type, author, body, position, extra = {}) => {
+    if (thread.length >= targetCount || !body) return;
+    thread.push({
+      type,
+      author: normalizeRepName(author) || author,
+      timestamp: timestampFor(position),
+      body: replaceLegacyRepNamesInText(body),
+      ...extra
+    });
+  };
+
+  for (let position = 0; position < targetCount; position += 1) {
+    if (position === 0) {
+      push("customer", customerName, firstCustomer, position, { attachments: ticket.attachments || [] });
+      continue;
+    }
+    if (position === 1) {
+      push("timeline", "System", `Assigned to ${assignee}.`, position);
+      continue;
+    }
+    if (notePositions.has(position)) {
+      push("note", assignee, noteBody, position);
+      continue;
+    }
+    if (position === 2 && ticket.attachments?.length && targetCount > 6) {
+      const names = ticket.attachments.slice(0, 2).map((file) => file.file || file.fileName).filter(Boolean).join(", ");
+      push("timeline", "System", `Attachment received: ${names}.`, position);
+      continue;
+    }
+    if (position === targetCount - 1 && ticket.status !== "Open") {
+      push("timeline", timelineAuthor, `Status changed to ${ticket.status}.`, position);
+      continue;
+    }
+
+    const sequenceIndex = thread.filter((message) => message.type === "customer" || message.type === "rep").length;
+    if (sequenceIndex % 2 === 1) {
+      push("rep", assignee, repTurn === 0 ? firstRep : seedRepFollowUp(ticket, repTurn), position);
+      repTurn += 1;
+    } else {
+      push("customer", customerName, seedCustomerFollowUp(ticket, customerTurn), position);
+      customerTurn += 1;
+    }
+  }
+
+  ticket.assignee = assignee;
+  ticket.conversation = thread.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  ticket.lastCustomerAt = ticket.conversation.filter((message) => message.type === "customer").at(-1)?.timestamp || ticket.lastCustomerAt;
+  ticket.lastRepAt = ticket.conversation.filter((message) => message.type === "rep").at(-1)?.timestamp || "";
+  if (ticket.aiAssignment?.assignedTo) ticket.aiAssignment.assignedTo = normalizeRepName(ticket.aiAssignment.assignedTo) || ticket.aiAssignment.assignedTo;
+  return ticket;
+}
+
+function seedCustomerOpening(ticket) {
+  return `I need help with ${ticket.model || "my system"}. ${ticket.diagnosis?.issue || ticket.subject}`;
+}
+
+function seedRepReply(ticket) {
+  const firstTest = ticket.diagnosis?.firstTest || "Please send the details requested so we can confirm the next step.";
+  return `Thanks. ${firstTest}`;
+}
+
+function seedInternalNote(ticket) {
+  const missing = ticket.missing?.length ? ` Missing items: ${ticket.missing.join(", ")}.` : "";
+  const prior = ticket.customer?.previousTickets?.length ? " Review prior email history before asking repeat questions." : "";
+  return `${ticket.family || "Support"} case. ${ticket.diagnosis?.issue || "Confirm the support path before committing next steps."}${missing}${prior}`.trim();
+}
+
+function seedCustomerFollowUp(ticket, turn) {
+  const model = ticket.model || "the system";
+  const options = [
+    `I can send that. The ${model} is still showing the same issue this morning.`,
+    "I uploaded the photos and wanted to make sure they came through.",
+    `The order number I have is ${ticket.order || "not handy right now"}.`,
+    "Can you confirm whether this is something I can fix myself or if a part is needed?",
+    "I tried the step you suggested and the result changed a little, but it is not fully resolved.",
+    "I am checking in because I would like to get this handled today.",
+    "That makes sense. I will wait for your next instruction before taking anything apart.",
+    "The issue happens more when water is running at more than one fixture."
+  ];
+  return options[turn % options.length];
+}
+
+function seedRepFollowUp(ticket, turn) {
+  const confirms = ticket.diagnosis?.confirms || "That result will confirm the next action.";
+  const options = [
+    `Thanks, that helps. ${confirms}`,
+    `Please also confirm the model label shows ${ticket.model || "the expected model"} so we do not send the wrong step.`,
+    "I added the update to the ticket and am keeping the next step focused on the test result.",
+    "Before we discuss replacement, let's isolate whether the issue follows the filter, valve, or installation path.",
+    "If you can send one wider photo, it will help us avoid asking you to repeat work.",
+    "I understand the urgency. I am checking the safest path based on the evidence in this thread.",
+    "Once we have that last detail, I can confirm whether this is troubleshooting, warranty, or a parts path.",
+    "Thank you for the patience. I will keep the ticket open while we confirm the remaining detail."
+  ];
+  return options[turn % options.length];
 }
 
 function extendedThreadForCase(config) {
@@ -5172,7 +5319,7 @@ function resetTicketDataFromSeed() {
   selectedTicketId = "";
   queueDebugState.recoveredTickets = true;
   setStoredValue(STORAGE_KEY, JSON.stringify(tickets));
-  if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+  persistDemoSeedVersion();
   lastUsedTicketNumber = loadLastUsedTicketNumber(tickets);
 }
 
@@ -5317,6 +5464,18 @@ function isGenericDemoWorkspace() {
   return activeDemoWorkspaceId === GENERIC_DEMO_ID;
 }
 
+function demoSeedVersionStorageKey() {
+  return isGenericDemoWorkspace() ? GENERIC_DEMO_SEED_VERSION_STORAGE_KEY : ISPRING_DEMO_SEED_VERSION_STORAGE_KEY;
+}
+
+function demoSeedVersion() {
+  return isGenericDemoWorkspace() ? GENERIC_DEMO_SEED_VERSION : ISPRING_DEMO_SEED_VERSION;
+}
+
+function persistDemoSeedVersion() {
+  localStorage.setItem(demoSeedVersionStorageKey(), demoSeedVersion());
+}
+
 function scopedStorageKey(primaryKey) {
   return isGenericDemoWorkspace() ? `${primaryKey}.generic` : primaryKey;
 }
@@ -5368,10 +5527,10 @@ function nextTicketNumber() {
 }
 
 function loadTickets() {
-  if (isGenericDemoWorkspace() && localStorage.getItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY) !== GENERIC_DEMO_SEED_VERSION) {
+  if (localStorage.getItem(demoSeedVersionStorageKey()) !== demoSeedVersion()) {
     const seeded = demoTicketSeed();
     setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
-    localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    persistDemoSeedVersion();
     return seeded;
   }
 
@@ -5379,7 +5538,7 @@ function loadTickets() {
   if (!stored) {
     const seeded = demoTicketSeed();
     setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
-    if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    persistDemoSeedVersion();
     return seeded;
   }
 
@@ -5391,12 +5550,12 @@ function loadTickets() {
     }
     const seeded = demoTicketSeed();
     setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
-    if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    persistDemoSeedVersion();
     return seeded;
   } catch {
     const seeded = demoTicketSeed();
     setStoredValue(STORAGE_KEY, JSON.stringify(seeded));
-    if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+    persistDemoSeedVersion();
     return seeded;
   }
 }
@@ -13245,7 +13404,7 @@ function resetDemoData() {
   knowledgeDocs = JSON.parse(JSON.stringify(demoKnowledgeSeed()));
   productLinks = JSON.parse(JSON.stringify(demoProductLinkSeed()));
   notifications = seedNotifications(tickets);
-  if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
+  persistDemoSeedVersion();
   activeView = "open";
   enterQueueScreen();
   uiState.activeQuickControl = "open";
