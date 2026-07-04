@@ -12333,7 +12333,7 @@ function renderProductLinkSection(ticket) {
       </div>
       ${productLink ? `<div class="product-link-copy-row">
         <span>Saved link</span>
-        <button class="ghost-button compact-action-button" id="copySuggestedProductLinkButton" type="button">Copy Link</button>
+        <button class="ghost-button product-link-copy-button" id="copySuggestedProductLinkButton" type="button">Copy Link</button>
       </div>` : ""}
       <div class="context-actions split-actions product-link-actions">
         <button class="primary-button compact-action-button" id="insertSuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Insert product URL</button>
