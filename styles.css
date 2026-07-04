@@ -14215,7 +14215,7 @@ textarea,
 
 /* Everything that isn't ticket # + status drops away. */
 .detail-screen.detail-condensed .ticket-title-stack,
-.detail-screen.detail-condensed .compact-action-button,
+.detail-screen.detail-condensed .ticket-header .compact-action-button,
 .detail-screen.detail-condensed .header-row .sla,
 .detail-screen.detail-condensed .header-row .email-count-badge,
 .detail-screen.detail-condensed .header-row .badge.priority {
