@@ -1794,7 +1794,8 @@ function handleHomeDemoChoice(event) {
   setHomeDemoChoice(button.dataset.demoWorkspace);
 }
 
-function enterStaticDemoWorkspace() {
+function enterStaticDemoWorkspace(demoId = activeDemoWorkspaceId) {
+  activateDemoWorkspace(demoId);
   sessionUser = isGenericDemoWorkspace() ? genericSessionUser() : null;
   backendSyncReady = true;
   backendSyncAvailable = false;
@@ -1810,9 +1811,10 @@ function enterStaticDemoWorkspace() {
 
 async function handleHomeLogin(event) {
   event.preventDefault();
-  activateDemoWorkspace(selectedHomeDemoId);
   const email = String(el.homeEmailInput?.value || "").trim();
   const password = String(el.homePasswordInput?.value || "");
+  const isIspringLogin = normalizedLoginUsername(email) === staticDemoCredentials.username;
+  activateDemoWorkspace(isIspringLogin ? ISPRING_DEMO_ID : selectedHomeDemoId);
 
   if (!email || !password) {
     setHomeStatus("Enter your username and password.", true);
@@ -1824,7 +1826,7 @@ async function handleHomeLogin(event) {
 
   if (!window.fetch) {
     if (matchesStaticDemoCredentials(email, password)) {
-      enterStaticDemoWorkspace();
+      enterStaticDemoWorkspace(ISPRING_DEMO_ID);
     } else {
       setHomeStatus("That username and password don't match. Try again.", true);
     }
@@ -1847,7 +1849,7 @@ async function handleHomeLogin(event) {
     }
     if (response.status === 404 || response.status === 405) {
       if (matchesStaticDemoCredentials(email, password)) {
-        enterStaticDemoWorkspace();
+        enterStaticDemoWorkspace(ISPRING_DEMO_ID);
       } else {
         setHomeStatus("That username and password don't match. Try again.", true);
         el.homePasswordInput?.focus({ preventScroll: true });
@@ -1869,7 +1871,7 @@ async function handleHomeLogin(event) {
   } catch (error) {
     if (error instanceof TypeError) {
       if (matchesStaticDemoCredentials(email, password)) {
-        enterStaticDemoWorkspace();
+        enterStaticDemoWorkspace(ISPRING_DEMO_ID);
       } else {
         setHomeStatus("That username and password don't match. Try again.", true);
         el.homePasswordInput?.focus({ preventScroll: true });
@@ -1886,8 +1888,12 @@ async function handleHomeLogin(event) {
 }
 
 function matchesStaticDemoCredentials(username, password) {
-  return String(username || "").trim().toLowerCase() === staticDemoCredentials.username &&
+  return normalizedLoginUsername(username) === staticDemoCredentials.username &&
     String(password || "") === staticDemoCredentials.password;
+}
+
+function normalizedLoginUsername(username) {
+  return String(username || "").trim().toLowerCase();
 }
 
 function openHomeLoginModal() {
