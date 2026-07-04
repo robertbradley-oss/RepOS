@@ -420,7 +420,7 @@
         <nav class="nav-list sidebar-main-nav" aria-label="Main navigation">
           <span class="sidebar-nav-indicator motion-tab-indicator" aria-hidden="true"></span>
           <button class="nav-item" id="homeNavButton" type="button" title="RepOS Home" aria-label="RepOS Home" data-tooltip="RepOS Home">
-            <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24px" height="24px" viewBox="0 0 32 32"><polygon points="30.168 14.404 16 3.272 1.832 14.404 .596 12.832 16 .728 31.404 12.832 30.168 14.404" fill="#1c1f21" stroke-width="0" data-color="color-2"></polygon><path d="m16,5.815L4,15.244v10.756c0,2.206,1.794,4,4,4h5v-9h6v9h5c2.206,0,4-1.794,4-4v-10.756l-12-9.429Z" stroke-width="0" fill="#1c1f21"></path></svg></span>
+            <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24px" height="24px" viewBox="0 0 32 32"><polygon points="30.168 14.404 16 3.272 1.832 14.404 .596 12.832 16 .728 31.404 12.832 30.168 14.404" fill="currentColor" stroke-width="0" data-color="color-2"></polygon><path d="m16,5.815L4,15.244v10.756c0,2.206,1.794,4,4,4h5v-9h6v9h5c2.206,0,4-1.794,4-4v-10.756l-12-9.429Z" stroke-width="0" fill="currentColor"></path></svg></span>
             <span class="nav-label">Home</span>
           </button>
           <button class="nav-item" id="dashboardNavButton" type="button" title="Dashboard" aria-label="Dashboard" data-tooltip="Dashboard">
@@ -611,18 +611,6 @@
     </div>
 
     <script src="./app.js"></script>
-    <script>
-      (function () {
-        var btn = document.getElementById('previewCollapseButton');
-        if (!btn) return;
-        btn.addEventListener('click', function () {
-          var collapsed = document.body.classList.toggle('preview-collapsed');
-          var label = collapsed ? 'Show details' : 'Collapse details';
-          btn.setAttribute('aria-label', label);
-          btn.setAttribute('title', label);
-        });
-      })();
-    </script>
     <script>
       /* 3D dotted wave — a perspective-projected grid of dots displaced by a
          rolling sine surface. Renders to the .home-wave canvas in the hero. */

@@ -1501,6 +1501,7 @@ let uiState = {
   sidebarCollapsed: false,
   metricsCollapsed: false,
   contextCollapsed: true,
+  previewCollapsed: true,
   filtersCollapsed: true
 };
 let lastRenderedScreen = uiState.activeScreen;
@@ -1563,6 +1564,7 @@ const el = {
   toggleSidebarButton: document.querySelector("#toggleSidebarButton"),
   toggleMetricsButton: document.querySelector("#toggleMetricsButton"),
   toggleContextButton: document.querySelector("#toggleContextButton"),
+  previewCollapseButton: document.querySelector("#previewCollapseButton"),
   adminNavButton: document.querySelector("#adminNavButton"),
   settingsNavButton: document.querySelector("#settingsNavButton"),
   knowledgeVaultNavButton: document.querySelector("#knowledgeVaultNavButton"),
@@ -2089,6 +2091,7 @@ function init() {
   el.notificationPanel?.addEventListener("click", handleNotificationPanelClick);
   el.toggleMetricsButton?.addEventListener("click", () => toggleUi("metricsCollapsed"));
   el.toggleContextButton?.addEventListener("click", () => toggleUi("contextCollapsed"));
+  el.previewCollapseButton?.addEventListener("click", () => toggleUi("previewCollapsed"));
   el.newTicketButton.addEventListener("click", openTicketModal);
   el.copyTicketLinkButton?.addEventListener("click", copyTicketLink);
   el.profileButton.addEventListener("click", openProfileModal);
@@ -7973,6 +7976,7 @@ function applyProfilePreferences({ initialize } = { initialize: false }) {
   if (initialize && profile.autoOpenFirstTicket) {
     uiState.activeScreen = "detail";
     uiState.contextCollapsed = false;
+    uiState.previewCollapsed = false;
   }
 }
 
@@ -12833,6 +12837,7 @@ function openTicketDetail(ticketId, context = {}) {
   }
   uiState.activeScreen = "detail";
   uiState.contextCollapsed = false;
+  uiState.previewCollapsed = false;
   shouldScrollToLatestOnOpen = true;
   render({ preserveQueueList: true });
 }
@@ -12850,6 +12855,7 @@ function showQueueScreen() {
 function enterQueueScreen() {
   uiState.activeScreen = "queue";
   uiState.contextCollapsed = true;
+  uiState.previewCollapsed = true;
 }
 
 function renderQueueReturnFromDetail() {
@@ -13112,6 +13118,7 @@ function applyUiState() {
   document.body.classList.toggle("sidebar-labels-hidden", sidebarLabelsHidden || uiState.sidebarCollapsed);
   document.body.classList.toggle("metrics-collapsed", uiState.metricsCollapsed);
   document.body.classList.toggle("context-collapsed", uiState.contextCollapsed);
+  document.body.classList.toggle("preview-collapsed", uiState.previewCollapsed);
   document.body.classList.toggle("filters-collapsed", uiState.filtersCollapsed);
   document.body.classList.toggle("table-view-active", uiState.queueMode === "table");
   document.body.classList.toggle("card-view-active", uiState.queueMode === "card");
@@ -13128,6 +13135,12 @@ function applyUiState() {
   el.tableViewButton?.setAttribute("aria-pressed", "true");
   if (el.toggleMetricsButton) el.toggleMetricsButton.textContent = uiState.metricsCollapsed ? "Show metrics" : "Hide metrics";
   if (el.toggleContextButton) el.toggleContextButton.textContent = uiState.contextCollapsed ? "Show context" : "Hide context";
+  if (el.previewCollapseButton) {
+    const previewLabel = uiState.previewCollapsed ? "Show details" : "Collapse details";
+    el.previewCollapseButton.setAttribute("aria-label", previewLabel);
+    el.previewCollapseButton.setAttribute("title", previewLabel);
+    el.previewCollapseButton.setAttribute("aria-expanded", String(!uiState.previewCollapsed));
+  }
   el.toggleSidebarButton.setAttribute("aria-expanded", String(!uiState.sidebarCollapsed));
   el.toggleSidebarButton.setAttribute("aria-label", uiState.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar");
   el.toggleSidebarButton.setAttribute("title", uiState.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar");
@@ -15522,6 +15535,7 @@ function handleCreateTicket(event) {
   activeView = "open";
   uiState.activeScreen = "detail";
   uiState.contextCollapsed = false;
+  uiState.previewCollapsed = false;
   uiState.activeQuickControl = "open";
   persistTickets();
   closeTicketModal();
