@@ -15052,6 +15052,214 @@ textarea,
   color: currentColor;
 }
 
+/* ===========================================================================
+   Dashboard signal cleanup. Manager table: risk was encoded four times per
+   row (edge bar + row wash + red count chips + pill) — the pill is now the
+   single carrier, on a standard green/amber/red scale, so the worst rep
+   stands out instead of the whole table flashing. Rep table: reason pills
+   gain urgency classes (risk = late, warn = blocker/deadline, turn = your
+   move) instead of one uniform violet.
+   =========================================================================== */
+.manager-risk-row.risk-watch,
+.manager-risk-row.risk-behind {
+  background: transparent;
+  box-shadow: none;
+}
+
+.manager-risk-row.risk-watch:hover,
+.manager-risk-row.risk-behind:hover {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+/* Counts are data, not alarms — always the neutral chip. */
+.workload-chip.chip-warn,
+.workload-chip.chip-risk {
+  color: #4b4563;
+  background: #f4f1fb;
+  border-color: #e0daf0;
+}
+
+/* Risk pill: conventional traffic-light scale. */
+.risk-pill.risk-good {
+  color: #196a3e;
+  background: rgba(23, 178, 106, 0.12);
+  border-color: rgba(23, 178, 106, 0.3);
+}
+
+.risk-pill.risk-watch {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.34);
+}
+
+/* Rep dashboard reason pills by urgency. "Turn" keeps the base violet. */
+.reason-pill.tone-risk {
+  color: #8f1d2c;
+  background: rgba(217, 45, 32, 0.1);
+  border-color: rgba(217, 45, 32, 0.24);
+}
+
+.reason-pill.tone-warn {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.34);
+}
+
+/* ---- KPI cards as drill-throughs: same card, now clickable. ---- */
+button.dashboard-metric.metric-link {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+button.dashboard-metric.metric-link:hover,
+button.dashboard-metric.metric-link:focus-visible {
+  border-color: rgba(124, 92, 255, 0.45);
+  box-shadow: 0 2px 8px rgba(96, 52, 224, 0.12);
+  outline: none;
+}
+
+/* ---- Rep table: SLA cell + customer-wait note under the reason pill. ---- */
+.sla-cell {
+  font-size: 11.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.sla-cell.sla-risk {
+  color: #b42318;
+}
+
+.sla-cell.sla-warn {
+  color: #92400e;
+}
+
+.reason-wait {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+/* ---- Manager table: evidence line under the risk pill, labeled bar. ---- */
+.risk-why,
+.workload-bar-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+/* ---- Queue trend card: created vs closed, last 7 days. ---- */
+.queue-trend-card .row-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trend-net {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 750;
+  white-space: nowrap;
+  color: #4b4563;
+  background: #f4f1fb;
+  border: 1px solid #e0daf0;
+}
+
+.trend-net-risk {
+  color: #8f1d2c;
+  background: rgba(217, 45, 32, 0.1);
+  border-color: rgba(217, 45, 32, 0.24);
+}
+
+.trend-net-good {
+  color: #196a3e;
+  background: rgba(23, 178, 106, 0.12);
+  border-color: rgba(23, 178, 106, 0.3);
+}
+
+.queue-trend-chart {
+  display: block;
+  width: 100%;
+  height: 96px;
+  margin-top: 6px;
+}
+
+.queue-trend-chart .trend-line {
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.queue-trend-chart .trend-line.trend-created,
+.queue-trend-chart .trend-dot.trend-created {
+  stroke: var(--accent);
+}
+
+.queue-trend-chart .trend-dot.trend-created {
+  fill: var(--accent);
+}
+
+.queue-trend-chart .trend-line.trend-closed,
+.queue-trend-chart .trend-dot.trend-closed {
+  stroke: #17b26a;
+}
+
+.queue-trend-chart .trend-dot.trend-closed {
+  fill: #17b26a;
+}
+
+.queue-trend-days {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.queue-trend-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.queue-trend-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trend-swatch {
+  width: 10px;
+  height: 3px;
+  border-radius: 999px;
+}
+
+.trend-swatch.trend-created {
+  background: var(--accent);
+}
+
+.trend-swatch.trend-closed {
+  background: #17b26a;
+}
+
 /* Ticket message exchange: quiet neutral canvas behind white message cards. */
 .detail-screen .conversation-scroll-area {
   background: #f7f8fb;

@@ -9400,6 +9400,7 @@ function renderDashboardOverview(currentDashboardView, scopedTickets, primaryTic
 function renderManagerDashboard(scopedTickets) {
   return `
     <section class="dashboard-grid dashboard-grid-lean">
+      ${renderQueueTrendCard(scopedTickets)}
       <article class="dashboard-card workload-card">
         <div class="section-title">
           <h3>Rep performance and risk</h3>
@@ -9407,6 +9408,71 @@ function renderManagerDashboard(scopedTickets) {
         ${renderRepWorkloadTable(scopedTickets)}
       </article>
     </section>
+  `;
+}
+
+// Real created-vs-closed counts per day for the last 7 days — answers "is the
+// queue growing or shrinking?" (unlike the demo's fabricated activity series).
+function queueTrendSeries(scopedTickets) {
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (6 - index));
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return { start, end, label: start.toLocaleDateString(undefined, { weekday: "short" }) };
+  });
+  const inDay = (value, day) => {
+    if (!value) return false;
+    const date = new Date(value);
+    return date >= day.start && date < day.end;
+  };
+  return days.map((day) => ({
+    label: day.label,
+    created: scopedTickets.filter((ticket) => inDay(ticket.createdAt, day)).length,
+    closed: scopedTickets.filter((ticket) => isClosedDisplayStatus(ticket) && inDay(ticketClosedAt(ticket), day)).length
+  }));
+}
+
+function renderQueueTrendCard(scopedTickets) {
+  const series = queueTrendSeries(scopedTickets);
+  const createdTotal = series.reduce((total, day) => total + day.created, 0);
+  const closedTotal = series.reduce((total, day) => total + day.closed, 0);
+  const net = createdTotal - closedTotal;
+  const netLabel = net > 0 ? `Backlog +${net} this week` : net < 0 ? `Backlog ${net} this week` : "Backlog flat this week";
+  const netTone = net > 0 ? "risk" : net < 0 ? "good" : "neutral";
+  const width = 720;
+  const height = 96;
+  const padX = 6;
+  const padY = 8;
+  const max = Math.max(1, ...series.flatMap((day) => [day.created, day.closed]));
+  const pointsFor = (key) => series.map((day, index) => {
+    const x = padX + (index * (width - padX * 2)) / (series.length - 1);
+    const y = height - padY - (day[key] / max) * (height - padY * 2);
+    return { x, y, value: day[key] };
+  });
+  const linePath = (points) => points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+  const dots = (points, cls) => points.map((point) => `<circle class="${cls}" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"><title>${point.value}</title></circle>`).join("");
+  const created = pointsFor("created");
+  const closed = pointsFor("closed");
+  return `
+    <article class="dashboard-card queue-trend-card">
+      <div class="section-title row-title">
+        <h3>Inbound vs closed &mdash; last 7 days</h3>
+        <span class="trend-net trend-net-${netTone}">${escapeHtml(netLabel)}</span>
+      </div>
+      <svg class="queue-trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Tickets created versus closed per day over the last 7 days" preserveAspectRatio="none">
+        <polyline class="trend-line trend-created" points="${linePath(created)}" fill="none"></polyline>
+        <polyline class="trend-line trend-closed" points="${linePath(closed)}" fill="none"></polyline>
+        ${dots(created, "trend-dot trend-created")}
+        ${dots(closed, "trend-dot trend-closed")}
+      </svg>
+      <div class="queue-trend-days">${series.map((day) => `<span>${escapeHtml(day.label)}</span>`).join("")}</div>
+      <div class="queue-trend-legend">
+        <span><i class="trend-swatch trend-created"></i>Created &middot; ${createdTotal}</span>
+        <span><i class="trend-swatch trend-closed"></i>Closed &middot; ${closedTotal}</span>
+      </div>
+    </article>
   `;
 }
 
@@ -9547,12 +9613,14 @@ function dashboardManagerMetricCards(scopedTickets) {
   const customerReplies = scopedTickets.filter(customerRepliedWithoutRep);
   const dueSoon = scopedTickets.filter(isSlaDueSoon);
   const overdue = scopedTickets.filter(isOverdue);
+  const unassigned = scopedTickets.filter(isUnassignedTicket);
   return [
-    { label: "Active tickets", value: activeTickets.length, meta: `${activeReps} reps with open work`, tone: activeTickets.length > 14 ? "warn" : "neutral" },
-    { label: "Needs action", value: needsAction.length, meta: "Ranked by customer wait and SLA", tone: needsAction.length ? "risk" : "good" },
-    { label: "Customer replies", value: customerReplies.length, meta: "Waiting for a rep response", tone: customerReplies.length ? "warn" : "good" },
-    { label: "SLA due soon", value: dueSoon.length, meta: "Due within 8 hours", tone: dueSoon.length ? "warn" : "good" },
-    { label: "Overdue", value: overdue.length, meta: "Past due or breached", tone: overdue.length ? "risk" : "good" }
+    { label: "Active tickets", value: activeTickets.length, meta: `${activeReps} reps with open work`, tone: activeTickets.length > 14 ? "warn" : "neutral", query: "" },
+    { label: "Needs action", value: needsAction.length, meta: "Ranked by customer wait and SLA", tone: needsAction.length ? "risk" : "good", query: "needs action" },
+    { label: "Customer replies", value: customerReplies.length, meta: "Waiting for a rep response", tone: customerReplies.length ? "warn" : "good", query: "customer replied" },
+    { label: "SLA due soon", value: dueSoon.length, meta: "Due within 8 hours", tone: dueSoon.length ? "warn" : "good", query: "sla due soon" },
+    { label: "Overdue", value: overdue.length, meta: "Past due or breached", tone: overdue.length ? "risk" : "good", query: "overdue" },
+    { label: "Unassigned", value: unassigned.length, meta: "No owner yet", tone: unassigned.length ? "risk" : "good", query: "unassigned" }
   ];
 }
 
@@ -9562,22 +9630,30 @@ function dashboardRepMetricCards(primaryTickets, scopedTickets) {
   const dueSoon = primaryTickets.filter(isSlaDueSoon);
   const overdue = primaryTickets.filter(isOverdue);
   return [
-    { label: "My active tickets", value: activeTickets.length, meta: `${scopedTickets.length} tickets in filtered scope`, tone: activeTickets.length > 8 ? "warn" : "neutral" },
-    { label: "Replies waiting", value: customerReplies.length, meta: "Customers need your next response", tone: customerReplies.length ? "warn" : "good" },
-    { label: "SLA due soon", value: dueSoon.length, meta: "Due within 8 hours", tone: dueSoon.length ? "warn" : "good" },
-    { label: "My overdue", value: overdue.length, meta: "Past due or breached", tone: overdue.length ? "risk" : "good" },
+    { label: "My active tickets", value: activeTickets.length, meta: `${scopedTickets.length} tickets in filtered scope`, tone: activeTickets.length > 8 ? "warn" : "neutral", query: "" },
+    { label: "Replies waiting", value: customerReplies.length, meta: "Customers need your next response", tone: customerReplies.length ? "warn" : "good", query: "customer replied" },
+    { label: "SLA due soon", value: dueSoon.length, meta: "Due within 8 hours", tone: dueSoon.length ? "warn" : "good", query: "sla due soon" },
+    { label: "My overdue", value: overdue.length, meta: "Past due or breached", tone: overdue.length ? "risk" : "good", query: "overdue" },
     { label: "Closed today", value: primaryTickets.filter(closedToday).length, meta: "Completed from your queue", tone: "good" }
   ];
 }
 
 function renderDashboardMetricCard(metric) {
-  return `
-    <article class="dashboard-metric tone-${metric.tone}">
+  const inner = `
       <span>${escapeHtml(metric.label)}</span>
       <strong>${escapeHtml(metric.value)}</strong>
       <small>${escapeHtml(metric.meta || metric.trend || "Current filtered view")}</small>
-    </article>
   `;
+  // Cards with a query are drill-throughs: clicking opens the queue filtered
+  // to the tickets behind the number.
+  if (typeof metric.query === "string") {
+    return `
+      <button class="dashboard-metric metric-link tone-${metric.tone}" data-dashboard-filter-query="${escapeHtml(metric.query)}" type="button" title="Open these tickets in the queue">
+        ${inner}
+      </button>
+    `;
+  }
+  return `<article class="dashboard-metric tone-${metric.tone}">${inner}</article>`;
 }
 
 function renderActivityChart(scopedTickets) {
@@ -9639,23 +9715,57 @@ function renderNeedsActionTable(scopedTickets, options = {}) {
   return `
     <div class="dashboard-table-wrap">
       <table class="dashboard-table">
-        <thead><tr><th>Ticket #</th><th>Subject</th><th>Customer</th>${includeAssignee ? "<th>Assigned rep</th>" : ""}<th>Reason</th><th>Last updated</th><th>Action</th></tr></thead>
+        <thead><tr><th>Ticket #</th><th>Subject</th><th>Customer</th>${includeAssignee ? "<th>Assigned rep</th>" : ""}<th>Reason</th><th>SLA</th><th>Last updated</th><th>Action</th></tr></thead>
         <tbody>
-          ${rows.map(({ ticket, reason }) => `
+          ${rows.map(({ ticket, reason }) => {
+            const sla = ticketSlaCell(ticket);
+            const waiting = reason === "Customer replied" ? customerWaitingLabel(ticket) : "";
+            return `
             <tr>
               <td><strong>${escapeHtml(ticketDisplayId(ticket))}</strong></td>
               <td>${escapeHtml(ticket.subject)}</td>
               <td>${escapeHtml(ticket.customer.name)}</td>
               ${includeAssignee ? `<td>${escapeHtml(ticket.assignee || "Unassigned")}</td>` : ""}
-              <td><span class="reason-pill">${escapeHtml(reason)}</span></td>
+              <td>
+                <span class="reason-pill tone-${needsActionReasonTone(reason)}">${escapeHtml(reason)}</span>
+                ${waiting ? `<small class="reason-wait">${escapeHtml(waiting)}</small>` : ""}
+              </td>
+              <td><span class="sla-cell ${sla.tone ? `sla-${sla.tone}` : ""}">${escapeHtml(sla.label)}</span></td>
               <td>${escapeHtml(dateTimeLabel(lastUpdatedAt(ticket)))}</td>
               <td><button class="ghost-button" data-dashboard-open-ticket="${escapeHtml(ticket.id)}" type="button">Work ticket</button></td>
             </tr>
-          `).join("")}
+          `;
+          }).join("")}
         </tbody>
       </table>
     </div>
   `;
+}
+
+// Time remaining against the SLA, as a rep would triage it: how late, or how
+// long until it becomes late.
+function ticketSlaCell(ticket) {
+  if (!ticket.dueAt || !isActiveTicket(ticket)) return { label: "—", tone: "" };
+  const hours = hoursUntil(ticket.dueAt);
+  if (hours < 0) return { label: `Overdue ${shortDurationLabel(-hours)}`, tone: "risk" };
+  if (hours <= 8) return { label: `Due in ${shortDurationLabel(hours)}`, tone: "warn" };
+  return { label: `Due in ${shortDurationLabel(hours)}`, tone: "" };
+}
+
+function shortDurationLabel(hours) {
+  const rounded = Math.max(1, Math.round(hours));
+  if (rounded < 24) return `${rounded}h`;
+  const days = Math.floor(rounded / 24);
+  const rest = rounded % 24;
+  return rest ? `${days}d ${rest}h` : `${days}d`;
+}
+
+function customerWaitingLabel(ticket) {
+  const lastCustomer = [...(ticket.conversation || [])]
+    .reverse()
+    .find((message) => message.type === "customer");
+  if (!lastCustomer?.timestamp) return "";
+  return `waiting ${shortDurationLabel(hoursSince(lastCustomer.timestamp))}`;
 }
 
 function needsActionTickets(sourceTickets = tickets) {
@@ -9664,6 +9774,15 @@ function needsActionTickets(sourceTickets = tickets) {
     .map((ticket) => ({ ticket, reason: needsActionReason(ticket), score: stuckTicketScore(ticket) }))
     .filter((item) => item.reason)
     .sort((a, b) => b.score - a.score || new Date(a.ticket.dueAt) - new Date(b.ticket.dueAt));
+}
+
+// Reasons fall into three urgency classes so the pills can be scanned:
+// risk (already late/escalated), warn (a blocker or deadline approaching),
+// turn (the ball is in the rep's court).
+function needsActionReasonTone(reason) {
+  if (reason === "Overdue" || reason === "Escalated") return "risk";
+  if (reason === "Customer replied" || reason === "Follow-up due") return "turn";
+  return "warn";
 }
 
 function needsActionReason(ticket) {
@@ -9859,11 +9978,18 @@ function renderRepWorkloadTable(scopedTickets) {
             const activeWidth = Math.max(4, Math.min(100, (row.active / maxActive) * 100));
             return `
               <tr class="manager-risk-row risk-${row.risk.tone}">
-                <td><strong>${escapeHtml(row.user.name)}</strong><span class="workload-bar"><i style="width:${activeWidth}%"></i></span></td>
+                <td>
+                  <strong>${escapeHtml(row.user.name)}</strong>
+                  <span class="workload-bar" title="${row.active} active vs busiest rep at ${maxActive}"><i style="width:${activeWidth}%"></i></span>
+                  <small class="workload-bar-note">${row.active} active &middot; busiest ${maxActive}</small>
+                </td>
                 <td><span class="workload-chip">${row.active}</span></td>
                 <td><span class="workload-chip ${row.customerReplies >= 4 ? "chip-risk" : row.customerReplies >= 2 ? "chip-warn" : ""}">${row.customerReplies}</span></td>
                 <td><span class="workload-chip ${row.overdue >= 2 ? "chip-risk" : row.overdue === 1 ? "chip-warn" : ""}">${row.overdue}</span></td>
-                <td><span class="risk-pill risk-${row.risk.tone}">${escapeHtml(row.risk.label)}</span></td>
+                <td>
+                  <span class="risk-pill risk-${row.risk.tone}">${escapeHtml(row.risk.label)}</span>
+                  <small class="risk-why">${escapeHtml(managerRiskEvidence(row))}</small>
+                </td>
                 <td>
                   <div class="dashboard-row-actions">
                     <button class="ghost-button mini-action-button" data-dashboard-rep-action="tickets" data-dashboard-rep-name="${escapeHtml(row.user.name)}" type="button">View rep tickets</button>
@@ -9925,6 +10051,16 @@ function managerWorkloadRowData(user, scopedTickets) {
   };
 }
 
+// The evidence behind the risk pill, so the judgment is checkable at a glance.
+function managerRiskEvidence(row) {
+  const parts = [];
+  if (row.overdue) parts.push(`${row.overdue} overdue`);
+  if (row.customerReplies) parts.push(`${row.customerReplies} ${row.customerReplies === 1 ? "reply" : "replies"} waiting`);
+  if (row.dueSoon) parts.push(`${row.dueSoon} due soon`);
+  if (row.oldestOpenHours >= 72) parts.push(`oldest ${row.oldestOpenAge}`);
+  return parts.length ? parts.join(" · ") : "No flags";
+}
+
 function managerRepRiskLevel(data) {
   if (data.overdue >= 2 || data.customerReplies >= 4 || data.dueSoon >= 4 || data.oldestOpenHours >= 120) {
     return { label: "Behind", tone: "behind" };
@@ -9947,8 +10083,82 @@ function handleDashboardRepAction(action, repName) {
     return;
   }
   if (action === "rebalance") {
-    showToast(`Rebalance review queued for ${safeRepName}.`);
+    openRebalanceModal(safeRepName);
   }
+}
+
+// Rebalance with a concrete proposal: pick the rep's most at-risk tickets and
+// suggest the least-loaded eligible teammate, instead of a fire-and-forget toast.
+function openRebalanceModal(repName) {
+  const scopedTickets = dashboardFilteredTickets();
+  const rows = visibleAssignmentUsers().map((user) => managerWorkloadRowData(user, scopedTickets));
+  const source = rows.find((row) => sameAssignmentUserName(row.user.name, repName));
+  if (!source) return;
+  const eligibleNames = activeAssignmentOptionUsers().map((user) => user.name);
+  const targets = rows
+    .filter((row) => row.user.name !== source.user.name && eligibleNames.includes(row.user.name))
+    .sort((a, b) => a.active - b.active);
+  const target = targets[0];
+  if (!target) {
+    showToast("No eligible rep available to take tickets.");
+    return;
+  }
+  const candidates = scopedTickets
+    .filter((ticket) => ticket.assignee === source.user.name && isActiveTicket(ticket) && !isTicketActionLocked(ticket.id))
+    .sort((a, b) =>
+      (isOverdue(b) - isOverdue(a)) ||
+      (customerRepliedWithoutRep(b) - customerRepliedWithoutRep(a)) ||
+      (new Date(a.createdAt) - new Date(b.createdAt)));
+  if (!candidates.length) {
+    showToast(`${source.user.name} has no active tickets to move.`);
+    return;
+  }
+  const gap = source.active - target.active;
+  const moveCount = Math.min(candidates.length, Math.max(1, Math.min(3, Math.ceil(gap / 2))));
+  const moveTickets = candidates.slice(0, moveCount);
+
+  el.workflowConfirmModal.innerHTML = `
+    <form id="rebalanceConfirmForm">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Rebalance workload</p>
+          <h2>${escapeHtml(source.user.name)} &rarr; ${escapeHtml(target.user.name)}</h2>
+          <p>${escapeHtml(source.user.name)} has ${source.active} active tickets; ${escapeHtml(target.user.name)} has ${target.active}. Moving the ${moveTickets.length === 1 ? "most at-risk ticket" : `${moveTickets.length} most at-risk tickets`} (overdue and waiting customers first).</p>
+        </div>
+        <button class="icon-button" id="closeWorkflowConfirmButton" aria-label="Close" type="button">x</button>
+      </div>
+      <div class="confirmation-body">
+        <label class="confirmation-field">
+          <span>Move to</span>
+          <select name="targetRep" required>
+            ${targets.map((row) => `<option value="${escapeHtml(row.user.name)}"${row.user.name === target.user.name ? " selected" : ""}>${escapeHtml(row.user.name)} (${row.active} active)</option>`).join("")}
+          </select>
+        </label>
+        ${renderBulkTicketList(moveTickets)}
+        <label class="confirmation-note">
+          <span>Internal note</span>
+          <textarea name="internalNote" rows="3" placeholder="Optional note added to each moved ticket">Rebalanced from ${escapeHtml(source.user.name)} to spread workload.</textarea>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary-button" id="cancelWorkflowConfirmButton" type="button">Cancel</button>
+        <button class="primary-button" type="submit">Move ${moveTickets.length === 1 ? "1 ticket" : `${moveTickets.length} tickets`}</button>
+      </div>
+    </form>
+  `;
+
+  openWorkflowConfirmModal();
+  el.workflowConfirmModal.querySelector("#closeWorkflowConfirmButton").addEventListener("click", closeWorkflowConfirmModal);
+  el.workflowConfirmModal.querySelector("#cancelWorkflowConfirmButton").addEventListener("click", closeWorkflowConfirmModal);
+  el.workflowConfirmModal.querySelector("#rebalanceConfirmForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const assignee = stringFormValue(form, "targetRep");
+    const note = stringFormValue(form, "internalNote");
+    moveTickets.forEach((ticket) => reassignTicket(ticket.id, assignee, "", true, note));
+    closeWorkflowConfirmModal();
+    showToast(`Moved ${moveTickets.length === 1 ? "1 ticket" : `${moveTickets.length} tickets`} from ${source.user.name} to ${assignee}.`);
+  });
 }
 
 function renderDashboardWidgets(scopedTickets) {
@@ -12844,7 +13054,7 @@ function ticketSearchText(ticket) {
 function dashboardQueueReasonTerms(ticket) {
   const terms = [];
   const reason = needsActionReason(ticket);
-  if (reason) terms.push(reason);
+  if (reason) terms.push(reason, "needs action");
   if (customerRepliedWithoutRep(ticket)) terms.push("customer replies waiting");
   if (isOverdue(ticket)) terms.push("overdue sla breached");
   if (isSlaDueSoon(ticket)) terms.push("sla due soon");
