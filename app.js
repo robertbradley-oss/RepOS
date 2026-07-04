@@ -12331,12 +12331,12 @@ function renderProductLinkSection(ticket) {
         <strong>${escapeHtml(matchLabel)}</strong>
         <small>${productLink ? "Active link available for this ticket" : "Add an active link for this model and source"}</small>
       </div>
-      ${productLink ? `<dl class="info-list">
-        <div><dt>Saved link</dt><dd class="link-value"><a href="${escapeHtml(productLink.url)}" target="_blank" rel="noreferrer">${escapeHtml(productLink.url)}</a></dd></div>
-      </dl>` : ""}
+      ${productLink ? `<div class="product-link-copy-row">
+        <span>Saved link</span>
+        <button class="ghost-button compact-action-button" id="copySuggestedProductLinkButton" type="button">Copy Link</button>
+      </div>` : ""}
       <div class="context-actions split-actions product-link-actions">
         <button class="primary-button compact-action-button" id="insertSuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Insert product URL</button>
-        <button class="ghost-button compact-action-button" id="copySuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Copy URL</button>
       </div>
       ${reviewNeeded && reviewLinks.length ? `
         <div class="review-link-row">

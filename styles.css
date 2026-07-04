@@ -7119,6 +7119,24 @@ body:not(.is-admin) .admin-only {
   line-height: 1.25;
 }
 
+.product-link-copy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 750;
+}
+
+.product-link-copy-row .ghost-button {
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding-inline: 10px;
+  font-size: 10.5px;
+}
+
 .product-link-muted {
   display: block;
   margin-top: 2px;
