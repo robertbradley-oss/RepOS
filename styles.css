@@ -15271,6 +15271,85 @@ button.dashboard-metric.metric-link:focus-visible {
   background: #17b26a;
 }
 
+/* ===========================================================================
+   Dashboard de-clunk pass: the page was four floating cards each with its own
+   chrome. Header becomes a slim title row (no card), the redundant "at a
+   glance" intro is gone so the KPI cards span full width as quiet flat tiles,
+   and the rep table rows tighten to a single scan line per rep.
+   =========================================================================== */
+.dashboard-header.dashboard-header-slim {
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 4px 4px 12px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.dashboard-header.dashboard-header-slim h1 {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+/* KPI row: transparent wrapper, cards share the full width. */
+.dashboard-overview.dashboard-overview-flat {
+  display: block;
+  margin-bottom: 12px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.dashboard-overview-flat .dashboard-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+/* KPI tiles: flat white on a hairline, slim accent edge, no gradient/shadow. */
+.dashboard-metric {
+  min-height: 88px;
+  padding: 12px 13px;
+  background: #ffffff;
+  border: 1px solid var(--line-soft);
+  border-left: 3px solid var(--tessario-blue);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.dashboard-metric.tone-neutral {
+  border-left-color: #cfd4dd;
+}
+
+/* Uniform section titles across dashboard cards. */
+.dashboard-panel .dashboard-card .section-title h3 {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* Rep table: one scan line per rep, quieter and shorter rows. */
+.manager-workload-table {
+  min-width: 900px;
+}
+
+.manager-workload-table td {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  vertical-align: middle;
+}
+
+.risk-why {
+  margin-top: 3px;
+}
+
 /* Ticket message exchange: quiet neutral canvas behind white message cards. */
 .detail-screen .conversation-scroll-area {
   background: #f7f8fb;

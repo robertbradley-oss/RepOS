@@ -9305,11 +9305,8 @@ function renderDashboardPanel() {
   const primaryTickets = dashboardPrimaryTickets(scopedTickets);
   const currentDashboardView = effectiveDashboardView();
   el.dashboardPanel.innerHTML = `
-    <div class="dashboard-header">
-      <div>
-        <h1>${currentDashboardView === "manager" ? "Manager Dashboard" : "Rep Dashboard"}</h1>
-        <p>${currentDashboardView === "manager" ? "Team view for workload, SLA risk, and support queue movement." : "Your tickets first, with team trends shown only in aggregate."} ${escapeHtml(demoStateSentence())}</p>
-      </div>
+    <div class="dashboard-header dashboard-header-slim">
+      <h1>${currentDashboardView === "manager" ? "Manager Dashboard" : "Rep Dashboard"}</h1>
       <div class="dashboard-header-actions">
         ${renderDashboardViewToggle(currentDashboardView)}
         <button class="secondary-button" id="dashboardRefreshButton" type="button">Refresh</button>
@@ -9384,18 +9381,8 @@ function setDashboardView(nextView) {
 function renderDashboardOverview(currentDashboardView, scopedTickets, primaryTickets) {
   const managerView = currentDashboardView === "manager";
   const metrics = managerView ? dashboardManagerMetricCards(scopedTickets) : dashboardRepMetricCards(primaryTickets, scopedTickets);
-  const activeScope = managerView ? scopedTickets.filter(isActiveTicket).length : primaryTickets.filter(isActiveTicket).length;
-  const scopeLabel = managerView ? "Team snapshot" : "My snapshot";
-  const scopeText = managerView
-    ? `${activeScope} active team tickets across the current dashboard filters.`
-    : `${activeScope} active assigned tickets in your current dashboard view.`;
   return `
-    <section class="dashboard-overview" aria-label="${escapeHtml(scopeLabel)}">
-      <div class="dashboard-overview-copy">
-        <p class="eyebrow">${escapeHtml(scopeLabel)}</p>
-        <h2>${managerView ? "Queue health at a glance" : "Your queue at a glance"}</h2>
-        <p>${escapeHtml(scopeText)}</p>
-      </div>
+    <section class="dashboard-overview dashboard-overview-flat" aria-label="${managerView ? "Team snapshot" : "My snapshot"}">
       <div class="dashboard-metrics dashboard-overview-metrics">
         ${metrics.map(renderDashboardMetricCard).join("")}
       </div>
@@ -9455,7 +9442,7 @@ function renderQueueTrendCard(scopedTickets) {
   const width = 1160;
   const height = 170;
   const padL = 44;
-  const padR = 18;
+  const padR = 32;
   const padT = 14;
   const padB = 30;
   const innerW = width - padL - padR;
@@ -9463,7 +9450,9 @@ function renderQueueTrendCard(scopedTickets) {
   const baseY = padT + innerH;
   const rawMax = Math.max(1, ...series.flatMap((day) => [day.created, day.closed]));
   const step = rawMax <= 4 ? 1 : rawMax <= 8 ? 2 : rawMax <= 20 ? 5 : 10;
-  const yMax = Math.max(step, Math.ceil(rawMax / step) * step);
+  let yMax = Math.max(step, Math.ceil(rawMax / step) * step);
+  // Headroom so an end-of-week spike never presses against the card edge.
+  if (rawMax >= yMax * 0.92) yMax += step;
   const xFor = (index) => padL + (index * innerW) / (series.length - 1);
   const yFor = (value) => padT + innerH - (value / yMax) * innerH;
   const pointsFor = (key) => series.map((day, index) => ({ x: xFor(index), y: yFor(day[key]), value: day[key], label: day.label }));
@@ -10029,37 +10018,29 @@ function renderDashboardMoreInsights(scopedTickets, primaryTickets) {
 
 function renderRepWorkloadTable(scopedTickets) {
   const rows = visibleAssignmentUsers().map((user) => managerWorkloadRowData(user, scopedTickets));
-  const maxActive = Math.max(1, ...rows.map((row) => row.active));
   return `
     <div class="dashboard-table-wrap">
       <table class="dashboard-table rep-table manager-workload-table">
         <thead><tr><th>Rep name</th><th>Active tickets</th><th>Customer replies waiting</th><th>Overdue tickets</th><th>Risk level</th><th>Actions</th></tr></thead>
         <tbody>
-          ${rows.map((row) => {
-            const activeWidth = Math.max(4, Math.min(100, (row.active / maxActive) * 100));
-            return `
+          ${rows.map((row) => `
               <tr class="manager-risk-row risk-${row.risk.tone}">
-                <td>
-                  <strong>${escapeHtml(row.user.name)}</strong>
-                  <span class="workload-bar" title="${row.active} active tickets"><i style="width:${activeWidth}%"></i></span>
-                </td>
+                <td><strong>${escapeHtml(row.user.name)}</strong></td>
                 <td><span class="workload-chip">${row.active}</span></td>
-                <td><span class="workload-chip ${row.customerReplies >= 4 ? "chip-risk" : row.customerReplies >= 2 ? "chip-warn" : ""}">${row.customerReplies}</span></td>
-                <td><span class="workload-chip ${row.overdue >= 2 ? "chip-risk" : row.overdue === 1 ? "chip-warn" : ""}">${row.overdue}</span></td>
+                <td><span class="workload-chip">${row.customerReplies}</span></td>
+                <td><span class="workload-chip">${row.overdue}</span></td>
                 <td>
                   <span class="risk-pill risk-${row.risk.tone}">${escapeHtml(row.risk.label)}</span>
                   <small class="risk-why">${escapeHtml(managerRiskEvidence(row))}</small>
                 </td>
                 <td>
                   <div class="dashboard-row-actions">
-                    <button class="ghost-button mini-action-button" data-dashboard-rep-action="tickets" data-dashboard-rep-name="${escapeHtml(row.user.name)}" type="button">View rep tickets</button>
-                    <button class="ghost-button mini-action-button" data-dashboard-rep-action="overdue" data-dashboard-rep-name="${escapeHtml(row.user.name)}" type="button"${row.overdue ? "" : " disabled"}>View overdue</button>
+                    <button class="ghost-button mini-action-button" data-dashboard-rep-action="tickets" data-dashboard-rep-name="${escapeHtml(row.user.name)}" type="button">View</button>
                     <button class="ghost-button mini-action-button" data-dashboard-rep-action="rebalance" data-dashboard-rep-name="${escapeHtml(row.user.name)}" type="button">Rebalance</button>
                   </div>
                 </td>
               </tr>
-            `;
-          }).join("")}
+          `).join("")}
         </tbody>
       </table>
     </div>
