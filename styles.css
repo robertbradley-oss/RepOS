@@ -15240,19 +15240,21 @@ button.dashboard-metric.metric-link:focus-visible {
   fill: #17b26a;
 }
 
-.queue-trend-legend {
+.queue-trend-meta {
   display: flex;
-  gap: 16px;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 650;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
 }
 
-.queue-trend-legend span {
+.queue-trend-legend-item {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
 }
 
 .trend-swatch {

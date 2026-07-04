@@ -8470,11 +8470,17 @@ function ticketMatchesClosedDateRange(ticket) {
   return closedDate >= start && closedDate < end;
 }
 
-function ticketClosedAt(ticket) {
+// Timestamp of the actual close/resolve status event, or null when the
+// timeline never recorded one (e.g. freshly seeded demo tickets).
+function ticketClosedEventAt(ticket) {
   const statusEvent = [...visibleThreadMessages(ticket)]
     .reverse()
     .find((message) => message.type === "timeline" && /status changed to (closed|resolved|waiting customer|waiting on response|closed,\s*waiting on response)|changed status .* to (closed|resolved|waiting customer|waiting on response|closed,\s*waiting on response)|closed\./i.test(message.body));
-  return statusEvent?.timestamp || lastUpdatedAt(ticket);
+  return statusEvent?.timestamp || null;
+}
+
+function ticketClosedAt(ticket) {
+  return ticketClosedEventAt(ticket) || lastUpdatedAt(ticket);
 }
 
 function closedDateRangeBounds(range) {
@@ -9430,7 +9436,9 @@ function queueTrendSeries(scopedTickets) {
   return days.map((day) => ({
     label: day.label,
     created: scopedTickets.filter((ticket) => inDay(ticket.createdAt, day)).length,
-    closed: scopedTickets.filter((ticket) => isClosedDisplayStatus(ticket) && inDay(ticketClosedAt(ticket), day)).length
+    // Only count real close events: the lastUpdatedAt fallback bunches every
+    // seeded closed ticket onto one day and tells a false story.
+    closed: scopedTickets.filter((ticket) => isClosedDisplayStatus(ticket) && inDay(ticketClosedEventAt(ticket), day)).length
   }));
 }
 
@@ -9445,11 +9453,11 @@ function renderQueueTrendCard(scopedTickets) {
   // Fixed-aspect chart (no preserveAspectRatio="none" stretch): axis labels,
   // gridlines, smoothed lines with a soft area fill, and ringed data points.
   const width = 1160;
-  const height = 250;
+  const height = 170;
   const padL = 44;
   const padR = 18;
-  const padT = 16;
-  const padB = 34;
+  const padT = 14;
+  const padB = 30;
   const innerW = width - padL - padR;
   const innerH = height - padT - padB;
   const baseY = padT + innerH;
@@ -9460,7 +9468,9 @@ function renderQueueTrendCard(scopedTickets) {
   const yFor = (value) => padT + innerH - (value / yMax) * innerH;
   const pointsFor = (key) => series.map((day, index) => ({ x: xFor(index), y: yFor(day[key]), value: day[key], label: day.label }));
 
-  // Catmull-Rom -> cubic bezier for a gentle curve through every point.
+  // Catmull-Rom -> cubic bezier, with control points clamped to each
+  // segment's own y-range so a flat run meeting a spike can't overshoot
+  // (which read as "negative tickets" below the zero line).
   const smoothPath = (points) => {
     if (points.length < 2) return "";
     let path = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
@@ -9469,10 +9479,12 @@ function renderQueueTrendCard(scopedTickets) {
       const p1 = points[i];
       const p2 = points[i + 1];
       const p3 = points[i + 2] || p2;
+      const lo = Math.min(p1.y, p2.y);
+      const hi = Math.max(p1.y, p2.y);
       const c1x = p1.x + (p2.x - p0.x) / 6;
-      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c1y = Math.min(hi, Math.max(lo, p1.y + (p2.y - p0.y) / 6));
       const c2x = p2.x - (p3.x - p1.x) / 6;
-      const c2y = p2.y - (p3.y - p1.y) / 6;
+      const c2y = Math.min(hi, Math.max(lo, p2.y - (p3.y - p1.y) / 6));
       path += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
     }
     return path;
@@ -9495,7 +9507,11 @@ function renderQueueTrendCard(scopedTickets) {
     <article class="dashboard-card queue-trend-card">
       <div class="section-title row-title">
         <h3>Inbound vs closed &mdash; last 7 days</h3>
-        <span class="trend-net trend-net-${netTone}">${escapeHtml(netLabel)}</span>
+        <div class="queue-trend-meta">
+          <span class="queue-trend-legend-item"><i class="trend-swatch trend-created"></i>Created &middot; ${createdTotal}</span>
+          <span class="queue-trend-legend-item"><i class="trend-swatch trend-closed"></i>Closed &middot; ${closedTotal}</span>
+          <span class="trend-net trend-net-${netTone}">${escapeHtml(netLabel)}</span>
+        </div>
       </div>
       <svg class="queue-trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Tickets created versus closed per day over the last 7 days">
         <defs>
@@ -9517,10 +9533,6 @@ function renderQueueTrendCard(scopedTickets) {
         ${dots(closed, "trend-closed", "closed")}
         ${dayLabels}
       </svg>
-      <div class="queue-trend-legend">
-        <span><i class="trend-swatch trend-created"></i>Created &middot; ${createdTotal}</span>
-        <span><i class="trend-swatch trend-closed"></i>Closed &middot; ${closedTotal}</span>
-      </div>
     </article>
   `;
 }
