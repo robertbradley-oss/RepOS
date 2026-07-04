@@ -1487,7 +1487,7 @@ let uiState = {
   activeQuickControl: "open",
   sidebarCollapsed: false,
   metricsCollapsed: false,
-  contextCollapsed: false,
+  contextCollapsed: true,
   filtersCollapsed: true
 };
 let lastRenderedScreen = uiState.activeScreen;
@@ -1776,7 +1776,7 @@ function activateDemoWorkspace(demoId) {
   pendingStatusChanges.clear();
   notificationsOpen = false;
   activeView = "open";
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   uiState.activeQuickControl = "open";
   queuePage = 1;
   filters.queue = "";
@@ -7922,6 +7922,7 @@ function applyProfilePreferences({ initialize } = { initialize: false }) {
 
   if (initialize && profile.autoOpenFirstTicket) {
     uiState.activeScreen = "detail";
+    uiState.contextCollapsed = false;
   }
 }
 
@@ -11409,7 +11410,7 @@ function enforceAuthorizedScreen() {
   if (currentUserIsAdmin()) return;
   if (!["admin", "knowledge"].includes(uiState.activeScreen)) return;
   const label = uiState.activeScreen === "knowledge" ? "Product Link Library" : "Admin Hub";
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   showAdminPermissionMessage(label);
 }
 
@@ -11421,7 +11422,7 @@ function showAdminPermissionMessage(area = "This area") {
 function showAdminScreen() {
   if (!currentUserIsAdmin()) {
     showAdminPermissionMessage("Admin Hub");
-    uiState.activeScreen = "queue";
+    enterQueueScreen();
     render();
     return;
   }
@@ -11432,7 +11433,7 @@ function showAdminScreen() {
 function showKnowledgeVaultScreen() {
   if (!currentUserIsAdmin()) {
     showAdminPermissionMessage("Product Link Library");
-    uiState.activeScreen = "queue";
+    enterQueueScreen();
     render();
     return;
   }
@@ -12638,7 +12639,7 @@ function handleViewClick(event) {
 
   activeView = button.dataset.view;
   resetQueuePagination();
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   uiState.activeQuickControl = activeView;
   clearFilters(false);
   render();
@@ -12659,7 +12660,7 @@ function handleQueueTabClick(event) {
     activeView = tab;
   }
   resetQueuePagination();
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   uiState.activeQuickControl = activeView;
   render();
 }
@@ -12690,7 +12691,7 @@ function handleToolbarStatusChange(event) {
     filters.status = value;
     filters.queue = "";
     resetQueuePagination();
-    uiState.activeScreen = "queue";
+    enterQueueScreen();
     uiState.activeQuickControl = "filters";
     render();
     return;
@@ -12713,7 +12714,7 @@ function applyToolbarSavedView(value) {
   filters.queue = view.query;
   filters.sort = view.sort || "newest";
   resetQueuePagination();
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   uiState.activeQuickControl = "filters";
   if (el.queueSearch) el.queueSearch.value = filters.queue;
   if (el.sortSelect) el.sortSelect.value = filters.sort;
@@ -12761,14 +12762,14 @@ function updateTableFilter(key, value) {
 
 function setQueueMode(mode) {
   uiState.queueMode = "table";
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   applyUiState();
   render();
 }
 
 function setQuickView(view) {
   activeView = view;
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   setActiveQuickControl(view);
   render();
 }
@@ -12788,12 +12789,17 @@ function openTicketDetail(ticketId, context = {}) {
 
 function showQueueScreen() {
   const returningFromDetail = uiState.activeScreen === "detail";
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   if (returningFromDetail && el.ticketList?.innerHTML.trim() && cachedVisibleTickets.length) {
     renderQueueReturnFromDetail();
     return;
   }
   render();
+}
+
+function enterQueueScreen() {
+  uiState.activeScreen = "queue";
+  uiState.contextCollapsed = true;
 }
 
 function renderQueueReturnFromDetail() {
@@ -12817,7 +12823,7 @@ function showDashboardScreen() {
 
 function openDashboardFilteredQueue(query) {
   activeView = dashboardIsTeamMode() ? "open" : "assigned";
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   uiState.activeQuickControl = activeView;
   filters.global = "";
   filters.queue = String(query || "").trim();
@@ -13178,7 +13184,7 @@ function resetDemoData() {
   notifications = seedNotifications(tickets);
   if (isGenericDemoWorkspace()) localStorage.setItem(GENERIC_DEMO_SEED_VERSION_STORAGE_KEY, GENERIC_DEMO_SEED_VERSION);
   activeView = "open";
-  uiState.activeScreen = "queue";
+  enterQueueScreen();
   uiState.activeQuickControl = "open";
   selectedTicketId = "";
   selectedTicketIds.clear();
@@ -15465,6 +15471,7 @@ function handleCreateTicket(event) {
   selectedTicketId = ticket.id;
   activeView = "open";
   uiState.activeScreen = "detail";
+  uiState.contextCollapsed = false;
   uiState.activeQuickControl = "open";
   persistTickets();
   closeTicketModal();
