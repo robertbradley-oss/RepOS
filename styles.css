@@ -14967,3 +14967,8 @@ textarea,
     opacity: 0.8;
   }
 }
+
+/* Ticket message exchange: quiet neutral canvas behind white message cards. */
+.detail-screen .conversation-scroll-area {
+  background: #f7f8fb;
+}
