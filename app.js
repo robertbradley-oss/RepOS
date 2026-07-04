@@ -12127,7 +12127,6 @@ function renderContext(ticket) {
     if (macroId) copyMacro(macroId);
   });
   el.contextPanel.querySelector("#copySuggestedProductLinkButton")?.addEventListener("click", () => copyProductLink(ticket));
-  el.contextPanel.querySelector("#insertSuggestedProductLinkButton")?.addEventListener("click", () => insertProductLink(ticket));
   el.contextPanel.querySelectorAll("[data-review-link-id]").forEach((button) => {
     button.addEventListener("click", () => copyReviewLink(button.dataset.reviewLinkId));
   });
@@ -12494,9 +12493,6 @@ function renderProductLinkSection(ticket) {
         <span>Saved link</span>
         <button class="ghost-button product-link-copy-button" id="copySuggestedProductLinkButton" type="button">Copy Link</button>
       </div>` : ""}
-      <div class="context-actions split-actions product-link-actions">
-        <button class="primary-button compact-action-button" id="insertSuggestedProductLinkButton" type="button" ${productLink ? "" : "disabled"}>Insert product URL</button>
-      </div>
       ${reviewNeeded && reviewLinks.length ? `
         <div class="review-link-row">
           <span>Review links</span>

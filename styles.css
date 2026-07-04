@@ -7307,26 +7307,6 @@ body:not(.is-admin) .admin-only {
   text-decoration: underline;
 }
 
-.product-link-actions {
-  margin-top: 8px;
-}
-
-.product-link-actions .primary-button,
-.product-link-actions .ghost-button {
-  justify-content: center;
-  min-height: 28px;
-  padding-inline: 7px;
-  font-size: 10.5px;
-  white-space: normal;
-}
-
-.product-link-actions .primary-button:disabled {
-  cursor: not-allowed;
-  filter: grayscale(0.1);
-  opacity: 0.52;
-  transform: none;
-}
-
 .review-link-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
