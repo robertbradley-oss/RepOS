@@ -27,22 +27,36 @@ const GENERIC_DEMO_ID = "generic";
 const demoWorkspaceIds = new Set([ISPRING_DEMO_ID, GENERIC_DEMO_ID]);
 let activeDemoWorkspaceId = safeDemoWorkspaceId(localStorage.getItem(DEMO_WORKSPACE_STORAGE_KEY));
 let selectedHomeDemoId = activeDemoWorkspaceId;
-const CURRENT_USER = "Morgan Lee";
+const CURRENT_USER = "CS14";
 const MIN_TICKET_NUMBER = 100000;
 const verifiedPurchaseSources = ["Amazon", "iSpring direct", "Home Depot", "Lowe's", "Walmart", "eBay"];
 const legacyRepNameMap = {
-  ["Robert" + " Bradley"]: "CS14 Robert",
-  ["Nick" + " Lawrence"]: "CS1 Nick",
-  ["Julius" + " Francis"]: "CS2 Julius",
-  ["Sean" + " Carter"]: "CS3 Sean",
-  ["Jonathan" + " Brown"]: "CS4 Jonathan",
-  ["Michelle" + " Roberts"]: "CS5 Michelle",
-  "CS14 · Robert": "CS14 Robert",
-  "CS1 · Nick": "CS1 Nick",
-  "CS2 · Julius": "CS2 Julius",
-  "CS3 · Sean": "CS3 Sean",
-  "CS4 · Jonathan": "CS4 Jonathan",
-  "CS5 · Michelle": "CS5 Michelle"
+  ["Robert" + " Bradley"]: "CS14",
+  ["Nick" + " Lawrence"]: "CS1",
+  ["Julius" + " Francis"]: "CS2",
+  ["Sean" + " Carter"]: "CS3",
+  ["Jonathan" + " Brown"]: "CS4",
+  ["Michelle" + " Roberts"]: "CS5",
+  "Morgan Lee": "CS14",
+  "CS14 Robert": "CS14",
+  "CS1 Nick": "CS1",
+  "CS2 Julius": "CS2",
+  "CS3 Sean": "CS3",
+  "CS4 Jonathan": "CS4",
+  "CS5 Michelle": "CS5",
+  "CS14 · Robert": "CS14",
+  "CS1 · Nick": "CS1",
+  "CS2 · Julius": "CS2",
+  "CS3 · Sean": "CS3",
+  "CS4 · Jonathan": "CS4",
+  "CS5 · Michelle": "CS5",
+  "CS14 Â· Robert": "CS14",
+  "CS1 Â· Nick": "CS1",
+  "CS2 Â· Julius": "CS2",
+  "CS3 Â· Sean": "CS3",
+  "CS4 Â· Jonathan": "CS4",
+  "CS5 Â· Michelle": "CS5",
+  "Test Rep": "CS0"
 };
 
 const workspaceConfig = {
@@ -64,9 +78,9 @@ const workspaceConfig = {
     workspaceName: "iSpring Water Systems",
     workspaceLabel: "Workspace: iSpring Water Systems",
     supportEmail: "support@ispringfilters.com",
-    currentUserName: "Morgan Lee",
+    currentUserName: "CS14",
     currentUserRole: "admin",
-    defaultAssignee: "Morgan Lee",
+    defaultAssignee: "CS14",
     timezone: "America/New_York",
     demoMode: true,
     allowedStatuses: ["Open", "Closed, Waiting On Response", "Closed"]
@@ -223,14 +237,14 @@ const workspaceConfig = {
     confirms: "Customer provides enough detail for a workflow decision."
   },
   defaultProfile: {
-    firstName: "Morgan",
-    lastName: "Lee",
-    displayName: "Morgan Lee",
-    email: "morgan.lee@demo.repos",
+    firstName: "CS14",
+    lastName: "",
+    displayName: "CS14",
+    email: "cs14@demo.repos",
     phone: "678-555-0144",
     mobile: "",
     extension: "DEMO",
-    username: "morgan.lee",
+    username: "cs14",
     role: "Workspace Admin",
     twoFactorEnabled: true,
     defaultLandingView: "open",
@@ -244,7 +258,7 @@ const workspaceConfig = {
     ticketDensity: "Comfortable",
     defaultSort: "Last Updated",
     autoOpenFirstTicket: false,
-    mySignature: "Thanks,\nMorgan",
+    mySignature: "Thanks,\nCS14",
     departmentSignature: "Customer Service Department\niSpring Water Systems",
     defaultSignature: "My Signature",
     insertSignature: true,
@@ -264,14 +278,13 @@ const workspaceConfig = {
     quietHoursEnd: "08:00"
   },
   reps: [
-    { id: "morgan-lee", name: "Morgan Lee", role: "admin", assignmentEligible: true, removed: false },
-    { id: "robert-bradley", name: "CS14 Robert", role: "admin", assignmentEligible: true, removed: false },
-    { id: "test-rep", name: "Test Rep", role: "rep", assignmentEligible: true, removed: false, email: "rep-test@repos.local" },
-    { id: "nick-lawrence", name: "CS1 Nick", role: "rep", assignmentEligible: true, removed: false },
-    { id: "julius-francis", name: "CS2 Julius", role: "rep", assignmentEligible: true, removed: false },
-    { id: "sean-carter", name: "CS3 Sean", role: "rep", assignmentEligible: true, removed: false },
-    { id: "jonathan-brown", name: "CS4 Jonathan", role: "rep", assignmentEligible: true, removed: false },
-    { id: "michelle-roberts", name: "CS5 Michelle", role: "rep", assignmentEligible: true, removed: false }
+    { id: "cs14", name: "CS14", role: "admin", assignmentEligible: true, removed: false },
+    { id: "cs0", name: "CS0", role: "rep", assignmentEligible: true, removed: false, email: "rep-test@repos.local" },
+    { id: "cs1", name: "CS1", role: "rep", assignmentEligible: true, removed: false },
+    { id: "cs2", name: "CS2", role: "rep", assignmentEligible: true, removed: false },
+    { id: "cs3", name: "CS3", role: "rep", assignmentEligible: true, removed: false },
+    { id: "cs4", name: "CS4", role: "rep", assignmentEligible: true, removed: false },
+    { id: "cs5", name: "CS5", role: "rep", assignmentEligible: true, removed: false }
   ],
   macroCategories: [
     "Warranty",
@@ -5388,25 +5401,47 @@ function loadTickets() {
 function loadUsers() {
   const stored = storedValue(USERS_STORAGE_KEY, LEGACY_USERS_STORAGE_KEY);
   if (!stored) {
-    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(demoUserSeed()));
-    return JSON.parse(JSON.stringify(demoUserSeed()));
+    const seeded = normalizeAssignmentUsers(demoUserSeed());
+    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(seeded));
+    return seeded;
   }
 
   try {
     const parsed = JSON.parse(stored);
     if (Array.isArray(parsed)) {
-      const normalized = parsed.map((user) => ({ ...user, name: normalizeRepName(user.name) || user.name }));
+      const normalized = normalizeAssignmentUsers(parsed);
       if (hasValidUserData(normalized)) {
         setStoredValue(USERS_STORAGE_KEY, JSON.stringify(normalized));
         return normalized;
       }
     }
-    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(demoUserSeed()));
-    return JSON.parse(JSON.stringify(demoUserSeed()));
+    const seeded = normalizeAssignmentUsers(demoUserSeed());
+    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(seeded));
+    return seeded;
   } catch {
-    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(demoUserSeed()));
-    return JSON.parse(JSON.stringify(demoUserSeed()));
+    const seeded = normalizeAssignmentUsers(demoUserSeed());
+    setStoredValue(USERS_STORAGE_KEY, JSON.stringify(seeded));
+    return seeded;
   }
+}
+
+function normalizeAssignmentUsers(sourceUsers) {
+  if (!Array.isArray(sourceUsers)) return [];
+  const normalized = [];
+  const seen = new Set();
+  sourceUsers.forEach((user) => {
+    if (!user || typeof user !== "object") return;
+    const name = normalizeRepName(user.name) || String(user.name || "").trim();
+    const key = assignmentUserNameKey(name);
+    if (!name || seen.has(key)) return;
+    seen.add(key);
+    normalized.push({
+      ...user,
+      id: String(user.id || slugify(name)),
+      name
+    });
+  });
+  return normalized;
 }
 
 function loadKnowledgeDocs() {
@@ -5565,9 +5600,15 @@ function applyDemoWorkspaceMetadata() {
 function normalizeProfile(sourceProfile) {
   const normalized = { ...sourceProfile };
   normalized.displayName = normalizeRepName(normalized.displayName) || currentDemoUserName();
-  normalized.firstName = normalized.firstName || "Morgan";
-  normalized.lastName = normalized.lastName || "Lee";
-  normalized.mySignature = normalized.mySignature || "Thanks,\nMorgan";
+  if (!isGenericDemoWorkspace()) {
+    normalized.firstName = normalizeRepName(normalized.firstName) || normalized.displayName;
+    normalized.lastName = "";
+    normalized.mySignature = replaceLegacyRepNamesInMacroTemplate(normalized.mySignature || "Thanks,\nCS14");
+  } else {
+    normalized.firstName = normalized.firstName || "Morgan";
+    normalized.lastName = normalized.lastName || "Lee";
+    normalized.mySignature = normalized.mySignature || "Thanks,\nMorgan";
+  }
   return normalized;
 }
 
@@ -5619,7 +5660,7 @@ function seedNotifications(sourceTickets) {
     { category: "sla", ticket: ticketById("ISP-28486"), title: "Close to overdue", description: "This ticket is approaching its SLA window.", hours: 2.2, read: false },
     { category: "sla", ticket: ticketById("ISP-28478"), title: "Ticket became overdue", description: "Harper Stone's bypass valve ticket is now overdue.", hours: 3.6, read: false },
     { category: "reassigned", ticket: ticketById("ISP-28494"), title: "Ticket reassigned to you", description: "A warranty registration case was reassigned for review.", hours: 5.2, read: true },
-    { category: "mention", ticket: ticketById("ISP-28491"), title: "Mentioned in internal note", description: "CS1 Nick mentioned you for a repeat customer context check.", hours: 7.3, read: false },
+    { category: "mention", ticket: ticketById("ISP-28491"), title: "Mentioned in internal note", description: "CS1 mentioned you for a repeat customer context check.", hours: 7.3, read: false },
     { category: "receipts", ticket: ticketById("ISP-28489"), title: "Receipt needs review", description: "A Lowe's receipt was uploaded and needs verification.", hours: 10.4, read: true },
     { category: "receipts", ticket: ticketById("ISP-28490"), title: "Warranty action needed", description: "Receipt is on file, but warranty registration still needs action.", hours: 17.7, read: false },
     { category: "assignment", ticket: null, title: "Assignment eligibility changed", description: "Admin updated your assignment pool eligibility.", hours: 31.5, read: true }
@@ -6103,7 +6144,7 @@ async function hydrateBackendState() {
       hydrated = true;
     }
     if (Array.isArray(state.users)) {
-      users = state.users.map((user) => ({ ...user, name: normalizeRepName(user.name) || user.name }));
+      users = normalizeAssignmentUsers(state.users);
       setStoredValue(USERS_STORAGE_KEY, JSON.stringify(users));
       hydrated = true;
     }
@@ -6112,7 +6153,7 @@ async function hydrateBackendState() {
       hydrated = true;
     }
     if (isBackendPlainObject(state.profile)) {
-      profile = state.profile;
+      profile = normalizeProfile(state.profile);
       setStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(profile));
       hydrated = true;
     }
@@ -6124,7 +6165,7 @@ async function hydrateBackendState() {
       hydrated = true;
     }
     if (Array.isArray(state.notifications)) {
-      notifications = state.notifications;
+      notifications = normalizeNotifications(state.notifications) || [];
       setStoredValue(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
       hydrated = true;
     }
@@ -6769,15 +6810,24 @@ function createEmptyCustomerAccount(email = "") {
 function normalizeRepName(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
-  return legacyRepNameMap[raw] || raw.replace(/^CS(\d+)\s*[·-]\s*/i, "CS$1 ");
+  if (isGenericDemoWorkspace()) return raw;
+  return legacyRepNameMap[raw] ||
+    raw.replace(/^CS(\d+)\s*(?:[Â·-]\s*)?(?:Robert|Nick|Julius|Sean|Jonathan|Michelle)\b/i, "CS$1");
 }
 
 function replaceLegacyRepNamesInText(value) {
   let text = String(value || "");
+  if (isGenericDemoWorkspace()) return text;
   Object.entries(legacyRepNameMap).forEach(([legacy, display]) => {
     text = text.split(legacy).join(display);
   });
-  return text.replace(/\bCS(\d+)\s*[·-]\s*(Robert|Nick|Julius|Sean|Jonathan|Michelle)\b/g, "CS$1 $2");
+  return text.replace(/\bCS(\d+)\s*(?:[Â·-]\s*)?(Robert|Nick|Julius|Sean|Jonathan|Michelle)\b/g, "CS$1");
+}
+
+function replaceLegacyRepNamesInMacroTemplate(value) {
+  const text = replaceLegacyRepNamesInText(value);
+  if (isGenericDemoWorkspace()) return text;
+  return text.replace(/\bRobert\b/g, "CS14");
 }
 
 function profileDisplayName() {
@@ -15156,7 +15206,7 @@ function clearReceiptUploadState() {
 }
 
 function applyVariables(text, ticket) {
-  return text
+  return replaceLegacyRepNamesInMacroTemplate(text)
     .replaceAll("{{customer_first_name}}", ticket.customer.name.split(" ")[0])
     .replaceAll("{{customer_name}}", ticket.customer.name)
     .replaceAll("{{ticket_number}}", ticketDisplayId(ticket))
@@ -15175,7 +15225,7 @@ function replacementPartFor(ticket) {
 }
 
 function macroRepName() {
-  return profileDisplayName().split(" ")[0] || profile.firstName || "Morgan";
+  return profileDisplayName().split(" ")[0] || profile.firstName || (isGenericDemoWorkspace() ? "Morgan" : "CS14");
 }
 
 function reviewLinkFor(ticket) {
