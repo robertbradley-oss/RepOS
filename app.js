@@ -1500,6 +1500,10 @@ let pendingReceiptUpload = {
   ticketId: "",
   file: null
 };
+const staticDemoCredentials = {
+  username: "ispring",
+  password: "ispring"
+};
 
 const el = {
   homeScreen: document.querySelector("#homeScreen"),
@@ -1819,7 +1823,11 @@ async function handleHomeLogin(event) {
   setHomeStatus("Signing in...");
 
   if (!window.fetch) {
-    setHomeStatus("RepOS sign in requires the backend connection. Try again when the server is available.", true);
+    if (matchesStaticDemoCredentials(email, password)) {
+      enterStaticDemoWorkspace();
+    } else {
+      setHomeStatus("That username and password don't match. Try again.", true);
+    }
     return;
   }
 
@@ -1838,7 +1846,13 @@ async function handleHomeLogin(event) {
       return;
     }
     if (response.status === 404 || response.status === 405) {
-      enterStaticDemoWorkspace();
+      if (matchesStaticDemoCredentials(email, password)) {
+        enterStaticDemoWorkspace();
+      } else {
+        setHomeStatus("That username and password don't match. Try again.", true);
+        el.homePasswordInput?.focus({ preventScroll: true });
+        el.homePasswordInput?.select?.();
+      }
       return;
     }
     if (!response.ok) throw new Error(`Sign in failed: ${response.status}`);
@@ -1854,7 +1868,13 @@ async function handleHomeLogin(event) {
     enterWorkspace();
   } catch (error) {
     if (error instanceof TypeError) {
-      enterStaticDemoWorkspace();
+      if (matchesStaticDemoCredentials(email, password)) {
+        enterStaticDemoWorkspace();
+      } else {
+        setHomeStatus("That username and password don't match. Try again.", true);
+        el.homePasswordInput?.focus({ preventScroll: true });
+        el.homePasswordInput?.select?.();
+      }
       return;
     }
     console.warn("RepOS sign in is unavailable.", error);
@@ -1863,6 +1883,11 @@ async function handleHomeLogin(event) {
   } finally {
     setHomeLoginControlsDisabled(false);
   }
+}
+
+function matchesStaticDemoCredentials(username, password) {
+  return String(username || "").trim().toLowerCase() === staticDemoCredentials.username &&
+    String(password || "") === staticDemoCredentials.password;
 }
 
 function openHomeLoginModal() {
