@@ -9441,33 +9441,82 @@ function renderQueueTrendCard(scopedTickets) {
   const net = createdTotal - closedTotal;
   const netLabel = net > 0 ? `Backlog +${net} this week` : net < 0 ? `Backlog ${net} this week` : "Backlog flat this week";
   const netTone = net > 0 ? "risk" : net < 0 ? "good" : "neutral";
-  const width = 720;
-  const height = 96;
-  const padX = 6;
-  const padY = 8;
-  const max = Math.max(1, ...series.flatMap((day) => [day.created, day.closed]));
-  const pointsFor = (key) => series.map((day, index) => {
-    const x = padX + (index * (width - padX * 2)) / (series.length - 1);
-    const y = height - padY - (day[key] / max) * (height - padY * 2);
-    return { x, y, value: day[key] };
-  });
-  const linePath = (points) => points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
-  const dots = (points, cls) => points.map((point) => `<circle class="${cls}" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"><title>${point.value}</title></circle>`).join("");
+
+  // Fixed-aspect chart (no preserveAspectRatio="none" stretch): axis labels,
+  // gridlines, smoothed lines with a soft area fill, and ringed data points.
+  const width = 1160;
+  const height = 250;
+  const padL = 44;
+  const padR = 18;
+  const padT = 16;
+  const padB = 34;
+  const innerW = width - padL - padR;
+  const innerH = height - padT - padB;
+  const baseY = padT + innerH;
+  const rawMax = Math.max(1, ...series.flatMap((day) => [day.created, day.closed]));
+  const step = rawMax <= 4 ? 1 : rawMax <= 8 ? 2 : rawMax <= 20 ? 5 : 10;
+  const yMax = Math.max(step, Math.ceil(rawMax / step) * step);
+  const xFor = (index) => padL + (index * innerW) / (series.length - 1);
+  const yFor = (value) => padT + innerH - (value / yMax) * innerH;
+  const pointsFor = (key) => series.map((day, index) => ({ x: xFor(index), y: yFor(day[key]), value: day[key], label: day.label }));
+
+  // Catmull-Rom -> cubic bezier for a gentle curve through every point.
+  const smoothPath = (points) => {
+    if (points.length < 2) return "";
+    let path = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const p0 = points[i - 1] || points[i];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2] || p2;
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      path += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+    return path;
+  };
+  const areaPath = (points) => `${smoothPath(points)} L ${points[points.length - 1].x.toFixed(1)} ${baseY} L ${points[0].x.toFixed(1)} ${baseY} Z`;
+  const dots = (points, cls, name) => points
+    .map((point) => `<circle class="trend-dot ${cls}" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4.5"><title>${escapeHtml(point.label)}: ${point.value} ${name}</title></circle>`)
+    .join("");
+
   const created = pointsFor("created");
   const closed = pointsFor("closed");
+  const ticks = [0, Math.round(yMax / 2), yMax];
+  const grid = ticks.map((tick) => `
+    <line class="trend-grid" x1="${padL}" y1="${yFor(tick).toFixed(1)}" x2="${width - padR}" y2="${yFor(tick).toFixed(1)}"></line>
+    <text class="trend-tick-label" x="${padL - 10}" y="${(yFor(tick) + 4).toFixed(1)}" text-anchor="end">${tick}</text>
+  `).join("");
+  const dayLabels = series.map((day, index) => `<text class="trend-day" x="${xFor(index).toFixed(1)}" y="${height - 10}" text-anchor="${index === 0 ? "start" : index === series.length - 1 ? "end" : "middle"}">${escapeHtml(day.label)}</text>`).join("");
+
   return `
     <article class="dashboard-card queue-trend-card">
       <div class="section-title row-title">
         <h3>Inbound vs closed &mdash; last 7 days</h3>
         <span class="trend-net trend-net-${netTone}">${escapeHtml(netLabel)}</span>
       </div>
-      <svg class="queue-trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Tickets created versus closed per day over the last 7 days" preserveAspectRatio="none">
-        <polyline class="trend-line trend-created" points="${linePath(created)}" fill="none"></polyline>
-        <polyline class="trend-line trend-closed" points="${linePath(closed)}" fill="none"></polyline>
-        ${dots(created, "trend-dot trend-created")}
-        ${dots(closed, "trend-dot trend-closed")}
+      <svg class="queue-trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Tickets created versus closed per day over the last 7 days">
+        <defs>
+          <linearGradient id="trendCreatedFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#7c5cff" stop-opacity="0.16"></stop>
+            <stop offset="1" stop-color="#7c5cff" stop-opacity="0"></stop>
+          </linearGradient>
+          <linearGradient id="trendClosedFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#17b26a" stop-opacity="0.14"></stop>
+            <stop offset="1" stop-color="#17b26a" stop-opacity="0"></stop>
+          </linearGradient>
+        </defs>
+        ${grid}
+        <path class="trend-area" d="${areaPath(created)}" fill="url(#trendCreatedFill)"></path>
+        <path class="trend-area" d="${areaPath(closed)}" fill="url(#trendClosedFill)"></path>
+        <path class="trend-line trend-created" d="${smoothPath(created)}" fill="none"></path>
+        <path class="trend-line trend-closed" d="${smoothPath(closed)}" fill="none"></path>
+        ${dots(created, "trend-created", "created")}
+        ${dots(closed, "trend-closed", "closed")}
+        ${dayLabels}
       </svg>
-      <div class="queue-trend-days">${series.map((day) => `<span>${escapeHtml(day.label)}</span>`).join("")}</div>
       <div class="queue-trend-legend">
         <span><i class="trend-swatch trend-created"></i>Created &middot; ${createdTotal}</span>
         <span><i class="trend-swatch trend-closed"></i>Closed &middot; ${closedTotal}</span>
@@ -9980,8 +10029,7 @@ function renderRepWorkloadTable(scopedTickets) {
               <tr class="manager-risk-row risk-${row.risk.tone}">
                 <td>
                   <strong>${escapeHtml(row.user.name)}</strong>
-                  <span class="workload-bar" title="${row.active} active vs busiest rep at ${maxActive}"><i style="width:${activeWidth}%"></i></span>
-                  <small class="workload-bar-note">${row.active} active &middot; busiest ${maxActive}</small>
+                  <span class="workload-bar" title="${row.active} active tickets"><i style="width:${activeWidth}%"></i></span>
                 </td>
                 <td><span class="workload-chip">${row.active}</span></td>
                 <td><span class="workload-chip ${row.customerReplies >= 4 ? "chip-risk" : row.customerReplies >= 2 ? "chip-warn" : ""}">${row.customerReplies}</span></td>
