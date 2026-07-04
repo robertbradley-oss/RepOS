@@ -14968,6 +14968,90 @@ textarea,
   }
 }
 
+/* ===========================================================================
+   Queue tabs, clean SaaS pass: pill buttons + tinted sliding card + bordered
+   count chips -> quiet text tabs sitting on the row's hairline, a 2px violet
+   underline that slides between them (reusing the existing indicator vars),
+   and counts as plain tabular numerals. Stripe/Linear tab pattern.
+   =========================================================================== */
+.queue-view-tabs {
+  gap: 2px;
+  padding: 0 12px;
+}
+
+/* The sliding indicator becomes the active-tab underline. */
+.queue-tab-indicator {
+  top: auto;
+  bottom: -1px;
+  left: 0;
+  width: var(--queue-tab-width, 0);
+  height: 2px;
+  background: var(--accent);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  transform: translateX(var(--queue-tab-x, 0));
+}
+
+.queue-view-tab {
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* The old per-tab hover underline is gone; the indicator owns that job. */
+.queue-view-tab::after {
+  display: none;
+}
+
+.queue-view-tab.active {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.queue-view-tab:not(.active):hover {
+  color: var(--ink);
+  background: transparent;
+  border-color: transparent;
+  transform: none;
+}
+
+/* Counts: no chip, just a quiet number that firms up on the active tab. */
+.queue-tab-count,
+.queue-view-tab.active .queue-tab-count {
+  display: inline;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 11.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.queue-tab-count {
+  color: var(--muted);
+}
+
+.queue-view-tab.active .queue-tab-count {
+  color: var(--accent-strong);
+}
+
+.closed-tab-chevron {
+  color: currentColor;
+}
+
 /* Ticket message exchange: quiet neutral canvas behind white message cards. */
 .detail-screen .conversation-scroll-area {
   background: #f7f8fb;

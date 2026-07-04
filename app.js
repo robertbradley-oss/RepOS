@@ -7806,6 +7806,8 @@ function closedCountForRange(range) {
   }).length;
 }
 
+let queueTabSyncRetries = 0;
+
 function syncQueueTabIndicator() {
   if (!el.queueViewTabs) return;
   const indicator = el.queueViewTabs.querySelector(".queue-tab-indicator");
@@ -7814,6 +7816,17 @@ function syncQueueTabIndicator() {
 
   const groupRect = el.queueViewTabs.getBoundingClientRect();
   const tabRect = activeTab.getBoundingClientRect();
+  // Zero rects mean the tabs are not laid out yet (hidden screen, mid-
+  // transition) — keep the last good position and retry briefly rather than
+  // latching zeros. The cap stops the loop when the queue is truly hidden.
+  if (!tabRect.width || !groupRect.width) {
+    if (queueTabSyncRetries < 20) {
+      queueTabSyncRetries += 1;
+      requestAnimationFrame(syncQueueTabIndicator);
+    }
+    return;
+  }
+  queueTabSyncRetries = 0;
   indicator.style.setProperty("--queue-tab-x", `${tabRect.left - groupRect.left}px`);
   indicator.style.setProperty("--queue-tab-y", `${tabRect.top - groupRect.top}px`);
   indicator.style.setProperty("--queue-tab-width", `${tabRect.width}px`);
@@ -13110,6 +13123,12 @@ function setupSidebarTooltips() {
   document.addEventListener("mouseout", handleSidebarTooltipOut, true);
   document.addEventListener("focusout", handleSidebarTooltipOut, true);
   window.addEventListener("resize", positionSidebarTooltip);
+  window.addEventListener("resize", () => requestAnimationFrame(syncQueueTabIndicator));
+  // Re-place the tab indicator whenever the tab row gains or changes layout
+  // (e.g. the queue becoming visible after the home -> workspace transition).
+  if (el.queueViewTabs && typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(() => syncQueueTabIndicator()).observe(el.queueViewTabs);
+  }
   document.addEventListener("scroll", positionSidebarTooltip, true);
 }
 
