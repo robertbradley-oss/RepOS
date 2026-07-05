@@ -632,10 +632,12 @@
           return true;
         }
 
-        var COLS = 66, ROWS = 30;
+        var COLS = 76, ROWS = 34;
         function draw(phase) {
           ctx.clearRect(0, 0, W, H);
           var cx = W * 0.5;
+          /* the whole sea slowly swells and relaxes */
+          var breathe = 0.90 + 0.10 * Math.sin(phase * 0.55);
           /* iterate far (j=0) -> near (j=ROWS) so nearer/bigger dots paint on top */
           for (var j = 0; j <= ROWS; j++) {
             var t = j / ROWS;                          // 0 far .. 1 near
@@ -644,14 +646,22 @@
             var spanX = W * (0.48 + 1.00 * t);         // rows converge toward the back
             for (var i = 0; i <= COLS; i++) {
               var u = i / COLS - 0.5;                  // -0.5 .. 0.5 across
-              var wave = Math.sin(u * 5.4 + t * 2.6 + phase) * 0.66
-                       + Math.sin(u * 2.2 - t * 5.0 + phase * 0.7) * 0.44;
+              /* four stacked waves: primary swell, counter-swell,
+                 fine cross-ripple, and a fast diagonal shimmer */
+              var wave = Math.sin(u * 5.4 + t * 2.6 + phase) * 0.50
+                       + Math.sin(u * 2.2 - t * 5.0 + phase * 0.7) * 0.34
+                       + Math.sin(u * 9.6 + t * 3.8 - phase * 1.35) * 0.17
+                       + Math.sin((u * 7.0 + t * 6.5) * 1.9 + phase * 2.2) * 0.07;
               var x = cx + u * spanX;
-              var y = rowY + wave * H * 0.27 * persp;
+              var y = rowY + wave * breathe * H * 0.27 * persp;
               if (y < -6 || y > H + 6) continue;
               var edge = 1 - Math.min(1, Math.pow(Math.abs(u) / 0.5, 2.3));
               if (edge <= 0) continue;
-              var crest = (wave + 1) / 2;               // 0 trough .. 1 crest
+              var crest = (wave + 1.08) / 2.16;         // 0 trough .. 1 crest
+              if (crest < 0) crest = 0; else if (crest > 1) crest = 1;
+              /* smoothstep sharpens trough/crest contrast so the surface
+                 keeps its bright bands even when the waves partly cancel */
+              crest = crest * crest * (3 - 2 * crest);
               var a = edge * persp * (0.24 + crest * 0.66);
               if (a <= 0.012) continue;
               var r = (0.55 + persp * 1.8) * (0.8 + crest * 0.45);
