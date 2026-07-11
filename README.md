@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/repos-logo.png" alt="RepOS" width="760">
+</p>
+
 # RepOS
 
 RepOS is a customer support operating system prototype focused on cleaner ticket workflows, internal visibility, and practical support team tools.
