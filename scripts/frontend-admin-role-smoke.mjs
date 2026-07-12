@@ -46,6 +46,9 @@ function createRoleHarness(role, options = {}) {
     currentDemoUserRole() {
       return context.role;
     },
+    enterQueueScreen() {
+      context.uiState.activeScreen = "queue";
+    },
     selectedTicket() {
       return context.selected;
     },

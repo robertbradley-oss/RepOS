@@ -190,6 +190,9 @@ function createHarness(fetchPayload = null, options = {}) {
     normalizeTickets(value) {
       return value;
     },
+    normalizeAssignmentUsers(value) {
+      return value;
+    },
     rebaselineOpenTicketSla() {},
     normalizeCustomerAccounts(value) {
       return value;
@@ -273,7 +276,7 @@ async function flushBackendAssignmentHydration() {
   assert.equal(context.workspaceSettings.defaultAssignee, "CS1 Nick", "default assignee should follow session identity");
   assert.equal(context.currentDemoUserRole(), "rep", "role helper should prefer hydrated session role");
   assert.equal(context.currentUserIsAdmin(), false, "rep session should not inherit stale admin settings");
-  assert.equal(context.currentUserCanUseMacros(), false, "rep session should not be able to use macros");
+  assert.equal(context.currentUserCanUseMacros(), true, "signed-in rep session should be able to use macros");
   assert.equal(context.assignedToCurrentDemoUser({ assignee: "CS1 Nick" }), true, "Assigned To Me should match session identity");
   assert.equal(context.assignedToCurrentDemoUser({ assignee: "CS14 Robert" }), false, "Assigned To Me should not match fallback user after session hydration");
   assert.deepEqual(fetchCalls.map((call) => [call.method, call.url]), [["GET", "/api/bootstrap"], ["GET", "/api/users"]], "bootstrap should only fetch bootstrap and backend assignment users");
@@ -286,7 +289,7 @@ for (const role of ["admin", "owner", "manager", "rep"]) {
   context.sessionUser = { assignmentName: "Role User", role };
   assert.equal(context.currentDemoUserRole(), role);
   assert.equal(context.currentUserIsAdmin(), ["admin", "owner"].includes(role), `${role} admin gate mismatch`);
-  assert.equal(context.currentUserCanUseMacros(), ["admin", "owner"].includes(role), `${role} macro gate mismatch`);
+  assert.equal(context.currentUserCanUseMacros(), true, `${role} signed-in macro gate mismatch`);
 }
 
 {
