@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="152" fill="#6d3ef1"/>
+  <path fill="#ffffff" d="M196 100
+    H324
+    Q426 100 426 202
+    V278
+    Q426 380 324 380
+    H210
+    C175 380 140 398 116 417
+    Q94 435 94 397
+    V202
+    Q94 100 196 100 Z"/>
+  <path fill="#a98af5" stroke="#6d3ef1" stroke-width="26" paint-order="stroke" d="M330 300
+    H376
+    Q426 300 426 350
+    V420
+    Q426 443 405 428
+    C391 417 378 400 344 400
+    H330
+    Q280 400 280 350
+    Q280 300 330 300 Z"/>
+</svg>
