@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run smoke
+      - run: npm run smoke:frontend-admin-role
+      - run: npm run smoke:frontend-merge-workflow
+      - run: npm run smoke:frontend-multi-user
+      - run: npm run smoke:frontend-ticket-api
+      - run: npm run smoke:multi-user
+      - run: npm run smoke:strict-deploy
