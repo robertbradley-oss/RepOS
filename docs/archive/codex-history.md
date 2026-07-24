@@ -7,9 +7,9 @@ Raw session JSONL files can be very large and may contain private prompts, local
 ## Repo-Local Memory
 
 - `PROJECT_CONTEXT.md` - product vision, UI direction, workflow rules, screen inventory, demo workspace rules, and future integration direction.
-- `TODO.md` - completed work history and remaining product/engineering tasks.
+- `docs/project-backlog.md` - completed work history and remaining product/engineering tasks.
 - `CHANGELOG.md` - dated implementation log for meaningful product, UI, data, and architecture changes.
-- `design-qa.md` - homepage visual QA notes and screenshot evidence paths.
+- `docs/archive/design-qa.md` - archived homepage visual QA notes and screenshot evidence paths.
 - `docs/backend.md` - backend contracts, persistence notes, auth/session behavior, merge rules, and smoke-test guidance.
 
 ## Global Codex Session Index
@@ -54,7 +54,7 @@ Some attachment files include real support-ticket URLs, review text, customer na
 
 When a future Codex session needs prior context:
 
-1. Read `PROJECT_CONTEXT.md`, `TODO.md`, `CHANGELOG.md`, and `docs/backend.md`.
+1. Read `PROJECT_CONTEXT.md`, `docs/project-backlog.md`, `CHANGELOG.md`, and `docs/backend.md`.
 2. Check this history map for the relevant thread title and session path.
 3. If exact chat context is needed, inspect the local JSONL session file outside the repo.
 4. Promote only durable, non-sensitive decisions or summaries into tracked markdown.
