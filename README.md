@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/repos-logo.png" alt="RepOS" width="760">
+  <img src="docs/assets/repos-logo-transparent.png" alt="RepOS" width="480">
 </p>
 
 # RepOS
