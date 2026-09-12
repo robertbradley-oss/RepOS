@@ -68,7 +68,7 @@ RepOS supports development, demo, and strict production authentication modes, op
 
 See [Production Operations](docs/production-operations.md) for environment variables, durable storage, first-admin setup, credential rotation, SSO configuration, health checks, backup, and restore guidance.
 
-Project planning and implementation context are kept in [Project Context](PROJECT_CONTEXT.md), the [Project Backlog](docs/project-backlog.md), and the [Changelog](CHANGELOG.md). Completed visual QA and Codex history notes are archived under [docs/archive](docs/archive/).
+Project planning and implementation context are kept in [Project Context](PROJECT_CONTEXT.md), the [Project Backlog](docs/project-backlog.md), and the [Changelog](CHANGELOG.md). Completed visual QA and development history notes are archived under [docs/archive](docs/archive/).
 
 ## Current Status
 
