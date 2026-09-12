@@ -4,20 +4,12 @@
 
 # RepOS
 
-RepOS is a customer support operating system prototype focused on cleaner ticket workflows, internal visibility, and practical support team tools.
-
-It is built as a hands-on workflow prototype for exploring how support reps and admins can manage queues, customer context, ticket state, and internal support activity in one workspace.
-
-## Why It Exists
-
-Support work often spreads across tickets, notes, customer history, assignment decisions, saved replies, and team visibility tools. RepOS brings those pieces into a single prototype so support workflows are easier to scan, update, and reason about.
-
-The current app uses an iSpring Water Systems demo workspace to model realistic customer support scenarios while keeping RepOS itself workspace-agnostic.
+RepOS is a prototype for managing support tickets, queues, customer history, and assignments. It uses an iSpring Water Systems demo workspace; workspace settings keep that demo content separate from the app.
 
 ## Core Features
 
 - Ticket workflow dashboard for open, assigned, and closed support work
-- Cleaner support queue visibility with table and card-style views
+- Support queues with table and card views
 - Internal support workspace with ticket detail, messages, notes, and customer context
 - Ticket state tracking for status, ownership, priority, assignment, and follow-up work
 - Admin tools for assignment users, workspace settings, and routing controls
@@ -72,9 +64,7 @@ Project planning and implementation context are kept in [Project Context](PROJEC
 
 ## Current Status
 
-RepOS is an active prototype for exploring customer support workflows and internal tooling.
-
-It includes a practical local backend, demo data, MVP auth/session behavior, JSON persistence, optional Postgres support, and local upload handling. Production-grade auth, email sync, order lookup, inventory lookup, and durable cloud file storage are not complete yet.
+The prototype includes a local backend, demo data, MVP auth/session behavior, JSON persistence, optional Postgres support, and local upload handling. Production-grade auth, email sync, order lookup, inventory lookup, and durable cloud file storage are not complete yet.
 
 ## Related Projects
 

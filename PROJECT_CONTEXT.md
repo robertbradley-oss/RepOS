@@ -2,7 +2,7 @@
 
 ## Product Vision
 
-RepOS, short for Rep Operating System, is intended to become a modern internal support workspace that lets reps search faster, troubleshoot smarter, reply cleaner, and manage customer tickets with fewer clicks. The current demo workspace uses iSpring Water Systems as the example customer.
+RepOS, short for Rep Operating System, is a planned workspace for searching, troubleshooting, replying to, and managing support tickets. The current demo workspace uses iSpring Water Systems as the example customer.
 
 Important product boundary: RepOS is the general SaaS support/ticketing platform. iSpring Water Systems is the active demo workspace/customer, not the product itself. iSpring-specific demo content should live under `workspaceConfig` so future companies can bring their own departments, reps, products, macros, warranty/return/review rules, categories, source channels, custom fields, and guardrails without changing the RepOS core workflow. RepOS Knowledge Vault source files are uploaded per workspace and currently stored as local metadata only.
 
@@ -15,11 +15,11 @@ The app should improve daily support work for:
 - Managers tracking workload, response time, overdue tickets, trends, escalations, and quality/coaching notes.
 - Admins managing users, roles, macros, custom fields, statuses, workflows, and integrations.
 
-The first build is not meant to be a full CRM. It is a focused Ticket Workspace MVP that demonstrates the day-to-day support experience.
+The first build covers the daily ticket workflow; broader CRM features are outside the MVP.
 
 ## Desired UI Direction
 
-The UI should feel like a premium internal SaaS support tool, not a mobile-first landing page.
+Design for support staff working at a desktop.
 
 Important visual direction:
 
@@ -84,7 +84,7 @@ Current prototype has several main screens:
   - Tickets
   - Admin, visible only to CS14 Robert
   - Settings
-  - Polished workspace switcher footer for iSpring Water Systems
+  - Workspace switcher footer for iSpring Water Systems
 
 - Top bar:
   - iSpring workspace logo
@@ -106,7 +106,7 @@ Current prototype has several main screens:
   - Average first response
 
 - Dashboard screen:
-  - Main RepOS support-health view, inspired by OST's dashboard structure but redesigned for real support decisions instead of random activity tracking.
+  - Support dashboard inspired by OST, showing ticket activity and workload.
   - Top filter bar for timeframe, department/team, rep, product family, channel/source, status, and refresh.
   - Key metrics for New tickets, Open tickets, Closed tickets, customer replies, SLA due soon, Overdue, Avg first response, Avg resolution, Reopened, and Needs action with small trend indicators.
   - Clean ticket activity chart focused on Created, Closed, Reopened, SLA risk, and Customer replied.

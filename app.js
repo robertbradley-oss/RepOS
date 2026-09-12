@@ -9404,8 +9404,7 @@ function renderManagerDashboard(scopedTickets) {
   `;
 }
 
-// Real created-vs-closed counts per day for the last 7 days — answers "is the
-// queue growing or shrinking?" (unlike the demo's fabricated activity series).
+// Count created and closed tickets per day for the last seven days.
 function queueTrendSeries(scopedTickets) {
   const days = Array.from({ length: 7 }, (_, index) => {
     const start = new Date();
@@ -9423,8 +9422,7 @@ function queueTrendSeries(scopedTickets) {
   return days.map((day) => ({
     label: day.label,
     created: scopedTickets.filter((ticket) => inDay(ticket.createdAt, day)).length,
-    // Only count real close events: the lastUpdatedAt fallback bunches every
-    // seeded closed ticket onto one day and tells a false story.
+    // Use close events; lastUpdatedAt groups seeded closed tickets on one day.
     closed: scopedTickets.filter((ticket) => isClosedDisplayStatus(ticket) && inDay(ticketClosedEventAt(ticket), day)).length
   }));
 }
@@ -10128,8 +10126,7 @@ function handleDashboardRepAction(action, repName) {
   }
 }
 
-// Rebalance with a concrete proposal: pick the rep's most at-risk tickets and
-// suggest the least-loaded eligible teammate, instead of a fire-and-forget toast.
+// Suggest moving the rep's most at-risk tickets to the least-loaded eligible teammate.
 function openRebalanceModal(repName) {
   const scopedTickets = dashboardFilteredTickets();
   const rows = visibleAssignmentUsers().map((user) => managerWorkloadRowData(user, scopedTickets));
