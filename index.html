@@ -11,17 +11,12 @@
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/repos-favicon-v5-180.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Inter:wght@400;450;500;600;700&display=swap">
     <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./home.css">
   </head>
   <body class="home-active queue-screen table-view-active metrics-collapsed filters-collapsed preview-collapsed">
-    <main class="home-screen" id="homeScreen" aria-labelledby="homeTitle">
-      <div class="home-aura" aria-hidden="true">
-        <span class="home-aura-glow home-aura-glow--violet"></span>
-        <span class="home-aura-glow home-aura-glow--blue"></span>
-        <span class="home-aura-grid"></span>
-      </div>
-
+    <main class="home-screen lp" id="homeScreen" aria-labelledby="homeTitle">
       <div class="home-login-overlay" id="homeLoginOverlay" hidden>
         <section class="home-login-modal" role="dialog" aria-modal="true" aria-labelledby="homeLoginTitle">
           <button class="home-login-close" id="homeLoginClose" type="button" aria-label="Close sign in">
@@ -60,359 +55,393 @@
         </section>
       </div>
 
-      <nav class="home-nav" aria-label="RepOS landing navigation">
-        <a class="home-brand" href="#homeScreen" aria-label="RepOS home">
-          <span class="home-brand-mark" aria-hidden="true"><img src="./assets/repos-mark.png" alt=""></span>
-          <span>
-            <strong>Rep<span>OS</span></strong>
-            <small>Support. Resolve. Deliver.</small>
-          </span>
-        </a>
-        <div class="home-nav-links" aria-label="Product links">
-          <a href="#homeFeatures">Features</a>
-          <a href="#homeTeams">For Teams</a>
-          <a href="#homeResources">Resources</a>
-          <a href="#homePricing">Pricing</a>
-          <a href="#homeAbout">About</a>
-        </div>
-        <div class="home-nav-actions">
-          <button class="home-signin-button" id="homeSignInButton" type="button">Sign in to RepOS <span aria-hidden="true">→</span></button>
-        </div>
-      </nav>
-
-      <section class="home-hero" aria-label="RepOS overview">
-        <div class="home-copy">
-          <p class="home-eyebrow">REP OPERATING SYSTEM</p>
-          <h1 id="homeTitle">Support work starts <span>here.</span></h1>
-          <p>RepOS gives support teams a clean operating system for queues, customer context, assignments, notes, and product resources — all in one place.</p>
-          <div class="home-cta-row">
-            <button class="home-primary-cta" id="homePrimaryCta" type="button" hidden>Open the demo <span aria-hidden="true">→</span></button>
-            <a class="home-secondary-cta" href="#homeFeatures">See features <span aria-hidden="true">↓</span></a>
-          </div>
-          <div class="home-trust-row" aria-label="RepOS highlights">
-            <span><b aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5 10 17 18.5 7.5"></path></svg></b><strong>Easy to set up</strong><small>Get started in minutes</small></span>
-            <span><b aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.2-4.7-9.3-9.1a5.2 5.2 0 0 1 9.3-4.6 5.2 5.2 0 0 1 9.3 4.6C19.2 15.3 12 20 12 20Z"></path></svg></b><strong>Loved by teams</strong><small>Built for real support</small></span>
-            <span><b aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 2.6v5.1c0 4.3-2.9 7.4-7 8.8-4.1-1.4-7-4.5-7-8.8V5.6L12 3Z"></path><path d="M8.8 11.8l2.2 2.2 4.2-4.4"></path></svg></b><strong>Secure & reliable</strong><small>Your data is protected</small></span>
-          </div>
-        </div>
-
-        <div class="home-product-wrap" aria-label="RepOS product preview">
-          <section class="home-product-shell">
-            <aside class="home-product-sidebar" aria-label="Preview sidebar">
-              <div class="home-product-logo">
-                <img src="./assets/repos-mark.png" alt="">
-                <strong>Rep<span>OS</span></strong>
-              </div>
-              <div class="home-product-nav">
-                <span class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5 12 4l8.5 6.5"></path><path d="M5.5 9.5V19.5h13V9.5"></path><path d="M10 19.5v-5h4v5"></path></svg>Home</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h13A1.5 1.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1.5A1.5 1.5 0 0 1 18.5 17h-13A1.5 1.5 0 0 1 4 15.5V14a2 2 0 0 0 0-4V8.5Z"></path><path d="M14.5 7.5v9"></path></svg>Tickets</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9.5" cy="9" r="2.8"></circle><path d="M4.5 18.5a5 5 0 0 1 10 0"></path><path d="M15.5 6.4a2.8 2.8 0 0 1 0 5.2"></path><path d="M16.6 14a5 5 0 0 1 3 4.5"></path></svg>Customers</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.2"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.2"></rect></svg>Dashboard</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h11.5v13H6A1.5 1.5 0 0 0 4.5 18V5A1.5 1.5 0 0 1 6 3.5Z"></path><path d="M4.5 18A1.5 1.5 0 0 0 6 19.5h11.5"></path></svg>Product Library</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3 5.5 13H11l-1 8 8.5-11H13l1-7Z"></path></svg>Macros</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 13.5 13.5 10.5"></path><path d="M8.6 11 6.8 12.8a3 3 0 0 0 4.2 4.2l1.8-1.8"></path><path d="M15.4 13l1.8-1.8a3 3 0 0 0-4.2-4.2L11.2 8.8"></path></svg>Product Links</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16"></path><path d="M7 19.5V12"></path><path d="M12 19.5V6"></path><path d="M17 19.5v-5"></path></svg>Reports</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l6.5 2.4v4.6c0 4-2.7 6.8-6.5 8.2-3.8-1.4-6.5-4.2-6.5-8.2V5.9L12 3.5Z"></path><path d="M9.3 11.8l1.9 1.9 3.6-3.8"></path></svg>Admin</span>
-              </div>
-              <div class="home-product-user">
-                <b>ML</b>
-                <span>Morgan Lee<small>Administrator</small></span>
-              </div>
-            </aside>
-
-            <div class="home-product-main">
-              <header class="home-product-topbar">
-                <div>
-                  <strong>Welcome back, Morgan!</strong>
-                  <small>Here’s what’s happening with your workspace today.</small>
-                </div>
-                <div class="home-workspace-pill">Northwind Systems <small>Demo Workspace</small></div>
-                <span class="home-top-icon" aria-hidden="true">⌕</span>
-                <span class="home-avatar" aria-hidden="true">ML</span>
-              </header>
-
-              <section class="home-preview-hero">
-                <canvas class="home-wave" aria-hidden="true"></canvas>
-                <div class="home-preview-copy">
-                  <p>FOCUS ON WHAT MATTERS</p>
-                  <h2>Every ticket. Every customer.<br><span>Total clarity.</span></h2>
-                  <small>RepOS puts everything you need in one place so you can deliver amazing support, every time.</small>
-                  <div>
-                    <button type="button">View Ticket Queue <span aria-hidden="true">→</span></button>
-                    <button type="button" class="ghost">View Dashboard</button>
-                  </div>
-                </div>
-                <aside class="home-workspace-card">
-                  <b>☆</b>
-                  <strong>Northwind Systems</strong>
-                  <small>Support Email</small>
-                  <span>support@northwind.com</span>
-                  <a href="#homeScreen">Workspace Settings →</a>
-                </aside>
-              </section>
-
-              <div class="home-stat-grid" aria-label="Workspace stats">
-                <article><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 13 6.7 6.4A1.5 1.5 0 0 1 8.1 5.5h7.8a1.5 1.5 0 0 1 1.4 1L19.5 13"></path><path d="M4.5 13h4l1 2h5l1-2h4v4.5a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4.5 17.5V13Z"></path></svg></b><span>Open Tickets</span><strong>42</strong><small>↓ 6 from yesterday</small></article>
-                <article><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9.5" cy="8.5" r="3"></circle><path d="M4.5 18.5a5 5 0 0 1 9.5-2"></path><path d="M14.5 13.6l1.7 1.7 3.3-3.5"></path></svg></b><span>Assigned To Me</span><strong>18</strong><small class="up">↑ 3 from yesterday</small></article>
-                <article><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M8.5 12.3l2.4 2.4 4.6-4.9"></path></svg></b><span>Closed Today</span><strong>27</strong><small>↑ 9 from yesterday</small></article>
-                <article><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7.5V12l3 1.8"></path></svg></b><span>Response Time</span><strong>1h 24m</strong><small>↓ 18m improvement</small></article>
-                <article><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5l2.2 4.5 5 .7-3.6 3.5.8 4.9-4.4-2.3-4.4 2.3.8-4.9L4.8 9.7l5-.7L12 4.5Z"></path></svg></b><span>Satisfaction</span><strong>98%</strong><small>↑ 2% from last 7 days</small></article>
-              </div>
-
-              <div class="home-dashboard-grid">
-                <section class="home-ticket-card">
-                  <header><strong>Recent Ticket Activity</strong><button type="button">View All Tickets →</button></header>
-                  <div class="home-ticket-row"><b>●</b><a>100046</a><span>Unable to log in after password reset<small>jessica.miller@gmail.com</small></span><em>Open</em><i>2m ago</i></div>
-                  <div class="home-ticket-row"><b>●</b><a>100045</a><span>Billing invoice shows a duplicate charge<small>mark.taylor@yahoo.com</small></span><em>Open</em><i>15m ago</i></div>
-                  <div class="home-ticket-row"><b>●</b><a>100044</a><span>Feature request: bulk export to CSV<small>david.wilson@outlook.com</small></span><em class="blue">Assigned</em><i>32m ago</i></div>
-                  <div class="home-ticket-row"><b>●</b><a>100043</a><span>Onboarding walkthrough won’t load<small>sarah.johnson@gmail.com</small></span><em class="green">Closed</em><i>1h ago</i></div>
-                  <div class="home-ticket-row"><b>●</b><a>100042</a><span>Mobile app crashes on startup<small>brian.walker@gmail.com</small></span><em class="green">Closed</em><i>2h ago</i></div>
-                </section>
-                <section class="home-chart-card">
-                  <header><strong>At a Glance</strong><button type="button">This Week ⌄</button></header>
-                  <div class="home-chart" aria-hidden="true">
-                    <div class="home-chart-y"><span>60</span><span>40</span><span>20</span><span>0</span></div>
-                    <div class="home-chart-main">
-                      <div class="home-chart-plot">
-                        <canvas class="home-chart-canvas"></canvas>
-                        <span class="home-chart-badge">42</span>
-                      </div>
-                      <div class="home-chart-x"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
-                    </div>
-                  </div>
-                  <small><b></b> Tickets Created</small>
-                </section>
-                <section class="home-quick-card">
-                  <b>✦</b>
-                  <span><strong>Quick Actions</strong><small>Shortcuts that keep reps moving.</small></span>
-                  <button type="button">Open Workspace →</button>
-                </section>
-              </div>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <section class="home-proof-strip" aria-label="Trusted by support teams">
-        <p>TRUSTED BY SUPPORT TEAMS</p>
-        <div>
-          <article>
-            <b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 2.6v5.1c0 4.3-2.9 7.4-7 8.8-4.1-1.4-7-4.5-7-8.8V5.6L12 3Z"></path><path d="M8.8 11.8l2.2 2.2 4.2-4.4"></path></svg></b>
-            <span><strong>Secure &amp; Private</strong><small>Your data is encrypted and always protected.</small></span>
-          </article>
-          <article>
-            <b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2 5 13.5h5.5L9 22l9.5-11.5H13L14.5 2Z"></path></svg></b>
-            <span><strong>Blazing Fast</strong><small>Built for speed so your team can move faster.</small></span>
-          </article>
-          <article>
-            <b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 18h9a3.5 3.5 0 0 0 .3-6.99 5.5 5.5 0 0 0-10.6-1.1A3.8 3.8 0 0 0 7.5 18Z"></path></svg></b>
-            <span><strong>Always Available</strong><small>99.9% uptime so you can count on RepOS every day.</small></span>
-          </article>
-          <article>
-            <b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M4 19a5.2 5.2 0 0 1 10 0"></path><path d="M15.5 5.2a3 3 0 0 1 0 5.6"></path><path d="M16.6 13.6a5.2 5.2 0 0 1 3.4 5.4"></path></svg></b>
-            <span><strong>Built for Teams</strong><small>Designed by support pros for support pros.</small></span>
-          </article>
-        </div>
-      </section>
-
-      <section class="home-section" id="homeFeatures" aria-labelledby="homeFeaturesTitle">
-        <div class="home-section-head">
-          <p class="home-section-kicker">FEATURES</p>
-          <h2 id="homeFeaturesTitle">Everything reps need to keep support moving.</h2>
-          <p>RepOS brings the daily support workflow into one clean workspace, from queue triage to customer context and team visibility.</p>
-        </div>
-        <div class="home-card-grid home-card-grid--four">
-          <article class="home-info-card">
-            <div class="home-info-card-top">
-              <span class="home-info-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h13A1.5 1.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1.5A1.5 1.5 0 0 1 18.5 17h-13A1.5 1.5 0 0 1 4 15.5V14a2 2 0 0 0 0-4V8.5Z"></path><path d="M14.5 7.5v9"></path></svg></span>
-              <b aria-hidden="true">01</b>
-            </div>
-            <h3>Ticket Queues</h3>
-            <p>Open, assigned, and closed work stays organized in one clear queue.</p>
-          </article>
-          <article class="home-info-card">
-            <div class="home-info-card-top">
-              <span class="home-info-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="9" r="2.8"></circle><path d="M4.5 18.5a5 5 0 0 1 10 0"></path><path d="M15.5 6.4a2.8 2.8 0 0 1 0 5.2"></path><path d="M16.6 14a5 5 0 0 1 3 4.5"></path></svg></span>
-              <b aria-hidden="true">02</b>
-            </div>
-            <h3>Customer Context</h3>
-            <p>See customer history, notes, timeline, and ticket details together.</p>
-          </article>
-          <article class="home-info-card">
-            <div class="home-info-card-top">
-              <span class="home-info-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5.5 13H11l-1 8 8.5-11H13l1-7Z"></path></svg></span>
-              <b aria-hidden="true">03</b>
-            </div>
-            <h3>Macros &amp; Product Links</h3>
-            <p>Keep repeat answers and product resources close to the ticket.</p>
-          </article>
-          <article class="home-info-card">
-            <div class="home-info-card-top">
-              <span class="home-info-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5h16"></path><path d="M7 19.5V12"></path><path d="M12 19.5V6"></path><path d="M17 19.5v-5"></path></svg></span>
-              <b aria-hidden="true">04</b>
-            </div>
-            <h3>Manager Dashboard</h3>
-            <p>Track workload, activity, queue health, and team visibility.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="home-section" id="homeTeams" aria-labelledby="homeTeamsTitle">
-        <div class="home-section-head">
-          <p class="home-section-kicker">FOR TEAMS</p>
-          <h2 id="homeTeamsTitle">Built for every role on the support floor.</h2>
-          <p>Reps, managers, and admins get the same shared operating system without losing the details each role depends on.</p>
-        </div>
-        <div class="home-card-grid home-card-grid--three">
-          <article class="home-info-card home-info-card--team">
-            <b aria-hidden="true">R</b>
-            <h3>For Reps</h3>
-            <p>Faster ticket handling with context, notes, macros, and simple queues.</p>
-            <ul class="home-card-list">
-              <li>Personal ticket queues</li>
-              <li>Macros &amp; saved replies</li>
-              <li>Full customer timeline</li>
-            </ul>
-          </article>
-          <article class="home-info-card home-info-card--team">
-            <b aria-hidden="true">M</b>
-            <h3>For Managers</h3>
-            <p>Clear visibility into assignments, workload, closed work, and team activity.</p>
-            <ul class="home-card-list">
-              <li>Workload dashboard</li>
-              <li>Assignment overview</li>
-              <li>Queue health metrics</li>
-            </ul>
-          </article>
-          <article class="home-info-card home-info-card--team">
-            <b aria-hidden="true">A</b>
-            <h3>For Admins</h3>
-            <p>Workspace settings, product resources, and macros in one place.</p>
-            <ul class="home-card-list">
-              <li>Workspace configuration</li>
-              <li>Product Link Library</li>
-              <li>Macro library</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section class="home-section" id="homeResources" aria-labelledby="homeResourcesTitle">
-        <div class="home-section-head">
-          <p class="home-section-kicker">RESOURCES</p>
-          <h2 id="homeResourcesTitle">Reusable support resources, kept close to the work.</h2>
-          <p>RepOS keeps reusable product resources inside the workspace so product context, replies, and reporting are easier to find.</p>
-        </div>
-        <div class="home-resource-grid">
-          <article class="home-resource-card">
-            <span class="home-resource-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h11.5v13H6A1.5 1.5 0 0 0 4.5 18V5A1.5 1.5 0 0 1 6 3.5Z"></path><path d="M4.5 18A1.5 1.5 0 0 0 6 19.5h11.5"></path></svg></span>
-            <strong>Product Resources</strong>
-            <span>Product and review links organized for repeat customer workflows.</span>
-          </article>
-          <article class="home-resource-card">
-            <span class="home-resource-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 13.5 13.5 10.5"></path><path d="M8.6 11 6.8 12.8a3 3 0 0 0 4.2 4.2l1.8-1.8"></path><path d="M15.4 13l1.8-1.8a3 3 0 0 0-4.2-4.2L11.2 8.8"></path></svg></span>
-            <strong>Product Link Library</strong>
-            <span>Product resources and customer-facing links organized by the team.</span>
-          </article>
-          <article class="home-resource-card">
-            <span class="home-resource-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5.5 13H11l-1 8 8.5-11H13l1-7Z"></path></svg></span>
-            <strong>Macros</strong>
-            <span>Reusable reply starters for consistent, faster ticket handling.</span>
-          </article>
-          <article class="home-resource-card">
-            <span class="home-resource-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5h16"></path><path d="M7 19.5V12"></path><path d="M12 19.5V6"></path><path d="M17 19.5v-5"></path></svg></span>
-            <strong>Reports</strong>
-            <span>Workspace views for queue health, activity, and team performance.</span>
-          </article>
-        </div>
-      </section>
-
-      <section class="home-section home-pricing-section" id="homePricing" aria-labelledby="homePricingTitle">
-        <div class="home-section-head">
-          <p class="home-section-kicker">PRICING</p>
-          <h2 id="homePricingTitle">Simple pricing for support teams.</h2>
-          <p>RepOS is currently available as a demo workspace while the product is being shaped for real support teams.</p>
-        </div>
-        <article class="home-pricing-card">
-          <div class="home-pricing-info">
-            <span>Demo Workspace</span>
-            <h3>Explore RepOS in a working support environment.</h3>
-            <p>Everything in the workspace is live — queues, customer context, notes, macros, reports, and admin tools.</p>
-            <ul class="home-pricing-list">
-              <li>Full ticket queue &amp; views</li>
-              <li>Customer context &amp; notes</li>
-              <li>Macros, reports &amp; admin tools</li>
-              <li>Sample workspace data included</li>
-            </ul>
-          </div>
-          <div class="home-pricing-cta">
-            <strong>Free</strong>
-            <small>Full demo access</small>
-            <a class="home-section-cta" href="#homeScreen">Open Workspace <span aria-hidden="true">→</span></a>
-            <em>No sign-up required</em>
-          </div>
-        </article>
-      </section>
-
-      <section class="home-section home-about-section" id="homeAbout" aria-labelledby="homeAboutTitle">
-        <div class="home-section-head">
-          <span class="home-about-mark" aria-hidden="true"><img src="./assets/repos-mark.png" alt=""></span>
-          <p class="home-section-kicker">ABOUT</p>
-          <h2 id="homeAboutTitle">RepOS is a cleaner way to run support work.</h2>
-          <p>RepOS is a rep operating system designed to make support work cleaner, faster, and easier to manage. It brings queues, customer history, notes, product links, macros, and visibility into one workspace.</p>
-        </div>
-      </section>
-
-      <footer class="home-footer" aria-label="Site footer">
-        <div class="home-footer-inner">
-          <div class="home-footer-brand">
-            <a class="home-brand" href="#homeScreen" aria-label="RepOS home">
-              <span class="home-brand-mark" aria-hidden="true"><img src="./assets/repos-mark.png" alt=""></span>
-              <span>
-                <strong>Rep<span>OS</span></strong>
-                <small>Support. Resolve. Deliver.</small>
-              </span>
-            </a>
-            <p class="home-footer-tagline">The rep operating system for support teams — queues, customer context, and product resources in one clean workspace.</p>
-            <div class="home-footer-social" aria-label="RepOS on social">
-              <a href="#" aria-label="RepOS on X"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"></path></svg></a>
-              <a href="#" aria-label="RepOS on LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286ZM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065Zm1.782 13.019H3.555V9h3.564v11.452ZM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003Z"></path></svg></a>
-              <a href="#" aria-label="RepOS on GitHub"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg></a>
-            </div>
-          </div>
-          <nav class="home-footer-cols" aria-label="Footer links">
-            <div class="home-footer-col">
-              <h3>Product</h3>
-              <a href="#">Features</a>
-              <a href="#">For Teams</a>
-              <a href="#">Pricing</a>
-              <a href="#">Integrations</a>
-              <a href="#">Changelog</a>
-            </div>
-            <div class="home-footer-col">
-              <h3>Company</h3>
-              <a href="#">About</a>
-              <a href="#">Careers</a>
-              <a href="#">Blog</a>
-              <a href="#">Contact</a>
-            </div>
-            <div class="home-footer-col">
-              <h3>Resources</h3>
-              <a href="#">Documentation</a>
-              <a href="#">Help Center</a>
-              <a href="#">API Reference</a>
-              <a href="#">Community</a>
-            </div>
+      <header class="lp-nav" id="lpNav">
+        <div class="lp-nav-inner">
+          <a class="lp-brand" href="#homeScreen" aria-label="RepOS home">
+            <img src="./assets/repos-mark.svg" alt="" width="26" height="26">
+            <span>RepOS</span>
+          </a>
+          <nav class="lp-nav-links" aria-label="Homepage sections">
+            <a href="#lpWorkflow">Workflow</a>
+            <a href="#lpAssist">Assist</a>
+            <a href="#lpTeams">Teams</a>
+            <a href="#lpDetails">Details</a>
           </nav>
-        </div>
-        <div class="home-footer-bar">
-          <p>© 2026 RepOS, LLC. All rights reserved.</p>
-          <span class="home-footer-status"><span class="home-footer-dot" aria-hidden="true"></span> All systems operational</span>
-          <div class="home-footer-legal">
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Security</a>
+          <div class="lp-nav-actions">
+            <button class="lp-text-button" id="homeSignInButton" type="button">Sign in</button>
+            <button class="lp-button lp-button--small" type="button" data-lp-demo hidden>Open demo</button>
           </div>
+        </div>
+      </header>
+
+      <section class="lp-hero" aria-labelledby="homeTitle">
+        <div class="lp-hero-glow" aria-hidden="true"></div>
+        <div class="lp-hero-copy">
+          <a class="lp-announce" href="#lpAssist" data-lp-rise>
+            <span class="lp-announce-tag">New</span>
+            RepOS Assist — reply drafts your reps review before sending
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4l4 4-4 4"></path></svg>
+          </a>
+          <h1 id="homeTitle" data-lp-rise>The operating system<br> for support reps.</h1>
+          <p class="lp-lede" data-lp-rise>Queue, customer history, macros, and product context sit right beside the conversation, so reps resolve the ticket instead of hunting for it.</p>
+          <div class="lp-cta-row" data-lp-rise>
+            <button class="lp-button" id="homePrimaryCta" type="button" hidden>
+              Open the live demo
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10"></path><path d="M9 4l4 4-4 4"></path></svg>
+            </button>
+            <button class="lp-button lp-button--ghost" type="button" data-lp-signin>Sign in to your workspace</button>
+          </div>
+          <ul class="lp-hero-meta" data-lp-rise aria-label="Demo details">
+            <li><kbd>/</kbd> to search the queue</li>
+            <li>100 tickets loaded</li>
+            <li>No sign-up</li>
+          </ul>
+        </div>
+
+        <div class="lp-stage" data-lp-rise>
+          <canvas class="lp-field" aria-hidden="true"></canvas>
+          <div class="lp-window" role="img" aria-label="The RepOS ticket queue with a ticket open beside it: the customer's message, an amber internal note, and a reply being written from a macro.">
+            <div class="lp-window-bar" aria-hidden="true">
+              <i></i><i></i><i></i>
+              <span>RepOS · Northstar workspace</span>
+            </div>
+            <div class="lp-app" aria-hidden="true">
+              <aside class="lp-app-side">
+                <div class="lp-app-logo"><img src="./assets/repos-mark.svg" alt=""><b>RepOS</b></div>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 4l8.5 6.5"></path><path d="M5.5 9.5V19.5h13V9.5"></path></svg>Home</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.2"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.2"></rect></svg>Dashboard</span>
+                <span class="is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h13A1.5 1.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1.5A1.5 1.5 0 0 1 18.5 17h-13A1.5 1.5 0 0 1 4 15.5V14a2 2 0 0 0 0-4V8.5Z"></path></svg>Tickets<em>60</em></span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M6 18l1.4-1.4M16.6 7.4 18 6"></path></svg>Settings</span>
+                <div class="lp-app-ws"><b>N</b><span><small>Workspace</small>Northstar</span></div>
+              </aside>
+
+              <div class="lp-app-queue">
+                <div class="lp-app-tabs">
+                  <span class="is-active">Open <em>60</em></span>
+                  <span>Assigned To Me <em>20</em></span>
+                  <span>Closed <em>40</em></span>
+                </div>
+                <div class="lp-app-search">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+                  Search tickets, customers, models, orders, notes
+                  <kbd>/</kbd>
+                </div>
+                <div class="lp-app-table" data-lp-queue>
+                  <div class="lp-q lp-q--head"><span>Ticket</span><span>Subject</span><span>Customer</span><span>Priority</span><span>Assigned</span></div>
+                  <div class="lp-q"><span>#100018</span><span>Subscription renewal question <i class="lp-sla" title="Near SLA"></i></span><span>Skyler Morris</span><span><b class="lp-pri"></b>Normal</span><span>Jordan Blake</span></div>
+                  <div class="lp-q is-selected"><span>#100017</span><span>Address change before shipment</span><span>Dakota Stone</span><span><b class="lp-pri lp-pri--high"></b>High</span><span>Avery Chen</span></div>
+                  <div class="lp-q"><span>#100016</span><span>Account access issue</span><span>Rowan Torres</span><span><b class="lp-pri lp-pri--low"></b>Low</span><span>Morgan Lee</span></div>
+                  <div class="lp-q"><span>#100013</span><span>Missing part from delivery <i class="lp-sla"></i></span><span>Parker Kim</span><span><b class="lp-pri lp-pri--high"></b>High</span><span>Avery Chen</span></div>
+                  <div class="lp-q"><span>#100012</span><span>Billing question on recent order</span><span>Reese Gray</span><span><b class="lp-pri lp-pri--low"></b>Low</span><span>Jordan Blake</span></div>
+                  <div class="lp-q"><span>#100011</span><span>Damaged shipment replacement request <i class="lp-sla"></i></span><span>Quinn Reed</span><span><b class="lp-pri"></b>Normal</span><span>Avery Chen</span></div>
+                  <div class="lp-q"><span>#100008</span><span>Subscription renewal question</span><span>Ari Bennett</span><span><b class="lp-pri lp-pri--low"></b>Low</span><span>Morgan Lee</span></div>
+                  <div class="lp-q"><span>#100007</span><span>Address change before shipment <i class="lp-sla"></i></span><span>Drew Brooks</span><span><b class="lp-pri"></b>Normal</span><span>Morgan Lee</span></div>
+                  <div class="lp-q"><span>#100006</span><span>Account access issue</span><span>Sam Diaz</span><span><b class="lp-pri lp-pri--low"></b>Low</span><span>Jordan Blake</span></div>
+                  <div class="lp-q"><span>#100003</span><span>Missing part from delivery</span><span>Taylor Blake</span><span><b class="lp-pri lp-pri--high"></b>High</span><span>Avery Chen</span></div>
+                </div>
+              </div>
+
+              <div class="lp-app-detail">
+                <header class="lp-detail-head">
+                  <span class="lp-mono">#100017</span>
+                  <b>Address change before shipment</b>
+                  <span class="lp-chip lp-chip--open">Open</span>
+                </header>
+                <div class="lp-thread">
+                  <div class="lp-msg">
+                    <p class="lp-msg-meta"><b>Dakota Stone</b><small>10:42 AM</small></p>
+                    <p>We just moved. Can the order go to our new address instead? It hasn't shipped yet.</p>
+                  </div>
+                  <div class="lp-msg lp-msg--note">
+                    <p class="lp-msg-meta"><b>Avery Chen</b><em>Internal note</em></p>
+                    <p>Warehouse cutoff is 3 PM. Update the address before then.</p>
+                  </div>
+                  <p class="lp-sys">Macro applied · Address change before shipment</p>
+                </div>
+                <div class="lp-composer">
+                  <div class="lp-composer-tabs"><span class="is-active">Reply</span><span>Internal note</span><em>Customer visible</em></div>
+                  <p class="lp-composer-text"><span data-lp-type>Hi Dakota, good news: order NS-48217 hasn't left the warehouse yet, so I've updated the shipping address. You'll get a fresh tracking email once it ships.</span><i class="lp-caret"></i></p>
+                  <div class="lp-composer-foot">
+                    <span class="lp-assist-chip"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5 9.4 6.6 14.5 8 9.4 9.4 8 14.5 6.6 9.4 1.5 8 6.6 6.6Z"></path></svg>Assist draft ready</span>
+                    <span class="lp-send">Send reply</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="lp-section lp-workflow" id="lpWorkflow" aria-labelledby="lpWorkflowTitle">
+        <div class="lp-section-intro" data-lp-reveal>
+          <p class="lp-kicker"><span>01</span>Workflow</p>
+          <h2 id="lpWorkflowTitle">One ticket, start to finish,<br> without leaving the screen.</h2>
+          <p>Most support tools make reps juggle tabs for orders, receipts, macros, and policy docs. RepOS keeps all of it in the ticket.</p>
+        </div>
+
+        <div class="lp-steps">
+          <ol class="lp-step-list">
+            <li class="lp-step is-active" data-lp-step="0">
+              <span class="lp-step-num">Triage</span>
+              <h3>Scan the whole queue in one pass.</h3>
+              <p>Open, Assigned To Me, and Closed tabs sit over a dense, sortable table. Priority, SLA risk, and owner are visible at a glance, and duplicates merge right from the toolbar.</p>
+              <div class="lp-step-media" data-lp-slot="0"></div>
+            </li>
+            <li class="lp-step" data-lp-step="1">
+              <span class="lp-step-num">Context</span>
+              <h3>Know the customer before you type.</h3>
+              <p>Order, model, purchase source, receipt, and warranty status sit next to the thread. Past tickets and verified receipts are one click away, not one search away.</p>
+              <div class="lp-step-media" data-lp-slot="1"></div>
+            </li>
+            <li class="lp-step" data-lp-step="2">
+              <span class="lp-step-num">Reply</span>
+              <h3>Answer with the team's best reply.</h3>
+              <p>Macros drop in with the customer's name, order, and model already filled. Internal notes stay amber, and the composer always shows who will see what you write.</p>
+              <div class="lp-step-media" data-lp-slot="2"></div>
+            </li>
+            <li class="lp-step" data-lp-step="3">
+              <span class="lp-step-num">Manage</span>
+              <h3>See where the queue is heading.</h3>
+              <p>Managers get SLA triage, real trend lines, and workload by rep, with drill-throughs into the exact tickets behind every number.</p>
+              <div class="lp-step-media" data-lp-slot="3"></div>
+            </li>
+          </ol>
+
+          <div class="lp-step-stage" aria-hidden="true">
+            <div class="lp-panel is-active" data-lp-panel="0">
+              <div class="lp-mini lp-mini--triage">
+                <div class="lp-mini-toolbar">
+                  <span class="lp-mini-sel">2 selected</span>
+                  <span class="lp-mini-btn">Assign</span>
+                  <span class="lp-mini-btn lp-mini-btn--accent">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v5a6 6 0 0 0 6 6h0a6 6 0 0 1 6 6"></path><path d="M18 4v5a6 6 0 0 1-6 6"></path></svg>
+                    Merge
+                  </span>
+                  <span class="lp-mini-sort">Sort · Newest</span>
+                </div>
+                <div class="lp-mini-row is-checked"><i class="lp-box"></i><span class="lp-mono">#100018</span><span>Subscription renewal question</span><em class="lp-due lp-due--hot">Due 48m</em><b class="lp-ava">JB</b></div>
+                <div class="lp-mini-row is-checked"><i class="lp-box"></i><span class="lp-mono">#100008</span><span>Subscription renewal question</span><em class="lp-due">Due 5h</em><b class="lp-ava lp-ava--2">ML</b></div>
+                <div class="lp-mini-row"><i class="lp-box"></i><span class="lp-mono">#100013</span><span>Missing part from delivery</span><em class="lp-due lp-due--warm">Due 1h 20m</em><b class="lp-ava lp-ava--3">AC</b></div>
+                <div class="lp-mini-row"><i class="lp-box"></i><span class="lp-mono">#100016</span><span>Account access issue</span><em class="lp-due">Due 7h</em><b class="lp-ava lp-ava--2">ML</b></div>
+                <div class="lp-mini-row"><i class="lp-box"></i><span class="lp-mono">#100012</span><span>Billing question on recent order</span><em class="lp-due">Due 9h</em><b class="lp-ava">JB</b></div>
+                <div class="lp-mini-row"><i class="lp-box"></i><span class="lp-mono">#100011</span><span>Damaged shipment replacement</span><em class="lp-due lp-due--warm">Due 2h</em><b class="lp-ava lp-ava--3">AC</b></div>
+                <p class="lp-mini-foot">Showing 1–50 of 60 <span>Page 1 · 2</span></p>
+              </div>
+            </div>
+
+            <div class="lp-panel" data-lp-panel="1">
+              <div class="lp-mini lp-mini--context">
+                <div class="lp-cust">
+                  <b class="lp-ava lp-ava--lg">SM</b>
+                  <div><strong>Skyler Morris</strong><small>skyler.morris@example.com · 555-1017</small></div>
+                  <span class="lp-mini-btn">Customer history</span>
+                </div>
+                <dl class="lp-facts">
+                  <div><dt>Order</dt><dd class="lp-mono">NS-48217</dd></div>
+                  <div><dt>Model</dt><dd>General Support</dd></div>
+                  <div><dt>Purchased</dt><dd>Amazon · Aug 2</dd></div>
+                  <div><dt>Receipt</dt><dd><span class="lp-ok">Verified</span></dd></div>
+                  <div><dt>Warranty</dt><dd><span class="lp-ok">Registered</span></dd></div>
+                  <div><dt>Last reply</dt><dd>12 min ago</dd></div>
+                </dl>
+                <div class="lp-receipt">
+                  <span class="lp-receipt-icon">PDF</span>
+                  <div><strong>amazon-order-NS-48217.pdf</strong><small>Uploaded by Jordan Blake · Aug 3</small></div>
+                  <span class="lp-mini-link">View receipt</span>
+                </div>
+                <p class="lp-mini-label">Previous tickets</p>
+                <div class="lp-hist"><span class="lp-mono">#099841</span><span>Filter replacement schedule</span><em class="lp-chip lp-chip--closed">Closed</em></div>
+                <div class="lp-hist"><span class="lp-mono">#099502</span><span>Order status question</span><em class="lp-chip lp-chip--closed">Closed</em></div>
+              </div>
+            </div>
+
+            <div class="lp-panel" data-lp-panel="2">
+              <div class="lp-mini lp-mini--reply">
+                <div class="lp-macro">
+                  <p class="lp-mini-label">Insert macro</p>
+                  <div class="lp-macro-field">Address change before shipment<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"></path></svg></div>
+                  <ul class="lp-macro-list">
+                    <li class="is-active">Address change before shipment<small>Shipping</small></li>
+                    <li>Replacement part request<small>Warranty</small></li>
+                    <li>Damaged shipment, reship<small>Returns</small></li>
+                    <li>Subscription renewal options<small>Billing</small></li>
+                  </ul>
+                </div>
+                <div class="lp-draft">
+                  <p>Hi <mark>Dakota</mark>,</p>
+                  <p>Order <mark>NS-48217</mark> hasn't left the warehouse yet, so I've updated the shipping address on file. You'll get a new tracking email as soon as it ships.</p>
+                  <p class="lp-sig">Avery · Northstar Support</p>
+                </div>
+                <div class="lp-mini-note"><b>Internal note</b> Address confirmed by phone. Flagged for the 3 PM warehouse cutoff.</div>
+              </div>
+            </div>
+
+            <div class="lp-panel" data-lp-panel="3">
+              <div class="lp-mini lp-mini--manage">
+                <div class="lp-kpis">
+                  <div><small>Open</small><strong>60</strong><span class="lp-delta lp-delta--down">−6 today</span></div>
+                  <div><small>Near SLA</small><strong>3</strong><span class="lp-delta lp-delta--warn">Review</span></div>
+                  <div><small>First response</small><strong>1h 12m</strong><span class="lp-delta lp-delta--down">−18m</span></div>
+                </div>
+                <div class="lp-trend">
+                  <p class="lp-mini-label">Opened vs. closed · last 7 days</p>
+                  <div class="lp-bars">
+                    <span style="--o:.62;--c:.48"><i></i><i></i><small>Mon</small></span>
+                    <span style="--o:.74;--c:.66"><i></i><i></i><small>Tue</small></span>
+                    <span style="--o:.55;--c:.70"><i></i><i></i><small>Wed</small></span>
+                    <span style="--o:.80;--c:.72"><i></i><i></i><small>Thu</small></span>
+                    <span style="--o:.68;--c:.84"><i></i><i></i><small>Fri</small></span>
+                    <span style="--o:.30;--c:.36"><i></i><i></i><small>Sat</small></span>
+                    <span style="--o:.24;--c:.30"><i></i><i></i><small>Sun</small></span>
+                  </div>
+                </div>
+                <div class="lp-load">
+                  <p class="lp-mini-label">Workload</p>
+                  <div><span>Avery Chen</span><i style="--w:.86"></i><b>18</b></div>
+                  <div><span>Jordan Blake</span><i style="--w:.64"></i><b>14</b></div>
+                  <div><span>Morgan Lee</span><i style="--w:.52"></i><b>11</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="lp-section lp-assist" id="lpAssist" aria-labelledby="lpAssistTitle">
+        <div class="lp-assist-grid">
+          <div class="lp-assist-copy" data-lp-reveal>
+            <p class="lp-kicker"><span>02</span>RepOS Assist</p>
+            <h2 id="lpAssistTitle">Drafts, not decisions.</h2>
+            <p>Assist reads the thread and your workspace's policies, then hands the rep a starting point. It never sends anything on its own.</p>
+            <ul class="lp-checks">
+              <li><b>Reps stay in charge.</b> Every suggestion lands as an editable draft, clearly labeled until a person sends it.</li>
+              <li><b>Grounded in your workspace.</b> Policies, macros, and product notes come from your Knowledge Vault, not the open internet.</li>
+              <li><b>Admins decide who gets it.</b> Assist is switched on per workspace and per role.</li>
+            </ul>
+          </div>
+
+          <div class="lp-assist-card" data-lp-reveal aria-label="Example RepOS Assist exchange" role="img">
+            <div aria-hidden="true">
+              <header class="lp-assist-head">
+                <span class="lp-assist-mark"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5 9.4 6.6 14.5 8 9.4 9.4 8 14.5 6.6 9.4 1.5 8 6.6 6.6Z"></path></svg></span>
+                <b>Assist</b><small>Ticket #100011 · Damaged shipment</small>
+              </header>
+              <div class="lp-bubble lp-bubble--rep">The replacement filter arrived cracked. What can I offer?</div>
+              <div class="lp-bubble lp-bubble--ai">
+                <p>Damaged-on-arrival parts qualify for a free reship. Ask Quinn for a photo of the damage, then start a replacement order on <span class="lp-mono">NS-47790</span>.</p>
+                <div class="lp-sources">
+                  <span>Returns &amp; Replacements policy</span>
+                  <span>Macro · Damaged shipment, reship</span>
+                </div>
+                <div class="lp-bubble-actions">
+                  <span class="lp-mini-btn lp-mini-btn--accent">Insert as draft</span>
+                  <span class="lp-mini-btn lp-mini-btn--dark">Summarize thread</span>
+                </div>
+              </div>
+              <p class="lp-assist-foot"><i></i>Draft · needs rep review before sending</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="lp-section lp-teams" id="lpTeams" aria-labelledby="lpTeamsTitle">
+        <div class="lp-section-intro" data-lp-reveal>
+          <p class="lp-kicker"><span>03</span>Teams</p>
+          <h2 id="lpTeamsTitle">Built for the whole support floor.</h2>
+          <p>Everyone works in the same workspace. Each role sees what it needs and nothing it shouldn't.</p>
+        </div>
+
+        <div class="lp-bento">
+          <article class="lp-tile lp-tile--wide" data-lp-reveal>
+            <p class="lp-tile-role">Reps</p>
+            <h3>Two screens. That's the whole job.</h3>
+            <p>A queue for scanning and a ticket screen for working one case deeply. Tickets open on the latest message, with everything else in the side rail.</p>
+            <div class="lp-tile-art lp-art-screens" aria-hidden="true">
+              <div class="lp-art-q"><i></i><i></i><i class="is-on"></i><i></i><i></i></div>
+              <svg viewBox="0 0 40 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h34"></path><path d="M31 3l5 5-5 5"></path></svg>
+              <div class="lp-art-t"><i></i><i class="is-note"></i><i class="is-me"></i></div>
+            </div>
+          </article>
+          <article class="lp-tile" data-lp-reveal>
+            <p class="lp-tile-role">Leads</p>
+            <h3>Escalations without the side chat.</h3>
+            <p>Internal notes keep coaching and handoffs on the ticket, visible to the team and never to the customer.</p>
+            <div class="lp-tile-art lp-art-note" aria-hidden="true"><b>Internal note</b>Try the pressure test before sending a part.</div>
+          </article>
+          <article class="lp-tile" data-lp-reveal>
+            <p class="lp-tile-role">Managers</p>
+            <h3>Numbers you can click into.</h3>
+            <p>SLA triage, queue trends, and workload drill down to the tickets behind them. Rep View leaves out team comparisons.</p>
+            <div class="lp-tile-art lp-art-spark" aria-hidden="true">
+              <svg viewBox="0 0 200 56" preserveAspectRatio="none"><path class="lp-spark-area" d="M0 44 C20 40 30 30 50 32 S80 18 100 22 S135 34 150 20 S180 8 200 12 V56 H0Z"></path><path class="lp-spark-line" d="M0 44 C20 40 30 30 50 32 S80 18 100 22 S135 34 150 20 S180 8 200 12"></path></svg>
+            </div>
+          </article>
+          <article class="lp-tile lp-tile--wide" data-lp-reveal>
+            <p class="lp-tile-role">Admins</p>
+            <h3>Configure without a ticket to IT.</h3>
+            <p>Users, roles, macros, custom fields, statuses, and the assignment pool, all managed from Admin.</p>
+            <div class="lp-tile-art lp-art-toggles" aria-hidden="true">
+              <span><i class="is-on"></i>Auto-assignment</span>
+              <span><i class="is-on"></i>Assist for reps</span>
+              <span><i></i>Require receipt</span>
+            </div>
+          </article>
+          <article class="lp-tile lp-tile--wide" data-lp-reveal>
+            <p class="lp-tile-role">Workspaces</p>
+            <h3>Bring your own business.</h3>
+            <p>Departments, products, policies, source channels, and guardrails live in workspace settings, so the core workflow stays the same from one company to the next.</p>
+            <div class="lp-tile-art lp-art-chips" aria-hidden="true">
+              <span>Departments</span><span>Product models</span><span>Warranty rules</span><span>Source channels</span><span>Custom fields</span><span>Review links</span><span>Macros</span><span>Guardrails</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="lp-section lp-details" id="lpDetails" aria-labelledby="lpDetailsTitle">
+        <div class="lp-section-intro lp-section-intro--left" data-lp-reveal>
+          <p class="lp-kicker"><span>04</span>Details</p>
+          <h2 id="lpDetailsTitle">The small things reps notice.</h2>
+        </div>
+        <ul class="lp-detail-list">
+          <li data-lp-reveal><span class="lp-mono">01</span><div><b>Opens where you left off.</b>Tickets jump to the latest customer message, not the top of a long thread.</div></li>
+          <li data-lp-reveal><span class="lp-mono">02</span><div><b>Macros that fill themselves in.</b>Customer name, order, and model are added to the draft for you.</div></li>
+          <li data-lp-reveal><span class="lp-mono">03</span><div><b>Merge from the queue.</b>Select duplicates in the table and combine them without opening either one.</div></li>
+          <li data-lp-reveal><span class="lp-mono">04</span><div><b>Receipts inline.</b>PDF and screenshot receipts open in a preview with order, source, and dates attached.</div></li>
+          <li data-lp-reveal><span class="lp-mono">05</span><div><b>Search the whole queue.</b>Filters apply across every page before pagination, not just the 50 rows in view.</div></li>
+          <li data-lp-reveal><span class="lp-mono">06</span><div><b>Fair-share assignment.</b>New tickets spread across the active pool, so no one gets buried.</div></li>
+          <li data-lp-reveal><span class="lp-mono">07</span><div><b>One-click ticket links.</b>Copy a link to any ticket, or to a whole selection, straight from the toolbar.</div></li>
+          <li data-lp-reveal><span class="lp-mono">08</span><div><b>Always clear who's reading.</b>Reply and Internal note are separate tabs, and the composer labels what's customer visible.</div></li>
+        </ul>
+      </section>
+
+      <section class="lp-final" aria-labelledby="lpFinalTitle">
+        <div class="lp-final-inner" data-lp-reveal>
+          <img src="./assets/repos-mark.svg" alt="" width="52" height="52">
+          <h2 id="lpFinalTitle">See it with real tickets.</h2>
+          <p>The demo workspace comes loaded with 100 tickets, customers, receipts, and macros. Click around. Nothing you do there reaches a real customer.</p>
+          <div class="lp-cta-row">
+            <button class="lp-button" type="button" data-lp-demo hidden>
+              Open the live demo
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10"></path><path d="M9 4l4 4-4 4"></path></svg>
+            </button>
+            <button class="lp-button lp-button--ghost" type="button" data-lp-signin>Sign in</button>
+          </div>
+        </div>
+      </section>
+
+      <footer class="lp-footer">
+        <div class="lp-footer-inner">
+          <a class="lp-brand" href="#homeScreen" aria-label="RepOS home">
+            <img src="./assets/repos-mark.svg" alt="" width="22" height="22">
+            <span>RepOS</span>
+          </a>
+          <nav aria-label="Footer">
+            <a href="#lpWorkflow">Workflow</a>
+            <a href="#lpAssist">Assist</a>
+            <a href="#lpTeams">Teams</a>
+            <a href="#lpDetails">Details</a>
+          </nav>
+          <p>© 2026 RepOS, LLC</p>
         </div>
       </footer>
     </main>
@@ -613,231 +642,6 @@
     </div>
 
     <script src="./app.js"></script>
-    <script>
-      /* 3D dotted wave — a perspective-projected grid of dots displaced by a
-         rolling sine surface. Renders to the .home-wave canvas in the hero. */
-      (function () {
-        var canvas = document.querySelector('canvas.home-wave');
-        if (!canvas || !canvas.getContext) return;
-        var ctx = canvas.getContext('2d');
-        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var W = 0, H = 0, dpr = 1;
-
-        function resize() {
-          var rect = canvas.getBoundingClientRect();
-          if (!rect.width || !rect.height) return false;
-          dpr = Math.min(window.devicePixelRatio || 1, 2);
-          W = rect.width; H = rect.height;
-          canvas.width = Math.round(W * dpr);
-          canvas.height = Math.round(H * dpr);
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          return true;
-        }
-
-        var COLS = 76, ROWS = 34;
-        function draw(phase) {
-          ctx.clearRect(0, 0, W, H);
-          var cx = W * 0.5;
-          /* the whole sea slowly swells and relaxes */
-          var breathe = 0.90 + 0.10 * Math.sin(phase * 0.55);
-          /* iterate far (j=0) -> near (j=ROWS) so nearer/bigger dots paint on top */
-          for (var j = 0; j <= ROWS; j++) {
-            var t = j / ROWS;                          // 0 far .. 1 near
-            var persp = 0.30 + 0.70 * t;               // dots grow toward the viewer
-            var rowY = H * (0.08 + 0.86 * Math.pow(t, 1.42)); // rows bunch toward the back
-            var spanX = W * (0.48 + 1.00 * t);         // rows converge toward the back
-            for (var i = 0; i <= COLS; i++) {
-              var u = i / COLS - 0.5;                  // -0.5 .. 0.5 across
-              /* four stacked waves: primary swell, counter-swell,
-                 fine cross-ripple, and a fast diagonal shimmer */
-              var wave = Math.sin(u * 5.4 + t * 2.6 + phase) * 0.50
-                       + Math.sin(u * 2.2 - t * 5.0 + phase * 0.7) * 0.34
-                       + Math.sin(u * 9.6 + t * 3.8 - phase * 1.35) * 0.17
-                       + Math.sin((u * 7.0 + t * 6.5) * 1.9 + phase * 2.2) * 0.07;
-              var x = cx + u * spanX;
-              var y = rowY + wave * breathe * H * 0.27 * persp;
-              if (y < -6 || y > H + 6) continue;
-              var edge = 1 - Math.min(1, Math.pow(Math.abs(u) / 0.5, 2.3));
-              if (edge <= 0) continue;
-              var crest = (wave + 1.08) / 2.16;         // 0 trough .. 1 crest
-              if (crest < 0) crest = 0; else if (crest > 1) crest = 1;
-              /* smoothstep sharpens trough/crest contrast so the surface
-                 keeps its bright bands even when the waves partly cancel */
-              crest = crest * crest * (3 - 2 * crest);
-              var a = edge * persp * (0.24 + crest * 0.66);
-              if (a <= 0.012) continue;
-              var r = (0.55 + persp * 1.8) * (0.8 + crest * 0.45);
-              var cb = 245 + Math.round(crest * 10); if (cb > 255) cb = 255;
-              ctx.beginPath();
-              ctx.fillStyle = 'rgba(' + (110 + Math.round(crest * 80)) + ',' +
-                                        (78 + Math.round(crest * 66)) + ',' + cb + ',' +
-                                        a.toFixed(3) + ')';
-              ctx.arc(x, y, r, 0, 6.2832);
-              ctx.fill();
-            }
-          }
-        }
-
-        var start = 0, raf = 0;
-        function frame(ts) {
-          if (!start) start = ts;
-          draw(((ts - start) / 1000) * 0.32);
-          raf = requestAnimationFrame(frame);
-        }
-        function boot() {
-          if (!resize()) { requestAnimationFrame(boot); return; }
-          if (reduce) draw(0.6);
-          else raf = requestAnimationFrame(frame);
-        }
-        boot();
-        window.addEventListener('resize', function () {
-          if (resize() && reduce) draw(0.6);
-        });
-      })();
-    </script>
-    <script>
-      /* "At a Glance" mini chart — smooth area+line on canvas with point
-         markers, a glowing highlighted day, a value badge and a draw-in. */
-      (function () {
-        var canvas = document.querySelector('canvas.home-chart-canvas');
-        if (!canvas || !canvas.getContext) return;
-        var badge = document.querySelector('.home-chart-badge');
-        var ctx = canvas.getContext('2d');
-        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var VIOLET = '124,92,255';
-        var data = [16, 22, 28, 34, 42, 33, 29];
-        var HI = 4, MAX = 60;
-        var W = 0, H = 0, dpr = 1, pts = [], pl = 4, pr = 4, pt = 12, pb = 6;
-
-        function yOf(v) { return pt + (1 - v / MAX) * (H - pt - pb); }
-        function layout() {
-          var rect = canvas.getBoundingClientRect();
-          if (!rect.width || !rect.height) return false;
-          dpr = Math.min(window.devicePixelRatio || 1, 2);
-          W = rect.width; H = rect.height;
-          canvas.width = Math.round(W * dpr);
-          canvas.height = Math.round(H * dpr);
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          var pw = W - pl - pr;
-          pts = data.map(function (v, i) {
-            return { x: pl + (i / (data.length - 1)) * pw, y: yOf(v), v: v };
-          });
-          if (badge) {
-            badge.style.left = pts[HI].x + 'px';
-            badge.style.top = pts[HI].y + 'px';
-            badge.textContent = data[HI];
-          }
-          return true;
-        }
-
-        function tracePath() {
-          ctx.beginPath();
-          ctx.moveTo(pts[0].x, pts[0].y);
-          for (var i = 0; i < pts.length - 1; i++) {
-            var p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || pts[i + 1];
-            ctx.bezierCurveTo(
-              p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6,
-              p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6,
-              p2.x, p2.y);
-          }
-        }
-
-        function draw(progress, pulse) {
-          ctx.clearRect(0, 0, W, H);
-          var revealX = pl + (W - pl - pr) * progress;
-
-          // dashed gridlines
-          ctx.setLineDash([3, 3]);
-          ctx.lineWidth = 1;
-          ctx.strokeStyle = 'rgba(67,76,96,.13)';
-          for (var g = 0; g <= 3; g++) {
-            var gy = yOf(g * 20) + 0.5;
-            ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
-          }
-          ctx.setLineDash([]);
-
-          ctx.save();
-          ctx.beginPath(); ctx.rect(0, 0, revealX, H); ctx.clip();
-
-          // area fill
-          tracePath();
-          ctx.lineTo(pts[pts.length - 1].x, H);
-          ctx.lineTo(pts[0].x, H);
-          ctx.closePath();
-          var grad = ctx.createLinearGradient(0, pt, 0, H);
-          grad.addColorStop(0, 'rgba(' + VIOLET + ',.34)');
-          grad.addColorStop(1, 'rgba(' + VIOLET + ',0)');
-          ctx.fillStyle = grad;
-          ctx.fill();
-
-          // line with soft glow
-          tracePath();
-          ctx.shadowColor = 'rgba(' + VIOLET + ',.5)';
-          ctx.shadowBlur = 7;
-          ctx.shadowOffsetY = 2;
-          ctx.strokeStyle = 'rgb(' + VIOLET + ')';
-          ctx.lineWidth = 2.6;
-          ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-          ctx.stroke();
-          ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-          ctx.restore();
-
-          // point markers (as the reveal passes them)
-          for (var i = 0; i < pts.length; i++) {
-            if (pts[i].x > revealX + 0.5) continue;
-            if (i === HI) continue;
-            ctx.beginPath();
-            ctx.fillStyle = '#fff';
-            ctx.strokeStyle = 'rgb(' + VIOLET + ')';
-            ctx.lineWidth = 1.6;
-            ctx.arc(pts[i].x, pts[i].y, 2.4, 0, 6.2832);
-            ctx.fill(); ctx.stroke();
-          }
-
-          // highlighted day: guide line + glow + ringed dot
-          if (revealX >= pts[HI].x - 0.5) {
-            var hx = pts[HI].x, hy = pts[HI].y;
-            ctx.setLineDash([2, 3]);
-            ctx.strokeStyle = 'rgba(' + VIOLET + ',.4)';
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(hx, hy + 5); ctx.lineTo(hx, H); ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.beginPath();
-            ctx.fillStyle = 'rgba(' + VIOLET + ',.18)';
-            ctx.arc(hx, hy, 6 + pulse * 3, 0, 6.2832); ctx.fill();
-            ctx.beginPath();
-            ctx.fillStyle = '#fff';
-            ctx.strokeStyle = 'rgb(' + VIOLET + ')';
-            ctx.lineWidth = 2.4;
-            ctx.arc(hx, hy, 3.6, 0, 6.2832);
-            ctx.fill(); ctx.stroke();
-          }
-        }
-
-        var DUR = 950, t0 = 0, done = false;
-        function frame(ts) {
-          if (!t0) t0 = ts;
-          var e = ts - t0;
-          if (!done) {
-            var p = Math.min(1, e / DUR);
-            draw(1 - Math.pow(1 - p, 3), 0);
-            if (p >= 1) { done = true; if (badge) badge.classList.add('is-shown'); }
-            requestAnimationFrame(frame);
-          } else {
-            draw(1, (Math.sin(e / 900) + 1) / 2);   // gentle highlight pulse
-            requestAnimationFrame(frame);
-          }
-        }
-        function boot() {
-          if (!layout()) { requestAnimationFrame(boot); return; }
-          if (reduce) { draw(1, 0); if (badge) badge.classList.add('is-shown'); }
-          else { t0 = 0; done = false; requestAnimationFrame(frame); }
-        }
-        boot();
-        window.addEventListener('resize', function () {
-          if (layout() && reduce) { draw(1, 0); }
-        });
-      })();
-    </script>
+    <script src="./home.js"></script>
   </body>
 </html>
