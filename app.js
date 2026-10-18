@@ -12100,7 +12100,7 @@ function renderConversation(ticket) {
         </div>
         <div id="replyEditor" class="reply-editor-rich" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="false" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" data-placeholder="${replyMode === "reply" ? "Write a customer-visible reply..." : "Write an internal note..."}">${ticket.draft || ""}</div>
       </div>
-      <input id="composerAttachmentInput" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple hidden>
+      <input id="composerAttachmentInput" type="file" aria-label="Attach files to reply" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple hidden>
       <p class="composer-validation" id="composerValidation" role="status" aria-live="polite"></p>
       <div class="composer-bar">
         <div class="composer-bottom-controls">
