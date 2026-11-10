@@ -1,7 +1,8 @@
 // RepOS local server: static app hosting plus MVP JSON API persistence.
 import { createServer } from "node:http";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { basename, extname, join, normalize, resolve } from "node:path";
+import { constants } from "node:fs";
+import { mkdir, open, readFile, realpath, writeFile } from "node:fs/promises";
+import { basename, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import * as oidc from "openid-client";
@@ -17,6 +18,7 @@ import { withTicketSla, withTicketsSla } from "./lib/ticket-sla.mjs";
 import { ValidationError, normalizeTicketStatus } from "./lib/ticket-workflow.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
+const publicRoot = await realpath(root);
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || (isRailwayRuntime() ? "0.0.0.0" : "127.0.0.1");
 const nodeEnv = process.env.NODE_ENV || "development";
@@ -92,6 +94,18 @@ const staticTypes = {
   ".svg": "image/svg+xml"
 };
 
+// Only these shipped files are public. State, uploads and source files share
+// this directory; they must never become public through generic static hosting.
+const publicStaticFiles = new Set([
+  "index.html", "app.js", "home.js", "styles.css", "home.css",
+  "assets/flowdesk-logo-2.png", "assets/flowdesk-mark.png", "assets/flowdesk-wordmark.png",
+  "assets/ispring-logo.png", "assets/repos-favicon-v5-16.png", "assets/repos-favicon-v5-180.png",
+  "assets/repos-favicon-v5-32.png", "assets/repos-hero-center.png", "assets/repos-hero-dashboard.png",
+  "assets/repos-homepage-hero-3840x2160.png", "assets/repos-homepage-hero.png", "assets/repos-logo.png",
+  "assets/repos-mark.png", "assets/repos-mark.svg", "assets/repos-podium.png",
+  "assets/tessario-logo.svg", "assets/tessario-mark.svg", "assets/text-cursor.svg"
+]);
+
 const resourceValidators = {
   tickets: Array.isArray,
   users: Array.isArray,
@@ -123,7 +137,7 @@ const server = createServer(async (request, response) => {
       await handleApi(request, response, url);
       return;
     }
-    await serveStatic(response, url.pathname);
+    await serveStatic(request, response, url.pathname);
   } catch (error) {
     if (error instanceof ValidationError) {
       sendJson(response, error.status || 400, {
@@ -734,24 +748,46 @@ async function handleApi(request, response, url) {
   sendJson(response, 404, { error: "not_found" });
 }
 
-async function serveStatic(response, pathname) {
-  const requestedPath = pathname === "/" ? "/index.html" : pathname;
-  const normalized = normalize(decodeURIComponent(requestedPath)).replace(/^[/\\]+/, "");
-  const filePath = resolve(root, normalized);
-
-  if (!filePath.startsWith(resolve(root))) {
-    response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
-    response.end("Forbidden");
-    return;
-  }
-
+async function serveStatic(request, response, pathname) {
   try {
-    const body = await readFile(filePath);
-    response.writeHead(200, {
-      "Content-Type": staticTypes[extname(filePath)] || "application/octet-stream",
-      "Cache-Control": "no-store"
-    });
-    response.end(body);
+    // Validate the URL before filesystem normalization can reinterpret it.
+    const decodedPath = decodeURIComponent(pathname);
+    const publicFile = decodedPath === "/" ? "index.html" : decodedPath.slice(1);
+    if (!decodedPath.startsWith("/") || !publicStaticFiles.has(publicFile)) {
+      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+      return;
+    }
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      response.writeHead(405, { "Allow": "GET, HEAD", "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Method not allowed");
+      return;
+    }
+    const filePath = resolve(publicRoot, publicFile);
+    // A listed asset must not be a link to state, uploads, or another target.
+    if (await realpath(filePath) !== filePath) {
+      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+      return;
+    }
+    const file = await open(filePath, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
+    try {
+      const metadata = await file.stat();
+      if (!metadata.isFile() || metadata.nlink > 1) {
+        response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+        response.end("Not found");
+        return;
+      }
+      const body = await file.readFile();
+      response.writeHead(200, {
+        "Content-Type": staticTypes[extname(filePath)] || "application/octet-stream",
+        "Content-Length": body.length,
+        "Cache-Control": "no-store"
+      });
+      response.end(request.method === "HEAD" ? undefined : body);
+    } finally {
+      await file.close();
+    }
   } catch {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Not found");

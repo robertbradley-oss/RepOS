@@ -12,6 +12,7 @@
     "smoke:frontend-ticket-api": "node scripts/frontend-ticket-api-smoke.mjs",
     "smoke:multi-user": "node scripts/backend-multi-user-smoke.mjs",
     "smoke:strict-deploy": "node scripts/strict-deployment-smoke.mjs",
+    "smoke:static-files": "node scripts/static-files-smoke.mjs",
     "smoke": "node scripts/backend-smoke.mjs"
   },
   "dependencies": {
