@@ -30,3 +30,4 @@ jobs:
       - run: npm run smoke:frontend-ticket-api
       - run: npm run smoke:multi-user
       - run: npm run smoke:strict-deploy
+      - run: npm run smoke:static-files
